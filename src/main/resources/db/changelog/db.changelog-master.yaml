@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id:  1
+      author:  altonac
+      changes:
+        - createTable:
+            tableName:  account
+            columns:
+              - column:
+                  name:  id
+                  type:  varchar(36)
+                  constraints:
+                    primaryKey:  true
+                    nullable:  false
+              - column:
+                  name:  name
+                  type:  varchar(255)
