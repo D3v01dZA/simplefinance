@@ -4,8 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
-import net.caltona.simplefinance.api.JAccount;
-import net.caltona.simplefinance.model.DAccount;
+import net.caltona.simplefinance.model.DAccountConfig;
+
+import java.util.Map;
 
 @Getter
 @EqualsAndHashCode
@@ -18,8 +19,17 @@ public class CheckingAccount implements Account {
     @NonNull
     private final String name;
 
+    public CheckingAccount(String id, String name, Map<String, Object> configs) {
+        this(id, name);
+    }
+
     @Override
-    public JAccount json() {
-        return new JAccount(id, name, DAccount.Type.CHECKING);
+    public boolean canUpdateConfig(DAccountConfig updateAccountConfig) {
+        return false;
+    }
+
+    @Override
+    public boolean canAddConfig(DAccountConfig newAccountConfig) {
+        return false;
     }
 }

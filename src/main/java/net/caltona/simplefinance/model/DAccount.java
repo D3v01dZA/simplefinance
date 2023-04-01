@@ -2,21 +2,17 @@ package net.caltona.simplefinance.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import net.caltona.simplefinance.api.JAccount;
 import net.caltona.simplefinance.service.Account;
 import net.caltona.simplefinance.service.CheckingAccount;
 import net.caltona.simplefinance.service.SavingsAccount;
-import org.hibernate.annotations.Cascade;
-import org.hibernate.annotations.CascadeType;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
 @Getter
 @Setter
-@ToString
 @EqualsAndHashCode
 @NoArgsConstructor
 
@@ -35,12 +31,21 @@ public class DAccount {
     private Type type;
 
     @OneToMany(mappedBy = "dAccount")
-    @Cascade(CascadeType.ALL)
     private List<DAccountConfig> dAccountConfigs;
 
     public DAccount(String name, Type type) {
         this.name = name;
         this.type = type;
+    }
+
+    public JAccount json() {
+        return new JAccount(id, name, type);
+    }
+
+    public Optional<DAccountConfig> dAccountConfig(String id) {
+        return getDAccountConfigs().stream()
+                .filter(dAccountConfig -> dAccountConfig.getId().equals(id))
+                .findFirst();
     }
 
     public Account account() {
@@ -51,17 +56,29 @@ public class DAccount {
         return Objects.requireNonNullElse(dAccountConfigs, List.of());
     }
 
+    public void addDAccountConfig(DAccountConfig dAccountConfig) {
+        List<DAccountConfig> updated = new ArrayList<>(getDAccountConfigs());
+        updated.add(dAccountConfig);
+        this.dAccountConfigs = updated;
+    }
+
+    public void removeDAccountConfig(DAccountConfig dAccountConfig) {
+        List<DAccountConfig> updated = new ArrayList<>(getDAccountConfigs());
+        updated.remove(dAccountConfig);
+        this.dAccountConfigs = updated;
+    }
+
     public enum Type {
         SAVINGS {
             @Override
             public Account account(String id, String name, Map<String, Object> configByName) {
-                return new SavingsAccount(id, name);
+                return new SavingsAccount(id, name, configByName);
             }
         },
         CHECKING {
             @Override
             public Account account(String id, String name, Map<String, Object> configByName) {
-                return new CheckingAccount(id, name);
+                return new CheckingAccount(id, name, configByName);
             }
         };
 
@@ -80,6 +97,27 @@ public class DAccount {
 
         @NonNull
         private final DAccount.Type type;
+
+        public DAccount dAccount() {
+            return new DAccount(name, type);
+        }
+
+    }
+
+    @Getter
+    @ToString
+    @EqualsAndHashCode
+    @AllArgsConstructor
+    public static class UpdateAccount {
+
+        @NonNull
+        private final String id;
+
+        private final String name;
+
+        public Optional<String> getName() {
+            return Optional.ofNullable(name);
+        }
 
     }
 }

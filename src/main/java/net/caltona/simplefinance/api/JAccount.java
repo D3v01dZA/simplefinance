@@ -2,17 +2,19 @@ package net.caltona.simplefinance.api;
 
 import lombok.*;
 import net.caltona.simplefinance.model.DAccount;
-import net.caltona.simplefinance.service.Account;
 
 @Getter
 @EqualsAndHashCode
 @AllArgsConstructor
 public class JAccount {
 
+    @NonNull
     private final String id;
 
+    @NonNull
     private final String name;
 
+    @NonNull
     private final DAccount.Type type;
 
     @Getter
@@ -27,8 +29,8 @@ public class JAccount {
         @NonNull
         private final DAccount.Type type;
 
-        public Account.NewAccount newAccount() {
-            return new Account.NewAccount(name, type);
+        public DAccount.NewAccount dNewAccount() {
+            return new DAccount.NewAccount(name, type);
         }
 
     }
@@ -41,8 +43,8 @@ public class JAccount {
 
         private final String name;
 
-        public Account.UpdateAccount updateAccount(String id) {
-            return new Account.UpdateAccount(id, name);
+        public DAccount.UpdateAccount dUpdateAccount(String id) {
+            return new DAccount.UpdateAccount(id, name);
         }
 
     }
