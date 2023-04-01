@@ -2,7 +2,8 @@ package net.caltona.simplefinance;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import net.caltona.simplefinance.model.Account;
+import net.caltona.simplefinance.api.JAccount;
+import net.caltona.simplefinance.model.DAccount;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,7 +26,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 @AutoConfigureMockMvc
 @ExtendWith(SpringExtension.class)
 @TestPropertySource("classpath:test-application.properties")
-class SimpleFinanceApplicationTests {
+class SimpleFinanceE2ETests {
 
     @Autowired
     private MockMvc mvc;
@@ -34,41 +35,56 @@ class SimpleFinanceApplicationTests {
     private ObjectMapper objectMapper;
 
     @Test
-    void contextLoads() throws Exception {
+    void test() throws Exception {
         // Create an account
-        Account account = createAccount("Account");
-        List<Account> accounts = listAccounts();
-        Assertions.assertEquals(1, accounts.size());
-        Assertions.assertEquals(List.of(account), accounts);
+        JAccount initialAccount = createAccount("Account");
+        JAccount updatedAccount = updateAccount(initialAccount.getId(), new JAccount.UpdateAccount("Test"));
+
+        List<JAccount> jAccounts = listAccounts();
+        Assertions.assertEquals(1, jAccounts.size());
+        Assertions.assertEquals(List.of(updatedAccount), jAccounts);
     }
 
-    private Account createAccount(String name) throws Exception {
+    private JAccount createAccount(String name) throws Exception {
         MockHttpServletResponse response = mvc.perform(post("/api/account/")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsBytes(new Account.NewAccount(name))))
+                        .content(objectMapper.writeValueAsBytes(new JAccount.NewAccount(name, DAccount.Type.SAVINGS))))
                 .andReturn()
                 .getResponse();
         Assertions.assertEquals(200, response.getStatus());
-        Account expected = objectMapper.readValue(response.getContentAsByteArray(), Account.class);
-        Account fetched = getAccount(expected.getId()).get();
+        JAccount expected = objectMapper.readValue(response.getContentAsByteArray(), JAccount.class);
+        JAccount fetched = getAccount(expected.getId()).get();
         Assertions.assertEquals(expected, fetched);
         return fetched;
     }
 
-    private List<Account> listAccounts() throws Exception {
+    private JAccount updateAccount(String id, JAccount.UpdateAccount updateAccount) throws Exception {
+        MockHttpServletResponse response = mvc.perform(post("/api/account/" + id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsBytes(updateAccount)))
+                .andReturn()
+                .getResponse();
+        Assertions.assertEquals(200, response.getStatus());
+        JAccount expected = objectMapper.readValue(response.getContentAsByteArray(), JAccount.class);
+        JAccount fetched = getAccount(expected.getId()).get();
+        Assertions.assertEquals(expected, fetched);
+        return fetched;
+    }
+
+    private List<JAccount> listAccounts() throws Exception {
         MockHttpServletResponse response = mvc.perform(get("/api/account/").contentType(MediaType.APPLICATION_JSON))
                 .andReturn()
                 .getResponse();
         Assertions.assertEquals(200, response.getStatus());
-        return objectMapper.readValue(response.getContentAsByteArray(), new TypeReference<List<Account>>() {});
+        return objectMapper.readValue(response.getContentAsByteArray(), new TypeReference<List<JAccount>>() {});
     }
 
-    private Optional<Account> getAccount(String id) throws Exception {
+    private Optional<JAccount> getAccount(String id) throws Exception {
         MockHttpServletResponse response = mvc.perform(get("/api/account/" + id).contentType(MediaType.APPLICATION_JSON))
                 .andReturn()
                 .getResponse();
         if (response.getStatus() == 200) {
-            return Optional.of(objectMapper.readValue(response.getContentAsByteArray(), Account.class));
+            return Optional.of(objectMapper.readValue(response.getContentAsByteArray(), JAccount.class));
         }
         return Optional.empty();
     }

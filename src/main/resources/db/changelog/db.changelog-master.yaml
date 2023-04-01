@@ -15,3 +15,36 @@ databaseChangeLog:
               - column:
                   name:  name
                   type:  varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName:  account_config
+            columns:
+              - column:
+                  name:  id
+                  type:  varchar(36)
+                  constraints:
+                    primaryKey:  true
+                    nullable:  false
+              - column:
+                  name: type
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name:  value
+                  type:  varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: account_id
+                  type: varchar(36)
+                  constraints:
+                    nullable: false
+                    references: account(id)
+                    foreignKeyName: fk_account_config_to_account
