@@ -4,8 +4,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.caltona.simplefinance.api.JAccount;
 import net.caltona.simplefinance.api.JAccountConfig;
+import net.caltona.simplefinance.api.JTransaction;
 import net.caltona.simplefinance.model.DAccount;
 import net.caltona.simplefinance.model.DAccountConfig;
+import net.caltona.simplefinance.model.DTransaction;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +20,8 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -57,11 +61,32 @@ class SimpleFinanceE2ETests {
         List<JAccountConfig> accountConfigs = listAccountConfigs(persistentAccount.getId());
         Assertions.assertEquals(List.of(rateConfig), accountConfigs);
 
+        // Update some config
+        JAccountConfig updateConfig = updateAccountConfig(persistentAccount.getId(), rateConfig.getId(), new JAccountConfig.UpdateAccountConfig("13"));
+        List<JAccountConfig> updatedConfigs = listAccountConfigs(persistentAccount.getId());
+        Assertions.assertEquals(List.of(updateConfig), updatedConfigs);
+
         // Delete some config
-        JAccountConfig deletedRateConfig = deleteAccountConfig(persistentAccount.getId(), rateConfig.getId());
-        Assertions.assertEquals(rateConfig, deletedRateConfig);
+        JAccountConfig deletedRateConfig = deleteAccountConfig(persistentAccount.getId(), updateConfig.getId());
+        Assertions.assertEquals(updateConfig, deletedRateConfig);
         List<JAccountConfig> deletedAccountConfig = listAccountConfigs(persistentAccount.getId());
         Assertions.assertEquals(List.of(), deletedAccountConfig);
+
+        // Add some transaction
+        JTransaction transaction = createTransaction(persistentAccount.getId(), "start", Instant.now(), BigDecimal.valueOf(10), DTransaction.Type.BALANCE, null);
+        List<JTransaction> transactions = listTransactions(persistentAccount.getId());
+        Assertions.assertEquals(List.of(transaction), transactions);
+
+        // Update some transaction
+        JTransaction updatedTransaction = updateTransaction(persistentAccount.getId(), transaction.getId(), new JTransaction.UpdateTransaction("test", Instant.now(), BigDecimal.valueOf(100)));
+        List<JTransaction> updatedTransactions = listTransactions(persistentAccount.getId());
+        Assertions.assertEquals(List.of(updatedTransaction), updatedTransactions);
+
+        // Delete some config
+        JTransaction deletedTransaction = deleteTransaction(persistentAccount.getId(), updatedTransaction.getId());
+        Assertions.assertEquals(updatedTransaction, deletedTransaction);
+        List<JTransaction> deletedTransactions = listTransactions(persistentAccount.getId());
+        Assertions.assertEquals(List.of(), deletedTransactions);
     }
 
     private JAccount createAccount(String name, DAccount.Type type) throws Exception {
@@ -106,6 +131,27 @@ class SimpleFinanceE2ETests {
         return objectMapper.readValue(response.getContentAsByteArray(), JAccountConfig.class);
     }
 
+    private JAccountConfig updateAccountConfig(String accountId, String id, JAccountConfig.UpdateAccountConfig updateAccountConfig) throws Exception {
+        MockHttpServletResponse response = mvc.perform(post("/api/account/" + accountId + "/config/" + id + "/")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsBytes(updateAccountConfig)))
+                .andReturn()
+                .getResponse();
+        Assertions.assertEquals(200, response.getStatus());
+        JAccountConfig expected = objectMapper.readValue(response.getContentAsByteArray(), JAccountConfig.class);
+        JAccountConfig fetched = getAccountConfig(accountId, expected.getId()).get();
+        Assertions.assertEquals(expected, fetched);
+        return fetched;
+    }
+
+    private JTransaction deleteTransaction(String accountId, String id) throws Exception {
+        MockHttpServletResponse response = mvc.perform(delete("/api/account/" + accountId + "/transaction/" + id + "/")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andReturn()
+                .getResponse();
+        return objectMapper.readValue(response.getContentAsByteArray(), JTransaction.class);
+    }
+
     private JAccountConfig createAccountConfig(String accountId, String name, DAccountConfig.Type type, String value) throws Exception {
         MockHttpServletResponse response = mvc.perform(post("/api/account/" + accountId + "/config/")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -115,6 +161,32 @@ class SimpleFinanceE2ETests {
         Assertions.assertEquals(200, response.getStatus());
         JAccountConfig expected = objectMapper.readValue(response.getContentAsByteArray(), JAccountConfig.class);
         JAccountConfig fetched = getAccountConfig(accountId, expected.getId()).get();
+        Assertions.assertEquals(expected, fetched);
+        return fetched;
+    }
+
+    private JTransaction createTransaction(String accountId, String description, Instant date, BigDecimal value, DTransaction.Type type, String fromAccountId) throws Exception {
+        MockHttpServletResponse response = mvc.perform(post("/api/account/" + accountId + "/transaction/")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsBytes(new JTransaction.NewTransaction(description, date, value, type, fromAccountId))))
+                .andReturn()
+                .getResponse();
+        Assertions.assertEquals(200, response.getStatus());
+        JTransaction expected = objectMapper.readValue(response.getContentAsByteArray(), JTransaction.class);
+        JTransaction fetched = getTransaction(accountId, expected.getId()).get();
+        Assertions.assertEquals(expected, fetched);
+        return fetched;
+    }
+
+    private JTransaction updateTransaction(String accountId, String id, JTransaction.UpdateTransaction updateTransaction) throws Exception {
+        MockHttpServletResponse response = mvc.perform(post("/api/account/" + accountId + "/transaction/" + id + "/")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsBytes(updateTransaction)))
+                .andReturn()
+                .getResponse();
+        Assertions.assertEquals(200, response.getStatus());
+        JTransaction expected = objectMapper.readValue(response.getContentAsByteArray(), JTransaction.class);
+        JTransaction fetched = getTransaction(accountId, expected.getId()).get();
         Assertions.assertEquals(expected, fetched);
         return fetched;
     }
@@ -135,6 +207,14 @@ class SimpleFinanceE2ETests {
         return objectMapper.readValue(response.getContentAsByteArray(), new TypeReference<List<JAccountConfig>>() {});
     }
 
+    private List<JTransaction> listTransactions(String accountId) throws Exception {
+        MockHttpServletResponse response = mvc.perform(get("/api/account/" + accountId + "/transaction/").contentType(MediaType.APPLICATION_JSON))
+                .andReturn()
+                .getResponse();
+        Assertions.assertEquals(200, response.getStatus());
+        return objectMapper.readValue(response.getContentAsByteArray(), new TypeReference<List<JTransaction>>() {});
+    }
+
     private Optional<JAccount> getAccount(String id) throws Exception {
         MockHttpServletResponse response = mvc.perform(get("/api/account/" + id + "/").contentType(MediaType.APPLICATION_JSON))
                 .andReturn()
@@ -151,6 +231,16 @@ class SimpleFinanceE2ETests {
                 .getResponse();
         if (response.getStatus() == 200) {
             return Optional.of(objectMapper.readValue(response.getContentAsByteArray(), JAccountConfig.class));
+        }
+        return Optional.empty();
+    }
+
+    private Optional<JTransaction> getTransaction(String accountId, String id) throws Exception {
+        MockHttpServletResponse response = mvc.perform(get("/api/account/" + accountId + "/transaction/" + id + "/").contentType(MediaType.APPLICATION_JSON))
+                .andReturn()
+                .getResponse();
+        if (response.getStatus() == 200) {
+            return Optional.of(objectMapper.readValue(response.getContentAsByteArray(), JTransaction.class));
         }
         return Optional.empty();
     }

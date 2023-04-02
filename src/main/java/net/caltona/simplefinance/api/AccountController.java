@@ -4,6 +4,7 @@ import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import net.caltona.simplefinance.model.DAccount;
 import net.caltona.simplefinance.model.DAccountConfig;
+import net.caltona.simplefinance.model.DTransaction;
 import net.caltona.simplefinance.service.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -93,6 +94,46 @@ public class AccountController {
     public Optional<JAccountConfig> deleteConfig(@PathVariable String id, @PathVariable String configId) {
         return accountService.deleteAccountConfig(id, configId)
                 .map(DAccountConfig::json);
+    }
+
+    @Transactional
+    @GetMapping("/api/account/{id}/transaction/")
+    public Optional<List<JTransaction>> listTransaction(@PathVariable String id) {
+        return accountService.get(id)
+                .map(DAccount::getDTransactions)
+                .map(dAccountConfigs -> dAccountConfigs.stream()
+                        .map(DTransaction::json)
+                        .collect(Collectors.toList())
+                );
+    }
+
+    @Transactional
+    @GetMapping("/api/account/{id}/transaction/{transactionId}/")
+    public Optional<JTransaction> getTransaction(@PathVariable String id, @PathVariable String transactionId) {
+        return accountService.get(id)
+                .flatMap(account -> account.dTransaction(transactionId))
+                .map(DTransaction::json);
+    }
+
+    @Transactional
+    @PostMapping("/api/account/{id}/transaction/{transactionId}/")
+    public Optional<JTransaction> updateTransaction(@PathVariable String id, @PathVariable String transactionId, @RequestBody JTransaction.UpdateTransaction updateTransaction) {
+        return accountService.updateTransaction(updateTransaction.dUpdateTransaction(id, transactionId))
+                .map(DTransaction::json);
+    }
+
+    @Transactional
+    @PostMapping("/api/account/{id}/transaction/")
+    public Optional<JTransaction> createTransaction(@PathVariable String id, @RequestBody JTransaction.NewTransaction newTransaction) {
+        return accountService.createTransaction(newTransaction.dNewTransaction(id))
+                .map(DTransaction::json);
+    }
+
+    @Transactional
+    @DeleteMapping("/api/account/{id}/transaction/{transactionId}/")
+    public Optional<JTransaction> deleteTransaction(@PathVariable String id, @PathVariable String transactionId) {
+        return accountService.deleteTransaction(id, transactionId)
+                .map(DTransaction::json);
     }
 
 }

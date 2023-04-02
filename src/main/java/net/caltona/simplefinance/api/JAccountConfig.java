@@ -24,7 +24,6 @@ public class JAccountConfig {
     private String value;
 
     @Getter
-    @ToString
     @EqualsAndHashCode
     @AllArgsConstructor
     public static class NewAccountConfig {
@@ -45,7 +44,6 @@ public class JAccountConfig {
     }
 
     @Getter
-    @ToString
     @EqualsAndHashCode
     @AllArgsConstructor
     public static class UpdateAccountConfig {

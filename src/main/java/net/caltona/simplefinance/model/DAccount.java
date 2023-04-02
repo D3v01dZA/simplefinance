@@ -3,11 +3,10 @@ package net.caltona.simplefinance.model;
 import jakarta.persistence.*;
 import lombok.*;
 import net.caltona.simplefinance.api.JAccount;
-import net.caltona.simplefinance.service.Account;
-import net.caltona.simplefinance.service.CheckingAccount;
-import net.caltona.simplefinance.service.SavingsAccount;
+import net.caltona.simplefinance.service.*;
 
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 
@@ -33,6 +32,9 @@ public class DAccount {
     @OneToMany(mappedBy = "dAccount")
     private List<DAccountConfig> dAccountConfigs;
 
+    @OneToMany(mappedBy = "dAccount")
+    private List<DTransaction> dTransactions;
+
     public DAccount(String name, Type type) {
         this.name = name;
         this.type = type;
@@ -48,12 +50,28 @@ public class DAccount {
                 .findFirst();
     }
 
+    public Optional<DTransaction> dTransaction(String id) {
+        return getDTransactions().stream()
+                .filter(dTransaction -> dTransaction.getId().equals(id))
+                .findFirst();
+    }
+
     public Account account() {
-        return type.account(id, name, getDAccountConfigs().stream().collect(Collectors.toMap(DAccountConfig::getId, DAccountConfig::value)));
+        Supplier<Map<String, Object>> configByNameSupplier = () -> getDAccountConfigs().stream()
+                .collect(Collectors.toMap(DAccountConfig::getName, DAccountConfig::value));
+        Supplier<List<Transaction>> transactionsSupplier = () -> getDTransactions().stream()
+                .sorted(Comparator.comparing(DTransaction::getDate))
+                .map(DTransaction::transaction)
+                .collect(Collectors.toList());
+        return type.account(id, name, configByNameSupplier, transactionsSupplier);
     }
 
     public List<DAccountConfig> getDAccountConfigs() {
         return Objects.requireNonNullElse(dAccountConfigs, List.of());
+    }
+
+    public List<DTransaction> getDTransactions() {
+        return Objects.requireNonNullElse(dTransactions, List.of());
     }
 
     public void addDAccountConfig(DAccountConfig dAccountConfig) {
@@ -62,32 +80,43 @@ public class DAccount {
         this.dAccountConfigs = updated;
     }
 
+    public void addDTransaction(DTransaction dTransaction) {
+        List<DTransaction> updated = new ArrayList<>(getDTransactions());
+        updated.add(dTransaction);
+        this.dTransactions = updated;
+    }
+
     public void removeDAccountConfig(DAccountConfig dAccountConfig) {
         List<DAccountConfig> updated = new ArrayList<>(getDAccountConfigs());
         updated.remove(dAccountConfig);
         this.dAccountConfigs = updated;
     }
 
+    public void removeDTransaction(DTransaction dTransaction) {
+        List<DTransaction> updated = new ArrayList<>(getDTransactions());
+        updated.remove(dTransaction);
+        this.dTransactions = updated;
+    }
+
     public enum Type {
         SAVINGS {
             @Override
-            public Account account(String id, String name, Map<String, Object> configByName) {
-                return new SavingsAccount(id, name, configByName);
+            public Account account(String id, String name, Supplier<Map<String, Object>> configByNameSupplier, Supplier<List<Transaction>> transactionsSupplier) {
+                return new SavingsAccount(id, name, configByNameSupplier, transactionsSupplier);
             }
         },
         CHECKING {
             @Override
-            public Account account(String id, String name, Map<String, Object> configByName) {
-                return new CheckingAccount(id, name, configByName);
+            public Account account(String id, String name, Supplier<Map<String, Object>> configByNameSupplier, Supplier<List<Transaction>> transactionsSupplier) {
+                return new CheckingAccount(id, name, configByNameSupplier, transactionsSupplier);
             }
         };
 
-        public abstract Account account(String id, String name, Map<String, Object> configByName);
+        public abstract Account account(String id, String name, Supplier<Map<String, Object>> configByNameSupplier, Supplier<List<Transaction>> transactionsSupplier);
 
     }
 
     @Getter
-    @ToString
     @EqualsAndHashCode
     @AllArgsConstructor
     public static class NewAccount {
@@ -105,7 +134,6 @@ public class DAccount {
     }
 
     @Getter
-    @ToString
     @EqualsAndHashCode
     @AllArgsConstructor
     public static class UpdateAccount {

@@ -7,7 +7,10 @@ import lombok.NonNull;
 import net.caltona.simplefinance.model.DAccountConfig;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Supplier;
 
 @Getter
 @EqualsAndHashCode
@@ -20,19 +23,20 @@ public class SavingsAccount implements Account {
     @NonNull
     private final String name;
 
-    private final static String RATE = "rate";
-    private final BigDecimal rate;
+    @NonNull
+    private final Supplier<Map<String, Object>> configByNameSupplier;
 
-    public SavingsAccount(String id, String name, Map<String, Object> configs) {
-        this(id, name, (BigDecimal) configs.get(RATE));
-    }
+    @NonNull
+    private final Supplier<List<Transaction>> transactionsSupplier;
+
+    private final static String RATE = "rate";
 
     @Override
     public boolean canUpdateConfig(DAccountConfig updateAccountConfig) {
         if (!updateAccountConfig.valid()) {
             return false;
         }
-        if (rate != null && updateAccountConfig.getType().equals(DAccountConfig.Type.BIG_DECIMAL) && updateAccountConfig.getName().equals(RATE)) {
+        if (rate().isPresent() && updateAccountConfig.getType().equals(DAccountConfig.Type.BIG_DECIMAL) && updateAccountConfig.getName().equals(RATE)) {
             return true;
         }
         return false;
@@ -43,9 +47,13 @@ public class SavingsAccount implements Account {
         if (!newAccountConfig.valid()) {
             return false;
         }
-        if (rate == null && newAccountConfig.getType().equals(DAccountConfig.Type.BIG_DECIMAL) && newAccountConfig.getName().equals(RATE)) {
+        if (rate().isEmpty() && newAccountConfig.getType().equals(DAccountConfig.Type.BIG_DECIMAL) && newAccountConfig.getName().equals(RATE)) {
             return true;
         }
         return false;
+    }
+
+    private Optional<BigDecimal> rate() {
+        return Optional.ofNullable((BigDecimal) configByNameSupplier.get().get(RATE));
     }
 }

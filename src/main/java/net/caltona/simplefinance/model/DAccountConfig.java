@@ -29,14 +29,15 @@ public class DAccountConfig {
     @Column
     private String value;
 
-    @ManyToOne
+    @ManyToOne(optional = false)
     @JoinColumn(name = "account_id")
     private DAccount dAccount;
 
-    private DAccountConfig(String name, Type type, String value) {
+    private DAccountConfig(String name, Type type, String value, DAccount dAccount) {
         this.name = name;
         this.type = type;
         this.value = value;
+        this.dAccount = dAccount;
     }
 
     public enum Type {
@@ -47,10 +48,10 @@ public class DAccountConfig {
             }
 
             @Override
-            boolean valid(String value) {
+            boolean valid(DAccountConfig dAccountConfig) {
                 try {
-                    new BigDecimal(value);
-                    return true;
+                    new BigDecimal(dAccountConfig.getValue());
+                    return dAccountConfig.getDAccount() != null;
                 } catch (Exception ex) {
                     return false;
                 }
@@ -59,7 +60,7 @@ public class DAccountConfig {
 
         abstract Object value(String value);
 
-        abstract boolean valid(String value);
+        abstract boolean valid(DAccountConfig dAccountConfig);
     }
 
     public Object value() {
@@ -67,7 +68,7 @@ public class DAccountConfig {
     }
 
     public boolean valid() {
-        return type.valid(value);
+        return type.valid(this);
     }
 
     public JAccountConfig json() {
@@ -75,7 +76,6 @@ public class DAccountConfig {
     }
 
     @Getter
-    @ToString
     @EqualsAndHashCode
     @AllArgsConstructor
     public static class NewAccountConfig {
@@ -92,14 +92,13 @@ public class DAccountConfig {
         @NonNull
         private final String value;
 
-        public DAccountConfig dAccountConfig() {
-            return new DAccountConfig(name, type, value);
+        public DAccountConfig dAccountConfig(DAccount dAccount) {
+            return new DAccountConfig(name, type, value, dAccount);
         }
 
     }
 
     @Getter
-    @ToString
     @EqualsAndHashCode
     @AllArgsConstructor
     public static class UpdateAccountConfig {

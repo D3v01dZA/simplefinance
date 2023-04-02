@@ -6,7 +6,9 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.caltona.simplefinance.model.DAccountConfig;
 
+import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 @Getter
 @EqualsAndHashCode
@@ -19,8 +21,11 @@ public class CheckingAccount implements Account {
     @NonNull
     private final String name;
 
-    public CheckingAccount(String id, String name, Map<String, Object> configs) {
-        this(id, name);
+    @NonNull
+    private final Supplier<List<Transaction>> transactionsSupplier;
+
+    public CheckingAccount(String id, String name, Supplier<Map<String, Object>> configByNameSupplier, Supplier<List<Transaction>> transactionsSupplier) {
+        this(id, name, transactionsSupplier);
     }
 
     @Override

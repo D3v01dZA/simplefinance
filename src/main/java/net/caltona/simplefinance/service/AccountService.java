@@ -3,12 +3,10 @@ package net.caltona.simplefinance.service;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import net.caltona.simplefinance.api.ExceptionControllerAdvice;
-import net.caltona.simplefinance.model.DAccount;
-import net.caltona.simplefinance.model.DAccountConfig;
-import net.caltona.simplefinance.model.DAccountConfigDAO;
-import net.caltona.simplefinance.model.DAccountDAO;
+import net.caltona.simplefinance.model.*;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,6 +19,9 @@ public class AccountService {
 
     @NonNull
     private DAccountConfigDAO dAccountConfigDAO;
+
+    @NonNull
+    private DTransactionDAO dTransactionDAO;
 
     public List<DAccount> list() {
        return dAccountDAO.findAll();
@@ -68,11 +69,10 @@ public class AccountService {
         return dAccountDAO.findById(newAccountConfig.getAccountId())
                 .map(dAccount -> {
                     Account account = dAccount.account();
-                    DAccountConfig dAccountConfig = newAccountConfig.dAccountConfig();
+                    DAccountConfig dAccountConfig = newAccountConfig.dAccountConfig(dAccount);
                     if (!account.canAddConfig(dAccountConfig)) {
                         throw new ExceptionControllerAdvice.BadConfigException("Cannot create");
                     }
-                    dAccountConfig.setDAccount(dAccount);
                     dAccount.addDAccountConfig(dAccountConfig);
                     dAccountDAO.save(dAccount);
                     return dAccountConfigDAO.save(dAccountConfig);
@@ -91,6 +91,49 @@ public class AccountService {
                     dAccount.removeDAccountConfig(dAccountConfig);
                     dAccountDAO.save(dAccount);
                     return Optional.of(dAccountConfig);
+                });
+    }
+
+    public Optional<DTransaction> updateTransaction(DTransaction.UpdateTransaction updateTransaction)  {
+        return dAccountDAO.findById(updateTransaction.getAccountId())
+                .map(dAccount -> {
+                    DTransaction dTransaction = dAccount.dTransaction(updateTransaction.getId()).orElseThrow();
+                    updateTransaction.getDate().map(Instant::toString).ifPresent(dTransaction::setDate);
+                    updateTransaction.getValue().ifPresent(dTransaction::setValue);
+                    updateTransaction.getDescription().ifPresent(dTransaction::setDescription);
+                    if (!dTransaction.isValid()) {
+                        throw new ExceptionControllerAdvice.BadConfigException("Cannot update");
+                    }
+                    return dTransactionDAO.save(dTransaction);
+                });
+    }
+
+    public Optional<DTransaction> createTransaction(DTransaction.NewTransaction newTransaction) {
+        return dAccountDAO.findById(newTransaction.getAccountId())
+                .map(dAccount -> {
+                    Optional<DAccount> toAccountOptional = newTransaction.getFromAccountId().flatMap(dAccountDAO::findById);
+                    DTransaction dTransaction = newTransaction.dTransaction(dAccount, toAccountOptional.orElse(null));
+                    if (!dTransaction.isValid()) {
+                        throw new ExceptionControllerAdvice.BadConfigException("Cannot create");
+                    }
+                    dAccount.addDTransaction(dTransaction);
+                    dAccountDAO.save(dAccount);
+                    return dTransactionDAO.save(dTransaction);
+                });
+    }
+
+    public Optional<DTransaction> deleteTransaction(String accountId, String id) {
+        return get(accountId)
+                .flatMap(dAccount -> {
+                    Optional<DTransaction> dTransactionOptional = dAccount.dTransaction(id);
+                    if (dTransactionOptional.isEmpty()) {
+                        return Optional.empty();
+                    }
+                    DTransaction dTransaction = dTransactionOptional.get();
+                    dTransactionDAO.delete(dTransaction);
+                    dAccount.removeDTransaction(dTransaction);
+                    dAccountDAO.save(dAccount);
+                    return Optional.of(dTransaction);
                 });
     }
 

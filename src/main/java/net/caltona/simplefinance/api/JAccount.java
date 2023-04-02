@@ -18,7 +18,6 @@ public class JAccount {
     private final DAccount.Type type;
 
     @Getter
-    @ToString
     @EqualsAndHashCode
     @AllArgsConstructor
     public static class NewAccount {
@@ -36,7 +35,6 @@ public class JAccount {
     }
 
     @Getter
-    @ToString
     @EqualsAndHashCode
     @AllArgsConstructor
     public static class UpdateAccount {

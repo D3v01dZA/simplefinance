@@ -53,3 +53,46 @@ databaseChangeLog:
                     nullable: false
                     references: account(id)
                     foreignKeyName: fk_account_config_to_account
+        - createTable:
+            tableName: account_transaction
+            columns:
+              - column:
+                  name:  id
+                  type:  varchar(36)
+                  constraints:
+                    primaryKey:  true
+                    nullable:  false
+              - column:
+                  name: description
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: date
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name:  value
+                  type:  decimal
+                  constraints:
+                    nullable: false
+              - column:
+                  name: account_id
+                  type: varchar(36)
+                  constraints:
+                    nullable: false
+                    references: account(id)
+                    foreignKeyName: fk_transaction_account_id_to_account
+              - column:
+                  name: to_account_id
+                  type: varchar(36)
+                  constraints:
+                    nullable: true
+                    references: account(id)
+                    foreignKeyName: fk_transaction_to_account_id_to_account
