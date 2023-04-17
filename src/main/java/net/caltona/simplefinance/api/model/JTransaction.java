@@ -1,17 +1,18 @@
-package net.caltona.simplefinance.api;
+package net.caltona.simplefinance.api.model;
 
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
-import net.caltona.simplefinance.model.DTransaction;
+import net.caltona.simplefinance.db.model.DTransaction;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Getter
 @EqualsAndHashCode
-@AllArgsConstructor
 public class JTransaction {
 
     @NonNull
@@ -21,7 +22,7 @@ public class JTransaction {
     private String description;
 
     @NonNull
-    private Instant date;
+    private LocalDateTime date;
 
     @NonNull
     private BigDecimal value;
@@ -34,6 +35,17 @@ public class JTransaction {
 
     private String fromAccountId;
 
+    @java.beans.ConstructorProperties({"id", "description", "date", "value", "type", "accountId", "fromAccountId"})
+    public JTransaction(@NonNull String id, @NonNull String description, @NonNull LocalDateTime date, @NonNull BigDecimal value, @NonNull DTransaction.Type type, @NonNull String accountId, String fromAccountId) {
+        this.id = id;
+        this.description = description;
+        this.date = date;
+        this.value = value.setScale(2, RoundingMode.FLOOR);
+        this.type = type;
+        this.accountId = accountId;
+        this.fromAccountId = fromAccountId;
+    }
+
     @Getter
     @EqualsAndHashCode
     @AllArgsConstructor
@@ -43,7 +55,7 @@ public class JTransaction {
         private String description;
 
         @NonNull
-        private Instant date;
+        private LocalDateTime date;
 
         @NonNull
         private BigDecimal value;

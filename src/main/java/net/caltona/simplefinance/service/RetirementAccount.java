@@ -5,8 +5,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import net.caltona.simplefinance.db.model.DAccountConfig;
+import net.caltona.simplefinance.service.calculator.AssetBalanceCalculator;
 import net.caltona.simplefinance.service.calculator.BalanceCalculator;
-import net.caltona.simplefinance.service.calculator.MonetaryBalanceCalculator;
 import net.caltona.simplefinance.service.transaction.Transaction;
 
 import java.math.BigDecimal;
@@ -18,7 +18,7 @@ import java.util.function.Supplier;
 @Getter
 @EqualsAndHashCode
 @AllArgsConstructor
-public class CheckingAccount implements Account {
+public class RetirementAccount implements Account {
 
     @NonNull
     private final String id;
@@ -29,18 +29,18 @@ public class CheckingAccount implements Account {
     @NonNull
     private final Supplier<List<Transaction>> transactionsSupplier;
 
-    public CheckingAccount(String id, String name, Supplier<Map<String, Object>> configByNameSupplier, Supplier<List<Transaction>> transactionsSupplier) {
+    public RetirementAccount(String id, String name, Supplier<Map<String, Object>> configByNameSupplier, Supplier<List<Transaction>> transactionsSupplier) {
         this(id, name, transactionsSupplier);
     }
 
     @Override
     public BalanceCalculator.TotalType totalType() {
-        return BalanceCalculator.TotalType.CASH;
+        return BalanceCalculator.TotalType.RETIREMENT;
     }
 
     @Override
     public BigDecimal calculateBalance(LocalDate date) {
-        return new MonetaryBalanceCalculator(transactionsSupplier.get()).balance(date);
+        return new AssetBalanceCalculator(transactionsSupplier.get()).balance(date);
     }
 
     @Override

@@ -1,0 +1,26 @@
+package net.caltona.simplefinance.service.calculator;
+
+import lombok.AllArgsConstructor;
+import net.caltona.simplefinance.service.transaction.Transaction;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+
+@AllArgsConstructor
+public class LiabilityBalanceCalculator {
+
+    private List<Transaction> transactions;
+
+    public BigDecimal balance(LocalDate date) {
+        BigDecimal value = BigDecimal.ZERO;
+        for (Transaction transaction : transactions) {
+            if (transaction.date().isAfter(date.atTime(23, 59))) {
+                return value;
+            }
+            value = transaction.apply(value);
+        }
+        return value;
+    }
+
+}

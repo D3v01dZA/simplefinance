@@ -1,8 +1,8 @@
-package net.caltona.simplefinance.model;
+package net.caltona.simplefinance.db.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import net.caltona.simplefinance.api.JAccountConfig;
+import net.caltona.simplefinance.api.model.JAccountConfig;
 
 import java.math.BigDecimal;
 import java.util.Optional;

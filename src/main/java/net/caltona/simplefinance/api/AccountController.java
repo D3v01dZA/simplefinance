@@ -2,16 +2,27 @@ package net.caltona.simplefinance.api;
 
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
-import net.caltona.simplefinance.model.DAccount;
-import net.caltona.simplefinance.model.DAccountConfig;
-import net.caltona.simplefinance.model.DTransaction;
+import net.caltona.simplefinance.api.model.JAccount;
+import net.caltona.simplefinance.api.model.JAccountConfig;
+import net.caltona.simplefinance.api.model.JBalance;
+import net.caltona.simplefinance.api.model.JTransaction;
+import net.caltona.simplefinance.db.model.DAccount;
+import net.caltona.simplefinance.db.model.DAccountConfig;
+import net.caltona.simplefinance.db.model.DTransaction;
+import net.caltona.simplefinance.service.Account;
 import net.caltona.simplefinance.service.AccountService;
+import net.caltona.simplefinance.service.calculator.BalanceCalculator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @RestController
 @AllArgsConstructor
@@ -19,6 +30,45 @@ public class AccountController {
 
     @Autowired
     private final AccountService accountService;
+
+    @Transactional
+    @GetMapping("/api/net/")
+    public JBalance net() {
+        List<Account> accounts = accountService.list().stream()
+                .map(DAccount::account)
+                .toList();
+        return new BalanceCalculator(accounts).calculate(LocalDate.now().plus(1, ChronoUnit.DAYS));
+    }
+
+    @Transactional
+    @GetMapping("/api/monthly/")
+    public List<JBalance> monthly() {
+        List<Account> accounts = accountService.list().stream()
+                .map(DAccount::account)
+                .toList();
+        LocalDate now = LocalDate.now();
+        int currentMonth = now.getMonthValue();
+        List<LocalDate> dates = IntStream.range(1, currentMonth + 1)
+                .mapToObj(month -> YearMonth.of(now.getYear(), month).atEndOfMonth())
+                .toList();
+        return new BalanceCalculator(accounts).calculate(dates);
+    }
+
+    @Transactional
+    @GetMapping("/api/weekly/")
+    public List<JBalance> weekly() {
+        List<Account> accounts = accountService.list().stream()
+                .map(DAccount::account)
+                .toList();
+        LocalDate now = LocalDate.now();
+        LocalDate week = LocalDate.of(now.getYear(), 1, 1);
+        List<LocalDate> dates = new ArrayList<>();
+        while (!week.isAfter(now)) {
+            dates.add(week);
+            week = week.plus(1, ChronoUnit.WEEKS);
+        }
+        return new BalanceCalculator(accounts).calculate(dates);
+    }
 
     @Transactional
     @GetMapping("/api/account/")

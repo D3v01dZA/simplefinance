@@ -1,7 +1,7 @@
-package net.caltona.simplefinance.api;
+package net.caltona.simplefinance.api.model;
 
 import lombok.*;
-import net.caltona.simplefinance.model.DAccountConfig;
+import net.caltona.simplefinance.db.model.DAccountConfig;
 
 @Getter
 @EqualsAndHashCode

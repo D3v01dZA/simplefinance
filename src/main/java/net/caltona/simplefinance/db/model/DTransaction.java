@@ -1,12 +1,13 @@
-package net.caltona.simplefinance.model;
+package net.caltona.simplefinance.db.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import net.caltona.simplefinance.api.JTransaction;
-import net.caltona.simplefinance.service.Transaction;
+import net.caltona.simplefinance.api.model.JTransaction;
+import net.caltona.simplefinance.service.transaction.*;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Getter
@@ -42,7 +43,7 @@ public class DTransaction {
     @JoinColumn(name = "to_account_id")
     private DAccount dToAccount;
 
-    public DTransaction(String description, Instant date, BigDecimal value, Type type, DAccount dAccount, DAccount dToAccount) {
+    public DTransaction(String description, LocalDateTime date, BigDecimal value, Type type, DAccount dAccount, DAccount dToAccount) {
         this.description = description;
         this.date = date.toString();
         this.value = value;
@@ -55,12 +56,20 @@ public class DTransaction {
         return type.isValid(this);
     }
 
-    public JTransaction json() {
-        return new JTransaction(id, description, Instant.parse(date), value, type, getDAccount().getId(), getDToAccount().map(DAccount::getId).orElse(null));
+    public LocalDateTime date() {
+        return LocalDateTime.parse(date);
     }
 
-    public Transaction transaction() {
-        return null;
+    public void date(Instant date) {
+        this.date = date.toString();
+    }
+
+    public JTransaction json() {
+        return new JTransaction(id, description, date(), value, type, getDAccount().getId(), getDToAccount().map(DAccount::getId).orElse(null));
+    }
+
+    public Transaction transaction(String accountId) {
+        return type.transaction(accountId, this);
     }
 
     public Optional<DAccount> getDToAccount() {
@@ -73,11 +82,21 @@ public class DTransaction {
             public boolean isValid(DTransaction dTransaction) {
                 return dTransaction.getDToAccount().isEmpty();
             }
+
+            @Override
+            public Transaction transaction(String accountId, DTransaction dTransaction) {
+                return new Balance(dTransaction.date(), dTransaction.getValue());
+            }
         },
         ADDITION{
             @Override
             public boolean isValid(DTransaction dTransaction) {
                 return dTransaction.getDToAccount().isEmpty();
+            }
+
+            @Override
+            public Transaction transaction(String accountId, DTransaction dTransaction) {
+                return new Addition(dTransaction.date(), dTransaction.getValue());
             }
         },
         SUBTRACTION{
@@ -85,15 +104,32 @@ public class DTransaction {
             public boolean isValid(DTransaction dTransaction) {
                 return dTransaction.getDToAccount().isEmpty();
             }
+
+            @Override
+            public Transaction transaction(String accountId, DTransaction dTransaction) {
+                return new Subtraction(dTransaction.date(), dTransaction.getValue());
+            }
         },
         TRANSFER{
             @Override
             public boolean isValid(DTransaction dTransaction) {
                 return dTransaction.getDToAccount().isPresent();
             }
+
+            @Override
+            public Transaction transaction(String accountId, DTransaction dTransaction) {
+                if (dTransaction.getDAccount().getId().equals(accountId)) {
+                    return new TransferOut(dTransaction.date(), dTransaction.getValue());
+                } else if (dTransaction.getDToAccount().orElseThrow().getId().equals(accountId)) {
+                    return new TransferIn(dTransaction.date(), dTransaction.getValue());
+                }
+                throw new IllegalStateException("Could not find account");
+            }
         };
 
         public abstract boolean isValid(DTransaction dTransaction);
+
+        public abstract Transaction transaction(String accountId, DTransaction dTransaction);
     }
 
     @Getter
@@ -105,7 +141,7 @@ public class DTransaction {
         private String description;
 
         @NonNull
-        private Instant date;
+        private LocalDateTime date;
 
         @NonNull
         private BigDecimal value;

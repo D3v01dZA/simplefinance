@@ -1,13 +1,15 @@
-package net.caltona.simplefinance.model;
+package net.caltona.simplefinance.db.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import net.caltona.simplefinance.api.JAccount;
+import net.caltona.simplefinance.api.model.JAccount;
 import net.caltona.simplefinance.service.*;
+import net.caltona.simplefinance.service.transaction.Transaction;
 
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 @Getter
@@ -35,6 +37,9 @@ public class DAccount {
     @OneToMany(mappedBy = "dAccount")
     private List<DTransaction> dTransactions;
 
+    @OneToMany(mappedBy = "dToAccount")
+    private List<DTransaction> dToTransactions;
+
     public DAccount(String name, Type type) {
         this.name = name;
         this.type = type;
@@ -59,9 +64,9 @@ public class DAccount {
     public Account account() {
         Supplier<Map<String, Object>> configByNameSupplier = () -> getDAccountConfigs().stream()
                 .collect(Collectors.toMap(DAccountConfig::getName, DAccountConfig::value));
-        Supplier<List<Transaction>> transactionsSupplier = () -> getDTransactions().stream()
+        Supplier<List<Transaction>> transactionsSupplier = () -> Stream.concat(getDTransactions().stream(), getDToTransactions().stream())
                 .sorted(Comparator.comparing(DTransaction::getDate))
-                .map(DTransaction::transaction)
+                .map(dTransaction -> dTransaction.transaction(id))
                 .collect(Collectors.toList());
         return type.account(id, name, configByNameSupplier, transactionsSupplier);
     }
@@ -72,6 +77,10 @@ public class DAccount {
 
     public List<DTransaction> getDTransactions() {
         return Objects.requireNonNullElse(dTransactions, List.of());
+    }
+
+    public List<DTransaction> getDToTransactions() {
+        return Objects.requireNonNullElse(dToTransactions, List.of());
     }
 
     public void addDAccountConfig(DAccountConfig dAccountConfig) {
@@ -109,6 +118,36 @@ public class DAccount {
             @Override
             public Account account(String id, String name, Supplier<Map<String, Object>> configByNameSupplier, Supplier<List<Transaction>> transactionsSupplier) {
                 return new CheckingAccount(id, name, configByNameSupplier, transactionsSupplier);
+            }
+        },
+        LOAN {
+            @Override
+            public Account account(String id, String name, Supplier<Map<String, Object>> configByNameSupplier, Supplier<List<Transaction>> transactionsSupplier) {
+                return new LoanAccount(id, name, configByNameSupplier, transactionsSupplier);
+            }
+        },
+        INVESTMENT {
+            @Override
+            public Account account(String id, String name, Supplier<Map<String, Object>> configByNameSupplier, Supplier<List<Transaction>> transactionsSupplier) {
+                return new InvestmentAccount(id, name, configByNameSupplier, transactionsSupplier);
+            }
+        },
+        RETIREMENT {
+            @Override
+            public Account account(String id, String name, Supplier<Map<String, Object>> configByNameSupplier, Supplier<List<Transaction>> transactionsSupplier) {
+                return new RetirementAccount(id, name, configByNameSupplier, transactionsSupplier);
+            }
+        },
+        ASSET {
+            @Override
+            public Account account(String id, String name, Supplier<Map<String, Object>> configByNameSupplier, Supplier<List<Transaction>> transactionsSupplier) {
+                return new AssetAccount(id, name, configByNameSupplier, transactionsSupplier);
+            }
+        },
+        PLACE_HOLDER {
+            @Override
+            public Account account(String id, String name, Supplier<Map<String, Object>> configByNameSupplier, Supplier<List<Transaction>> transactionsSupplier) {
+                return new PlaceholderAccount(id, name, configByNameSupplier, transactionsSupplier);
             }
         };
 

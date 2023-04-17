@@ -3,10 +3,12 @@ package net.caltona.simplefinance.service;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import net.caltona.simplefinance.api.ExceptionControllerAdvice;
-import net.caltona.simplefinance.model.*;
+import net.caltona.simplefinance.db.*;
+import net.caltona.simplefinance.db.model.DAccount;
+import net.caltona.simplefinance.db.model.DAccountConfig;
+import net.caltona.simplefinance.db.model.DTransaction;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -98,7 +100,7 @@ public class AccountService {
         return dAccountDAO.findById(updateTransaction.getAccountId())
                 .map(dAccount -> {
                     DTransaction dTransaction = dAccount.dTransaction(updateTransaction.getId()).orElseThrow();
-                    updateTransaction.getDate().map(Instant::toString).ifPresent(dTransaction::setDate);
+                    updateTransaction.getDate().ifPresent(dTransaction::date);
                     updateTransaction.getValue().ifPresent(dTransaction::setValue);
                     updateTransaction.getDescription().ifPresent(dTransaction::setDescription);
                     if (!dTransaction.isValid()) {
