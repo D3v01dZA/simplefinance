@@ -23,7 +23,7 @@ public class Balance implements Transaction {
     }
 
     @Override
-    public BigDecimal apply(BigDecimal value) {
+    public BigDecimal balance(BigDecimal value) {
         return this.value;
     }
 }

@@ -23,7 +23,7 @@ public class TransferOut implements Transaction {
     }
 
     @Override
-    public BigDecimal apply(BigDecimal value) {
-        return value.subtract(this.value);
+    public BigDecimal balance(BigDecimal value) {
+        return value;
     }
 }

@@ -7,6 +7,6 @@ public interface Transaction {
 
     LocalDateTime date();
 
-    BigDecimal apply(BigDecimal value);
+    BigDecimal balance(BigDecimal value);
 
 }

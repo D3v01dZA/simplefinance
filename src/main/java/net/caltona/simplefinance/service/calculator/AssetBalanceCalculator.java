@@ -18,7 +18,7 @@ public class AssetBalanceCalculator {
             if (transaction.date().isAfter(date.atTime(23, 59))) {
                 return value;
             }
-            value = transaction.apply(value);
+            value = transaction.balance(value);
         }
         return value;
     }

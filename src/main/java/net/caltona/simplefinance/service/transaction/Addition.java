@@ -23,7 +23,7 @@ public class Addition implements Transaction {
     }
 
     @Override
-    public BigDecimal apply(BigDecimal value) {
-        return value.add(this.value);
+    public BigDecimal balance(BigDecimal value) {
+        return value;
     }
 }
