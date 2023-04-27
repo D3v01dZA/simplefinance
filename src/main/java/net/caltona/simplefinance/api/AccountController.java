@@ -67,6 +67,7 @@ public class AccountController {
             dates.add(week);
             week = week.plus(1, ChronoUnit.WEEKS);
         }
+        dates.add(week);
         return new BalanceCalculator(accounts).calculate(dates);
     }
 
