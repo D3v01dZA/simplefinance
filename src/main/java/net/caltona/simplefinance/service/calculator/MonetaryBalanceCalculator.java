@@ -15,7 +15,7 @@ public class MonetaryBalanceCalculator {
     public BigDecimal balance(LocalDate date) {
         BigDecimal value = BigDecimal.ZERO;
         for (Transaction transaction : transactions) {
-            if (transaction.date().isAfter(date.atTime(23, 59))) {
+            if (transaction.date().isAfter(date)) {
                 return value;
             }
             value = transaction.balance(value);

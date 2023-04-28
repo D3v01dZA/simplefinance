@@ -7,7 +7,7 @@ import net.caltona.simplefinance.service.transaction.*;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.Optional;
 
 @Getter
@@ -43,7 +43,7 @@ public class DTransaction {
     @JoinColumn(name = "to_account_id")
     private DAccount dToAccount;
 
-    public DTransaction(String description, LocalDateTime date, BigDecimal value, Type type, DAccount dAccount, DAccount dToAccount) {
+    public DTransaction(String description, LocalDate date, BigDecimal value, Type type, DAccount dAccount, DAccount dToAccount) {
         this.description = description;
         this.date = date.toString();
         this.value = value;
@@ -56,8 +56,8 @@ public class DTransaction {
         return type.isValid(this);
     }
 
-    public LocalDateTime date() {
-        return LocalDateTime.parse(date);
+    public LocalDate date() {
+        return LocalDate.parse(date);
     }
 
     public void date(Instant date) {
@@ -141,7 +141,7 @@ public class DTransaction {
         private String description;
 
         @NonNull
-        private LocalDateTime date;
+        private LocalDate date;
 
         @NonNull
         private BigDecimal value;

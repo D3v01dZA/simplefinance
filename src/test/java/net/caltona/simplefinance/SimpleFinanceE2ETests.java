@@ -22,7 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -74,7 +74,7 @@ class SimpleFinanceE2ETests {
         Assertions.assertEquals(List.of(), deletedAccountConfig);
 
         // Add some transaction
-        JTransaction transaction = createTransaction(persistentAccount.getId(), "start", LocalDateTime.now(), BigDecimal.valueOf(10), DTransaction.Type.BALANCE, null);
+        JTransaction transaction = createTransaction(persistentAccount.getId(), "start", LocalDate.now(), BigDecimal.valueOf(10), DTransaction.Type.BALANCE, null);
         List<JTransaction> transactions = listTransactions(persistentAccount.getId());
         Assertions.assertEquals(List.of(transaction), transactions);
 
@@ -166,7 +166,7 @@ class SimpleFinanceE2ETests {
         return fetched;
     }
 
-    private JTransaction createTransaction(String accountId, String description, LocalDateTime date, BigDecimal value, DTransaction.Type type, String fromAccountId) throws Exception {
+    private JTransaction createTransaction(String accountId, String description, LocalDate date, BigDecimal value, DTransaction.Type type, String fromAccountId) throws Exception {
         MockHttpServletResponse response = mvc.perform(post("/api/account/" + accountId + "/transaction/")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsBytes(new JTransaction.NewTransaction(description, date, value, type, fromAccountId))))

@@ -9,6 +9,7 @@ import net.caltona.simplefinance.db.model.DTransaction;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
@@ -22,7 +23,7 @@ public class JTransaction {
     private String description;
 
     @NonNull
-    private LocalDateTime date;
+    private LocalDate date;
 
     @NonNull
     private BigDecimal value;
@@ -36,7 +37,7 @@ public class JTransaction {
     private String fromAccountId;
 
     @java.beans.ConstructorProperties({"id", "description", "date", "value", "type", "accountId", "fromAccountId"})
-    public JTransaction(@NonNull String id, @NonNull String description, @NonNull LocalDateTime date, @NonNull BigDecimal value, @NonNull DTransaction.Type type, @NonNull String accountId, String fromAccountId) {
+    public JTransaction(@NonNull String id, @NonNull String description, @NonNull LocalDate date, @NonNull BigDecimal value, @NonNull DTransaction.Type type, @NonNull String accountId, String fromAccountId) {
         this.id = id;
         this.description = description;
         this.date = date;
@@ -55,7 +56,7 @@ public class JTransaction {
         private String description;
 
         @NonNull
-        private LocalDateTime date;
+        private LocalDate date;
 
         @NonNull
         private BigDecimal value;

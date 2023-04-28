@@ -5,20 +5,20 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @EqualsAndHashCode
 @AllArgsConstructor
 public class TransferOut implements Transaction {
 
     @NonNull
-    private LocalDateTime date;
+    private LocalDate date;
 
     @NonNull
     private BigDecimal value;
 
     @Override
-    public LocalDateTime date() {
+    public LocalDate date() {
         return date;
     }
 
