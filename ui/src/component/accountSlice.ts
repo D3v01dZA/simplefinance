@@ -7,11 +7,11 @@ export interface Account {
 }
 
 export interface AccountsState {
-    accounts: Account[]
+    accounts: Account[],
 }
 
 const initialState: AccountsState = {
-    accounts: []
+    accounts: [],
 }
 
 export const accountSlice = createSlice({
@@ -20,11 +20,14 @@ export const accountSlice = createSlice({
     reducers: {
         addAccount: (state, action: PayloadAction<Account>) => {
             state.accounts.push(action.payload);
-        }
+        },
+        setAccounts: (state, action: PayloadAction<Account[]>) => {
+            state.accounts = action.payload;
+        },
     }
-})
+});
 
-export const {addAccount} = accountSlice.actions;
+export const {addAccount, setAccounts} = accountSlice.actions;
 
 export const selectAccounts = (state: RootState) => state.accounts.accounts;
 
