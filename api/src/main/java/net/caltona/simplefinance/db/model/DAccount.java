@@ -144,7 +144,7 @@ public class DAccount {
                 return new AssetAccount(id, name, configByNameSupplier, transactionsSupplier);
             }
         },
-        PLACE_HOLDER {
+        EXTERNAL {
             @Override
             public Account account(String id, String name, Supplier<Map<String, Object>> configByNameSupplier, Supplier<List<Transaction>> transactionsSupplier) {
                 return new PlaceholderAccount(id, name, configByNameSupplier, transactionsSupplier);

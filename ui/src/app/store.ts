@@ -1,11 +1,9 @@
 import { configureStore, ThunkAction, Action } from "@reduxjs/toolkit"
-import accountReducer from "../component/accountSlice"
 import serverReducer from "./serverSlice"
 
 export const store = configureStore({
   reducer: {
     server: serverReducer,
-    accounts: accountReducer,
   },
 })
 
