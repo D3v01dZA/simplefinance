@@ -89,7 +89,7 @@ export function Graphs() {
 
     return (
         <Container>
-            <Row xs={1} md={2} xl={3}>
+            <Row xs={1} md={2} xl={2}>
                 <Form.Group>
                     <Form.Label>Date Type</Form.Label>
                     <Form.Select value={dateType} onChange={e => setDateType(e.target.value as DateType)}>

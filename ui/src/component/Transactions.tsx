@@ -93,7 +93,7 @@ function TransactionModal({
                 </Form.Group>
                 <Form.Group>
                     <Form.Label>Value</Form.Label>
-                    <Form.Control type="number" value={transaction?.value} onChange={e => setTransaction({ ...transaction, value: parseFloat(e.target.value) })}></Form.Control>
+                    <Form.Control type="text" value={transaction?.value} onChange={e => setTransaction({ ...transaction, value: parseFloat(e.target.value) })}></Form.Control>
                 </Form.Group>
                 <Form.Group>
                     <Form.Label>Type</Form.Label>

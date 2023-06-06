@@ -3,13 +3,13 @@ import ReactDOM from "react-dom/client"
 import { Provider } from "react-redux"
 import { store } from "./app/store"
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { createBrowserRouter, RouterProvider, useNavigate, } from "react-router-dom";
+import { createHashRouter, RouterProvider, useNavigate, } from "react-router-dom";
 import { Header } from "./component/Header"
 import { Accounts } from "./component/Accounts"
 import { Transactions } from "./component/Transactions";
 import { Graphs } from "./component/Graphs";
 
-const router = createBrowserRouter([
+const router = createHashRouter([
   {
     path: "/",
     element: <Header />,
