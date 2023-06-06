@@ -29,10 +29,10 @@ docker push d3v01d/simplefinance:stable
 
 
 # Revert the url
-nano ./src/app/serverSlice.ts
+git checkout ../ui/src/app/serverSlice.ts
 
 # Revert the db
-nano ./src/main/resources/application.properties
+git checkout ./src/main/resources/application.properties
 
 # Remove the built artifacts
 rm -rf ./src/main/resources/static/*
