@@ -128,7 +128,8 @@ public class BalanceCalculator {
                     illiquidAssetsBalance.subtract(previous.getIlliquidAssetsBalance()),
                     retirementBalance.subtract(previous.getRetirementBalance()),
                     liabilitiesBalance.subtract(previous.getLiabilitiesBalance()),
-                    net.subtract(previous.getNet())
+                    net.subtract(previous.getNet()),
+                    new ArrayList<>()
             );
         }
 

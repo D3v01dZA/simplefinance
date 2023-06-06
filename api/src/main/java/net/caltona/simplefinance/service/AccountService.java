@@ -104,7 +104,7 @@ public class AccountService {
                     updateTransaction.getValue().ifPresent(dTransaction::setValue);
                     updateTransaction.getDescription().ifPresent(dTransaction::setDescription);
                     if (!dTransaction.isValid()) {
-                        throw new ExceptionControllerAdvice.BadConfigException("Cannot update");
+                        throw new ExceptionControllerAdvice.BadConfigException("Invalid transaction");
                     }
                     return dTransactionDAO.save(dTransaction);
                 });
@@ -116,7 +116,7 @@ public class AccountService {
                     Optional<DAccount> toAccountOptional = newTransaction.getFromAccountId().flatMap(dAccountDAO::findById);
                     DTransaction dTransaction = newTransaction.dTransaction(dAccount, toAccountOptional.orElse(null));
                     if (!dTransaction.isValid()) {
-                        throw new ExceptionControllerAdvice.BadConfigException("Cannot create");
+                        throw new ExceptionControllerAdvice.BadConfigException("Invalid transaction");
                     }
                     dAccount.addDTransaction(dTransaction);
                     dAccountDAO.save(dAccount);

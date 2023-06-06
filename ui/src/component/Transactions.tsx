@@ -25,6 +25,16 @@ interface JTranscation {
     fromAccountId: string,
 }
 
+interface WorkingTransaction {
+    id: string,
+    description: string,
+    date: string,
+    value: string,
+    type: TransactionType,
+    accountId: string,
+    fromAccountId: string,
+}
+
 function AccountName({ accountId: fromAccountId, accounts }: { accountId: string, accounts: IndexedAccounts }) {
     if (fromAccountId === undefined || fromAccountId === null) {
         return (<React.Fragment />);
@@ -71,8 +81,8 @@ function TransactionModal({
     accounts: IndexedAccounts,
     show: boolean,
     setShow: (value: boolean) => void,
-    transaction: Partial<JTranscation>,
-    setTransaction: (account: Partial<JTranscation>) => void,
+    transaction: Partial<WorkingTransaction>,
+    setTransaction: (account: Partial<WorkingTransaction>) => void,
     saving: boolean,
     save: () => void
 }) {
@@ -93,11 +103,15 @@ function TransactionModal({
                 </Form.Group>
                 <Form.Group>
                     <Form.Label>Value</Form.Label>
-                    <Form.Control type="text" value={transaction?.value} onChange={e => setTransaction({ ...transaction, value: parseFloat(e.target.value) })}></Form.Control>
+                    <Form.Control type="text" value={transaction?.value} onChange={e => setTransaction({ ...transaction, value: e.target.value })}></Form.Control>
                 </Form.Group>
                 <Form.Group>
                     <Form.Label>Type</Form.Label>
-                    <Form.Select value={transaction.type} onChange={e => setTransaction({ ...transaction, type: e.target.value as TransactionType })}>
+                    <Form.Select disabled={!isAdd} value={transaction.type} onChange={e => {
+                        const type = e.target.value as TransactionType;
+                        const fromAccountId = type === TransactionType.TRANSFER ? Object.keys(accounts)[0] : undefined;
+                        setTransaction({ ...transaction, fromAccountId, type });
+                    }}>
                         {Object.keys(TransactionType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
                     </Form.Select>
                 </Form.Group>
@@ -107,7 +121,7 @@ function TransactionModal({
                         {Object.values(accounts).map(account => <option key={account.id} value={account.id}>{account.name} ({titleCase(account.type)})</option>)}
                     </Form.Select>
                 </Form.Group>
-                <Form.Group>
+                <Form.Group hidden={transaction.type !== TransactionType.TRANSFER}>
                     <Form.Label>From Account</Form.Label>
                     <Form.Select disabled={!isAdd || transaction.type !== TransactionType.TRANSFER} value={transaction?.fromAccountId} onChange={e => setTransaction({ ...transaction, fromAccountId: e.target.value })}>
                         {Object.values(accounts).map(account => <option key={account.id} value={account.id}>{account.name} ({titleCase(account.type)})</option>)}
@@ -136,11 +150,11 @@ export function Transactions() {
 
     const [showAdding, setShowAdding] = useState(false);
     const [adding, setAdding] = useState(false);
-    const [addingTransaction, setAddingTransaction] = useState<Partial<JTranscation>>({});
+    const [addingTransaction, setAddingTransaction] = useState<Partial<WorkingTransaction>>({});
 
     const [showEditing, setShowEditing] = useState(false);
     const [editing, setEditing] = useState(false);
-    const [editingTransaction, setEditingTransaction] = useState<Partial<JTranscation>>({});
+    const [editingTransaction, setEditingTransaction] = useState<Partial<WorkingTransaction>>({});
 
     function refreshTransactions() {
         if (accountId !== undefined) {
@@ -170,7 +184,7 @@ export function Transactions() {
                 </thead>
                 <tbody>
                     {transactions.map(transaction => <Transaction key={transaction.id} transaction={transaction} accounts={accounts} edit={() => {
-                        setEditingTransaction(transaction);
+                        setEditingTransaction({...transaction, value: transaction.value.toString()});
                         setShowEditing(true);
                     }} del={() => {
                         if (confirm(`Are you sure you want to delete ${transaction.id}?`)) {

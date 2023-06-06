@@ -60,14 +60,17 @@ public class JBalance {
 
         private BigDecimal net;
 
-        @java.beans.ConstructorProperties({"cashBalance", "liquidAssetsBalance", "illiquidAssetsBalance", "retirementBalance", "liabilitiesBalance", "net"})
-        public Difference(@NonNull BigDecimal cashBalance, @NonNull BigDecimal liquidAssetsBalance, @NonNull BigDecimal illiquidAssetsBalance, @NonNull BigDecimal retirementBalance, @NonNull BigDecimal liabilitiesBalance, @NonNull BigDecimal net) {
+        private List<AccountBalance> accountBalances;
+
+        @java.beans.ConstructorProperties({"cashBalance", "liquidAssetsBalance", "illiquidAssetsBalance", "retirementBalance", "liabilitiesBalance", "net", "accountBalances"})
+        public Difference(@NonNull BigDecimal cashBalance, @NonNull BigDecimal liquidAssetsBalance, @NonNull BigDecimal illiquidAssetsBalance, @NonNull BigDecimal retirementBalance, @NonNull BigDecimal liabilitiesBalance, @NonNull BigDecimal net, @NonNull List<AccountBalance> accountBalances) {
             this.cashBalance = cashBalance.setScale(2, RoundingMode.FLOOR);
             this.liquidAssetsBalance = liquidAssetsBalance.setScale(2, RoundingMode.FLOOR);
             this.illiquidAssetsBalance = illiquidAssetsBalance.setScale(2, RoundingMode.FLOOR);
             this.retirementBalance = retirementBalance.setScale(2, RoundingMode.FLOOR);
             this.liabilitiesBalance = liabilitiesBalance.setScale(2, RoundingMode.FLOOR);
             this.net = net.setScale(2, RoundingMode.FLOOR);
+            this.accountBalances = accountBalances;
         }
     }
 
