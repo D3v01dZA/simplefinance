@@ -8,9 +8,7 @@ import net.caltona.simplefinance.db.model.DTransaction;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Getter
 @EqualsAndHashCode
@@ -79,7 +77,7 @@ public class JTransaction {
 
         private String description;
 
-        private Instant date;
+        private LocalDate date;
 
         private BigDecimal value;
 

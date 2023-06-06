@@ -6,7 +6,6 @@ import net.caltona.simplefinance.api.model.JTransaction;
 import net.caltona.simplefinance.service.transaction.*;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Optional;
 
@@ -60,7 +59,7 @@ public class DTransaction {
         return LocalDate.parse(date);
     }
 
-    public void date(Instant date) {
+    public void date(LocalDate date) {
         this.date = date.toString();
     }
 
@@ -176,7 +175,7 @@ public class DTransaction {
 
         private String description;
 
-        private Instant date;
+        private LocalDate date;
 
         private BigDecimal value;
 
@@ -184,7 +183,7 @@ public class DTransaction {
             return Optional.ofNullable(description);
         }
 
-        public Optional<Instant> getDate() {
+        public Optional<LocalDate> getDate() {
             return Optional.ofNullable(date);
         }
 

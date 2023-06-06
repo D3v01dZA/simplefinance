@@ -21,7 +21,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -79,7 +78,7 @@ class SimpleFinanceE2ETests {
         Assertions.assertEquals(List.of(transaction), transactions);
 
         // Update some transaction
-        JTransaction updatedTransaction = updateTransaction(persistentAccount.getId(), transaction.getId(), new JTransaction.UpdateTransaction("test", Instant.now(), BigDecimal.valueOf(100)));
+        JTransaction updatedTransaction = updateTransaction(persistentAccount.getId(), transaction.getId(), new JTransaction.UpdateTransaction("test", LocalDate.now(), BigDecimal.valueOf(100)));
         List<JTransaction> updatedTransactions = listTransactions(persistentAccount.getId());
         Assertions.assertEquals(List.of(updatedTransaction), updatedTransactions);
 

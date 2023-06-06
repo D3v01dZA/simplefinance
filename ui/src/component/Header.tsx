@@ -1,9 +1,25 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Container, Nav, Navbar, Row } from "react-bootstrap";
 import { Outlet } from "react-router-dom";
 import { LinkContainer } from 'react-router-bootstrap';
+import { useAppDispatch, useAppSelector } from "../app/hooks";
+import { selectServer } from "../app/serverSlice";
+import { err, get } from "../util/util";
+import { JAccount, setAccounts } from "../app/accountSlice";
 
-export function Header() {
+export function Header() {   
+    const server = useAppSelector(selectServer);
+
+    const dispatch = useAppDispatch();
+
+    function refreshAccounts() {
+        get<JAccount[]>(server, "/api/account/")
+            .then(accounts => dispatch(setAccounts(accounts)))
+            .catch(error => err(error));
+    }
+
+    useEffect(() => refreshAccounts(), []);
+
     return (
         <React.Fragment>
             <Navbar bg="light" expand="lg">
@@ -12,14 +28,11 @@ export function Header() {
                     <Navbar.Toggle aria-controls="basic-navbar-nav" />
                     <Navbar.Collapse id="basic-navbar-nav">
                         <Nav className="me-auto">
-                            <LinkContainer to="home">
-                                <Nav.Link href="/home">Home</Nav.Link>
+                            <LinkContainer to="/home">
+                                <Nav.Link>Home</Nav.Link>
                             </LinkContainer>
-                            <LinkContainer to="accounts">
-                                <Nav.Link href="/accounts">Accounts</Nav.Link>
-                            </LinkContainer>
-                            <LinkContainer to="balances">
-                                <Nav.Link href="/balances">Balances</Nav.Link>
+                            <LinkContainer to="/accounts">
+                                <Nav.Link>Accounts</Nav.Link>
                             </LinkContainer>
                         </Nav>
                     </Navbar.Collapse>

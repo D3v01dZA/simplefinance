@@ -31,13 +31,13 @@ public class DAccount {
     @Column
     private Type type;
 
-    @OneToMany(mappedBy = "dAccount")
+    @OneToMany(mappedBy = "dAccount", cascade = CascadeType.REMOVE)
     private List<DAccountConfig> dAccountConfigs;
 
-    @OneToMany(mappedBy = "dAccount")
+    @OneToMany(mappedBy = "dAccount", cascade = CascadeType.REMOVE)
     private List<DTransaction> dTransactions;
 
-    @OneToMany(mappedBy = "dToAccount")
+    @OneToMany(mappedBy = "dToAccount", cascade = CascadeType.REMOVE)
     private List<DTransaction> dToTransactions;
 
     public DAccount(String name, Type type) {

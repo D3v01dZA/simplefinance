@@ -6,6 +6,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { createBrowserRouter, RouterProvider, } from "react-router-dom";
 import { Header } from "./component/Header"
 import { Accounts } from "./component/Accounts"
+import { Transactions } from "./component/Transactions";
 
 const router = createBrowserRouter([
   {
@@ -19,6 +20,10 @@ const router = createBrowserRouter([
       {
         path: "/accounts",
         element: <Accounts />
+      },
+      {
+        path: "/accounts/:accountId/transactions",
+        element: <Transactions />
       }
     ]
   },

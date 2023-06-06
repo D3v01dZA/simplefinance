@@ -1,55 +1,58 @@
-import { useEffect, useState } from "react";
-import { Button, Card, Container, Modal, Row, Form } from "react-bootstrap";
+import { useState } from "react";
+import { Button, Card, Container, Modal, Row, Form, ButtonGroup, Table } from "react-bootstrap";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPenToSquare, faPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
-import { useAppSelector } from "../app/hooks";
+import { faPenToSquare, faPlus, faTrash, faMoneyBillTransfer } from '@fortawesome/free-solid-svg-icons';
+import { useAppDispatch, useAppSelector } from "../app/hooks";
 import { selectServer } from "../app/serverSlice";
 import { get, err, titleCase, post, del } from "../util/util";
-
-interface JAccount {
-    id: string,
-    name: string,
-    type: AccountType,
-}
-
-enum AccountType {
-    SAVINGS = "SAVINGS",
-    CHECKING = "CHECKING",
-    LOAN = "LOAN",
-    INVESTMENT = "INVESTMENT",
-    RETIREMENT = "RETIREMENT",
-    ASSET = "ASSET",
-    EXTERNAL = "EXTERNAL"
-}
+import { AccountType, JAccount, selectAccounts, setAccounts } from "../app/accountSlice";
+import { LinkContainer } from "react-router-bootstrap";
 
 function Account({ account, edit, del }: { account: JAccount, edit: () => void, del: () => void }) {
     return (
-        <Card>
-            <Card.Body>
-                <Card.Title>
-                    {account.name}
-                </Card.Title>
-                <Card.Text>
-                    {titleCase(account.type)}
-                    <Row xl={2}>
-                        <Button onClick={() => edit()}>
-                            <FontAwesomeIcon title="Edit" icon={faPenToSquare} />
+        <tr>
+            <td>{titleCase(account.type)}</td>
+            <td>{account.name}</td>
+            <td>
+                <ButtonGroup>
+                    <LinkContainer to={`/accounts/${account.id}/transactions`}>
+                        <Button variant="warning">
+                            <FontAwesomeIcon title="Transactions" icon={faMoneyBillTransfer} />
                         </Button>
-                        <Button variant="danger" onClick={() => del()}>
-                            <FontAwesomeIcon title="Delete" icon={faTrash} />
-                        </Button>
-                    </Row>
-                </Card.Text>
-            </Card.Body>
-        </Card>
+                    </LinkContainer>
+                    <Button onClick={() => edit()}>
+                        <FontAwesomeIcon title="Edit" icon={faPenToSquare} />
+                    </Button>
+                    <Button variant="danger" onClick={() => del()}>
+                        <FontAwesomeIcon title="Delete" icon={faTrash} />
+                    </Button>
+                </ButtonGroup>
+            </td>
+        </tr>
     );
 }
 
-function AccountModal({ show, setShow, account, setAccount, saving, save }: { show: boolean, setShow: (value: boolean) => void, account: Partial<JAccount>, setAccount: (account: Partial<JAccount>) => void, saving: boolean, save: () => void }) {
+function AccountModal({
+    show,
+    setShow,
+    account,
+    setAccount,
+    saving,
+    save
+}: {
+    show: boolean,
+    setShow: (value: boolean) => void,
+    account: Partial<JAccount>,
+    setAccount: (account: Partial<JAccount>) => void,
+    saving: boolean,
+    save: () => void
+}) {
+    const isAdd = account.id === undefined;
+
     return (
         <Modal show={show} onHide={() => setShow(false)} >
             <Modal.Header closeButton>
-                <Modal.Title>{account != undefined ? "Add" : "ERROR"} Account</Modal.Title>
+                <Modal.Title>{isAdd ? "Add" : "Edit"} Account</Modal.Title>
             </Modal.Header>
             <Form>
                 <Form.Group>
@@ -58,7 +61,7 @@ function AccountModal({ show, setShow, account, setAccount, saving, save }: { sh
                 </Form.Group>
                 <Form.Group>
                     <Form.Label>Type</Form.Label>
-                    <Form.Select value={account?.type} onChange={e => setAccount({ ...account, type: e.target.value as AccountType })}>
+                    <Form.Select disabled={!isAdd} value={account?.type} onChange={e => setAccount({ ...account, type: e.target.value as AccountType })}>
                         {Object.keys(AccountType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
                     </Form.Select>
                 </Form.Group>
@@ -77,12 +80,13 @@ function AccountModal({ show, setShow, account, setAccount, saving, save }: { sh
 
 export function Accounts() {
     const server = useAppSelector(selectServer);
+    const accounts = useAppSelector(selectAccounts);
 
-    const [accounts, setAccounts] = useState<JAccount[]>([]);
+    const dispatch = useAppDispatch();
 
     const [showAdding, setShowAdding] = useState(false);
     const [adding, setAdding] = useState(false);
-    const [addingAccount, setAddingAccount] = useState<Partial<JAccount>>({ type: AccountType.SAVINGS });
+    const [addingAccount, setAddingAccount] = useState<Partial<JAccount>>({});
 
     const [showEditing, setShowEditing] = useState(false);
     const [editing, setEditing] = useState(false);
@@ -90,43 +94,47 @@ export function Accounts() {
 
     function refreshAccounts() {
         get<JAccount[]>(server, "/api/account/")
-            .then(accounts => setAccounts(accounts))
+            .then(accounts => dispatch(setAccounts(accounts)))
             .catch(error => err(error));
     }
 
-    useEffect(() => refreshAccounts(), []);
-
     return (
         <Container>
-            <Row xs={1} md={2} xl={3}>
-                {accounts.map(account => <Account key={account.id} account={account} edit={() => {
-                    setEditingAccount(account);
-                    setShowEditing(true);
-                }} del={() => {
-                    if (confirm(`Are you sure you want to delete ${account.name}?`)) {
-                        del(server, `/api/account/${account.id}/`)
-                            .then(() => refreshAccounts())
-                            .catch(error => err(error));
-                    }
-                }} />)}
-                <Card>
-                    <Card.Body>
-                        <Card.Title>
-                            New Account
-                        </Card.Title>
-                        <Card.Text title="Add">
-                            <Row xs={1} md={1} xl={1}>
+            <Table striped bordered hover>
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Name</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {Object.values(accounts).map(account => <Account key={account.id} account={account} edit={() => {
+                        setEditingAccount(account);
+                        setShowEditing(true);
+                    }} del={() => {
+                        if (confirm(`Are you sure you want to delete ${account.name}?`)) {
+                            del(server, `/api/account/${account.id}/`)
+                                .then(() => refreshAccounts())
+                                .catch(error => err(error));
+                        }
+                    }} />)}
+                    <tr>
+                        <td></td>
+                        <td></td>
+                        <td>
+                            <ButtonGroup>
                                 <Button variant="success" onClick={() => {
                                     setAddingAccount({ type: AccountType.SAVINGS });
                                     setShowAdding(true);
                                 }}>
                                     <FontAwesomeIcon icon={faPlus} />
                                 </Button>
-                            </Row>
-                        </Card.Text>
-                    </Card.Body>
-                </Card>
-            </Row>
+                            </ButtonGroup>
+                        </td>
+                    </tr>
+                </tbody>
+            </Table>
             <AccountModal show={showAdding} setShow={setShowAdding} account={addingAccount} setAccount={setAddingAccount} saving={adding} save={() => {
                 setAdding(true);
                 post(server, "/api/account/", addingAccount)
