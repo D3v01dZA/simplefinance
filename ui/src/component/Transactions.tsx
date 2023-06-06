@@ -71,6 +71,7 @@ function Transaction({ transaction, accounts, edit, del }: { transaction: JTrans
 
 function TransactionModal({
     accounts,
+    singleAccount,
     show,
     setShow,
     transaction,
@@ -79,6 +80,7 @@ function TransactionModal({
     save
 }: {
     accounts: IndexedAccounts,
+    singleAccount: boolean,
     show: boolean,
     setShow: (value: boolean) => void,
     transaction: Partial<WorkingTransaction>,
@@ -117,7 +119,7 @@ function TransactionModal({
                 </Form.Group>
                 <Form.Group>
                     <Form.Label>Account</Form.Label>
-                    <Form.Select disabled={!isAdd} value={transaction?.accountId} onChange={e => setTransaction({ ...transaction, accountId: e.target.value })}>
+                    <Form.Select disabled={!isAdd || singleAccount} value={transaction?.accountId} onChange={e => setTransaction({ ...transaction, accountId: e.target.value })}>
                         {Object.values(accounts).map(account => <option key={account.id} value={account.id}>{account.name} ({titleCase(account.type)})</option>)}
                     </Form.Select>
                 </Form.Group>
@@ -157,12 +159,17 @@ export function Transactions() {
     const [editingTransaction, setEditingTransaction] = useState<Partial<WorkingTransaction>>({});
 
     function refreshTransactions() {
+        function sortTransactions(transactions: JTranscation[]) {
+            return transactions.sort((left, right) => Date.parse(right.date) - Date.parse(left.date))
+        }
         if (accountId !== undefined) {
             get<JTranscation[]>(server, `/api/account/${accountId}/transaction/`)
-                .then(transactions => setTransactions(transactions))
+                .then(transactions => setTransactions(sortTransactions(transactions)))
                 .catch(error => err(error));
         } else {
-            alert("All transactions not supported");
+            get<JTranscation[]>(server, `/api/transaction/`)
+                .then(transactions => setTransactions(sortTransactions(transactions)))
+                .catch(error => err(error));
         }
     }
 
@@ -213,7 +220,7 @@ export function Transactions() {
                     </tr>
                 </tbody>
             </Table>
-            <TransactionModal accounts={accounts} show={showAdding} setShow={setShowAdding} transaction={addingTransaction} setTransaction={setAddingTransaction} saving={adding} save={() => {
+            <TransactionModal accounts={accounts} singleAccount={accountId !== undefined} show={showAdding} setShow={setShowAdding} transaction={addingTransaction} setTransaction={setAddingTransaction} saving={adding} save={() => {
                 setAdding(true);
                 post(server, `/api/account/${addingTransaction.accountId}/transaction/`, addingTransaction)
                     .then(() => refreshTransactions())
@@ -223,7 +230,7 @@ export function Transactions() {
                         setShowAdding(false);
                     });
             }} />
-            <TransactionModal accounts={accounts} show={showEditing} setShow={setShowEditing} transaction={editingTransaction} setTransaction={setEditingTransaction} saving={editing} save={() => {
+            <TransactionModal accounts={accounts} singleAccount={accountId !== undefined} show={showEditing} setShow={setShowEditing} transaction={editingTransaction} setTransaction={setEditingTransaction} saving={editing} save={() => {
                 setEditing(true);
                 post(server, `/api/account/${editingTransaction.accountId}/transaction/${editingTransaction.id}/`, editingTransaction)
                     .then(() => refreshTransactions())

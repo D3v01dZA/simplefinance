@@ -23,6 +23,10 @@ const router = createHashRouter([
         element: <Accounts />
       },
       {
+        path: "/transactions",
+        element: <Transactions />
+      },
+      {
         path: "/accounts/:accountId/transactions",
         element: <Transactions />
       },
@@ -41,7 +45,7 @@ function Redirector() {
     navigate("/accounts")
   }, []);
 
-  return (<React.Fragment/>)
+  return (<React.Fragment />)
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

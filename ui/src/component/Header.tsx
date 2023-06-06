@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Container, Nav, Navbar, Row } from "react-bootstrap";
+import { Container, Nav, Navbar } from "react-bootstrap";
 import { Outlet } from "react-router-dom";
 import { LinkContainer } from 'react-router-bootstrap';
 import { useAppDispatch, useAppSelector } from "../app/hooks";
@@ -30,6 +30,9 @@ export function Header() {
                         <Nav className="me-auto">
                             <LinkContainer to="/accounts">
                                 <Nav.Link>Accounts</Nav.Link>
+                            </LinkContainer>
+                            <LinkContainer to="/transactions">
+                                <Nav.Link>Transactions</Nav.Link>
                             </LinkContainer>
                             <LinkContainer to="/graphs">
                                 <Nav.Link>Graphs</Nav.Link>
