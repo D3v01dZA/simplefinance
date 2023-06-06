@@ -13,6 +13,7 @@ echo "Copying ui assets"
 cd ../api
 rm -rf ./src/main/resources/static/*
 cp -r ../ui/build/* ./src/main/resources/static/
+cp ../ui/fav.svg ./src/main/resources/static/assets/
 
 echo "Changing database url"
 git checkout ./src/main/resources/application.properties

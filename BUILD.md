@@ -10,6 +10,7 @@ npm run build
 # Move the ui artifacts into the api
 cd ../api
 cp -r ../ui/build/* ./src/main/resources/static
+cp ../ui/fav.svg ./src/main/resources/static/assets/
 
 # Change the location of the database to /data/database.db
 nano ./src/main/resources/application.properties
