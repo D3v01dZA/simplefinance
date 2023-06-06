@@ -210,7 +210,7 @@ export function Transactions() {
                         <td>
                             <ButtonGroup>
                                 <Button variant="success" onClick={() => {
-                                    setAddingTransaction({ type: TransactionType.BALANCE, accountId: accountId });
+                                    setAddingTransaction({ type: TransactionType.BALANCE, accountId: accountId ?? Object.keys(accounts)[0] });
                                     setShowAdding(true);
                                 }}>
                                     <FontAwesomeIcon icon={faPlus} />
