@@ -29,6 +29,10 @@ public class AccountService {
        return dAccountDAO.findAll();
     }
 
+    public List<DTransaction> listTransactions() {
+        return dTransactionDAO.findAll();
+    }
+
     public Optional<DAccount> get(String id) {
         return dAccountDAO.findById(id);
     }

@@ -6,11 +6,11 @@ import lombok.Getter;
 import lombok.With;
 import net.caltona.simplefinance.api.model.JBalance;
 import net.caltona.simplefinance.service.Account;
+import org.springframework.util.Assert;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Getter
 @EqualsAndHashCode
@@ -36,13 +36,15 @@ public class BalanceCalculator {
     }
 
     private JBalance calculate(JBalance previous, LocalDate date) {
-        Totals totals = new Totals(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
+        Totals totals = new Totals(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, new LinkedHashMap<>());
         List<JBalance.AccountBalance> accountBalances = new ArrayList<>();
 
         for (Account account : accounts) {
             BigDecimal balance = account.calculateBalance(date);
-            accountBalances.add(new JBalance.AccountBalance(account.getId(), account.getName(), balance));
+            JBalance.AccountBalance accountBalance = new JBalance.AccountBalance(account.getId(), balance);
+            accountBalances.add(accountBalance);
             totals = account.totalType().add(totals, balance);
+            totals = totals.withAccountBalance(account.getId(), accountBalance);
         }
 
         return new JBalance(
@@ -120,6 +122,7 @@ public class BalanceCalculator {
         private BigDecimal retirementBalance;
         private BigDecimal liabilitiesBalance;
         private BigDecimal net;
+        private LinkedHashMap<String, JBalance.AccountBalance> accountBalances;
 
         public JBalance.Difference difference(JBalance previous) {
             return new JBalance.Difference(
@@ -129,8 +132,40 @@ public class BalanceCalculator {
                     retirementBalance.subtract(previous.getRetirementBalance()),
                     liabilitiesBalance.subtract(previous.getLiabilitiesBalance()),
                     net.subtract(previous.getNet()),
-                    new ArrayList<>()
+                    calculateDifference(previous.getAccountBalances())
             );
+        }
+
+        private Totals withAccountBalance(String accountId, JBalance.AccountBalance accountBalance) {
+            LinkedHashMap<String, JBalance.AccountBalance> accountBalances = new LinkedHashMap<>(this.accountBalances);
+            Assert.isTrue(!accountBalances.containsKey(accountId), "Account id is duplicated");
+            accountBalances.put(accountId, accountBalance);
+            return new Totals(cashBalance, liquidAssetsBalance, illiquidAssetsBalance, retirementBalance, liabilitiesBalance, net, accountBalances);
+        }
+
+        private List<JBalance.AccountBalance> calculateDifference(List<JBalance.AccountBalance> previousBalances) {
+            List<JBalance.AccountBalance> result = new ArrayList<>();
+            Set<String> usedIds = new HashSet<>();
+
+            for (JBalance.AccountBalance previousBalance : previousBalances) {
+                String id = previousBalance.getId();
+                usedIds.add(id);
+                JBalance.AccountBalance newer = accountBalances.get(id);
+                if (newer != null) {
+                    JBalance.AccountBalance difference = new JBalance.AccountBalance(id, newer.getBalance().subtract(previousBalance.getBalance()));
+                    result.add(difference);
+                } else {
+                    JBalance.AccountBalance difference = new JBalance.AccountBalance(id, previousBalance.getBalance().negate());
+                    result.add(difference);
+                }
+            }
+
+            Set<String> remainingIds = new HashSet<>(accountBalances.keySet());
+            remainingIds.removeAll(usedIds);
+            for (String remainingId : remainingIds) {
+                result.add(accountBalances.get(remainingId));
+            }
+            return result;
         }
 
     }

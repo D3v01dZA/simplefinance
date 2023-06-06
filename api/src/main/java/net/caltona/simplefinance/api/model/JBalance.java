@@ -82,15 +82,11 @@ public class JBalance {
         private String id;
 
         @NonNull
-        private String name;
-
-        @NonNull
         private BigDecimal balance;
 
-        @java.beans.ConstructorProperties({"id", "name", "balance"})
-        public AccountBalance(@NonNull String id, @NonNull String name, @NonNull BigDecimal balance) {
+        @java.beans.ConstructorProperties({"id", "balance"})
+        public AccountBalance(@NonNull String id, @NonNull BigDecimal balance) {
             this.id = id;
-            this.name = name;
             this.balance = balance.setScale(2, RoundingMode.FLOOR);
         }
     }

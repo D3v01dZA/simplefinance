@@ -149,6 +149,14 @@ public class AccountController {
     }
 
     @Transactional
+    @GetMapping("/api/transaction/")
+    public List<JTransaction> listAllTransactions() {
+        return accountService.listTransactions().stream()
+                .map(DTransaction::json)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
     @GetMapping("/api/account/{id}/transaction/")
     public Optional<List<JTransaction>> listTransaction(@PathVariable String id) {
         return accountService.get(id)
