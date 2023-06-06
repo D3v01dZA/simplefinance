@@ -1,12 +1,13 @@
-import React from "react"
+import React, { useEffect } from "react"
 import ReactDOM from "react-dom/client"
 import { Provider } from "react-redux"
 import { store } from "./app/store"
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { createBrowserRouter, RouterProvider, } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, useNavigate, } from "react-router-dom";
 import { Header } from "./component/Header"
 import { Accounts } from "./component/Accounts"
 import { Transactions } from "./component/Transactions";
+import { Graphs } from "./component/Graphs";
 
 const router = createBrowserRouter([
   {
@@ -14,8 +15,8 @@ const router = createBrowserRouter([
     element: <Header />,
     children: [
       {
-        path: "/home",
-        element: <div>Home</div>
+        path: "/",
+        element: <Redirector />
       },
       {
         path: "/accounts",
@@ -24,10 +25,24 @@ const router = createBrowserRouter([
       {
         path: "/accounts/:accountId/transactions",
         element: <Transactions />
+      },
+      {
+        path: "/graphs",
+        element: <Graphs />
       }
     ]
   },
 ]);
+
+function Redirector() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    navigate("/accounts")
+  }, []);
+
+  return (<React.Fragment/>)
+}
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

@@ -28,11 +28,11 @@ export function Header() {
                     <Navbar.Toggle aria-controls="basic-navbar-nav" />
                     <Navbar.Collapse id="basic-navbar-nav">
                         <Nav className="me-auto">
-                            <LinkContainer to="/home">
-                                <Nav.Link>Home</Nav.Link>
-                            </LinkContainer>
                             <LinkContainer to="/accounts">
                                 <Nav.Link>Accounts</Nav.Link>
+                            </LinkContainer>
+                            <LinkContainer to="/graphs">
+                                <Nav.Link>Graphs</Nav.Link>
                             </LinkContainer>
                         </Nav>
                     </Navbar.Collapse>
