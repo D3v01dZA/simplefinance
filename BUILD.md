@@ -23,7 +23,7 @@ docker build .
 # Optional push image
 docker tag <id> d3v01d/simplefinance:latest
 docker push d3v01d/simplefinance:latest
-docker tag <id> d3v01d/simplefinance:stable
+docker tag d3v01d/simplefinance:latest d3v01d/simplefinance:stable
 docker push d3v01d/simplefinance:stable
 
 
