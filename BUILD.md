@@ -9,7 +9,6 @@ npm run build
 
 # Move the ui artifacts into the api
 cd ../api
-rm -rf ./src/main/resources/static/*
 cp -r ../ui/build/* ./src/main/resources/static
 
 # Change the location of the database to /data/database.db
