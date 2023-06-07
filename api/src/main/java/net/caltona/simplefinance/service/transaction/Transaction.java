@@ -9,4 +9,8 @@ public interface Transaction {
 
     BigDecimal balance(BigDecimal value);
 
+    BigDecimal transfer(BigDecimal value);
+
+    BigDecimal transferReverse(BigDecimal value);
+
 }

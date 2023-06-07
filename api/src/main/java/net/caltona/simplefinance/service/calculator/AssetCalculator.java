@@ -8,7 +8,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @AllArgsConstructor
-public class MonetaryBalanceCalculator {
+public class AssetCalculator {
 
     private List<Transaction> transactions;
 
@@ -19,6 +19,17 @@ public class MonetaryBalanceCalculator {
                 return value;
             }
             value = transaction.balance(value);
+        }
+        return value;
+    }
+
+    public BigDecimal transfer(LocalDate date) {
+        BigDecimal value = BigDecimal.ZERO;
+        for (Transaction transaction : transactions) {
+            if (transaction.date().isAfter(date)) {
+                return value;
+            }
+            value = transaction.transfer(value);
         }
         return value;
     }

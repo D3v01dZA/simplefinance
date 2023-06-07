@@ -5,8 +5,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import net.caltona.simplefinance.db.model.DAccountConfig;
-import net.caltona.simplefinance.service.calculator.BalanceCalculator;
-import net.caltona.simplefinance.service.calculator.LiabilityBalanceCalculator;
+import net.caltona.simplefinance.service.calculator.Calculator;
+import net.caltona.simplefinance.service.calculator.LiabilityCalculator;
 import net.caltona.simplefinance.service.transaction.Transaction;
 
 import java.math.BigDecimal;
@@ -36,13 +36,18 @@ public class LoanAccount implements Account {
     private final static String RATE = "rate";
 
     @Override
-    public BalanceCalculator.TotalType totalType() {
-        return BalanceCalculator.TotalType.LIABILITY;
+    public Calculator.TotalType totalType() {
+        return Calculator.TotalType.LIABILITY;
     }
 
     @Override
     public BigDecimal calculateBalance(LocalDate date) {
-        return new LiabilityBalanceCalculator(transactionsSupplier.get()).balance(date);
+        return new LiabilityCalculator(transactionsSupplier.get()).balance(date);
+    }
+
+    @Override
+    public BigDecimal calculateTransfer(LocalDate date) {
+        return new LiabilityCalculator(transactionsSupplier.get()).transfer(date);
     }
 
     @Override

@@ -29,6 +29,7 @@ public class DAccount {
     private String name;
 
     @Column
+    @Enumerated(EnumType.STRING)
     private Type type;
 
     @OneToMany(mappedBy = "dAccount", cascade = CascadeType.REMOVE)
@@ -37,8 +38,8 @@ public class DAccount {
     @OneToMany(mappedBy = "dAccount", cascade = CascadeType.REMOVE)
     private List<DTransaction> dTransactions;
 
-    @OneToMany(mappedBy = "dToAccount", cascade = CascadeType.REMOVE)
-    private List<DTransaction> dToTransactions;
+    @OneToMany(mappedBy = "dFromAccount", cascade = CascadeType.REMOVE)
+    private List<DTransaction> dFromTransactions;
 
     public DAccount(String name, Type type) {
         this.name = name;
@@ -64,7 +65,7 @@ public class DAccount {
     public Account account() {
         Supplier<Map<String, Object>> configByNameSupplier = () -> getDAccountConfigs().stream()
                 .collect(Collectors.toMap(DAccountConfig::getName, DAccountConfig::value));
-        Supplier<List<Transaction>> transactionsSupplier = () -> Stream.concat(getDTransactions().stream(), getDToTransactions().stream())
+        Supplier<List<Transaction>> transactionsSupplier = () -> Stream.concat(getDTransactions().stream(), getDFromTransactions().stream())
                 .sorted(Comparator.comparing(DTransaction::getDate))
                 .map(dTransaction -> dTransaction.transaction(id))
                 .collect(Collectors.toList());
@@ -79,8 +80,8 @@ public class DAccount {
         return Objects.requireNonNullElse(dTransactions, List.of());
     }
 
-    public List<DTransaction> getDToTransactions() {
-        return Objects.requireNonNullElse(dToTransactions, List.of());
+    public List<DTransaction> getDFromTransactions() {
+        return Objects.requireNonNullElse(dFromTransactions, List.of());
     }
 
     public void addDAccountConfig(DAccountConfig dAccountConfig) {
@@ -147,7 +148,7 @@ public class DAccount {
         EXTERNAL {
             @Override
             public Account account(String id, String name, Supplier<Map<String, Object>> configByNameSupplier, Supplier<List<Transaction>> transactionsSupplier) {
-                return new PlaceholderAccount(id, name, configByNameSupplier, transactionsSupplier);
+                return new ExternalAccount(id, name, configByNameSupplier, transactionsSupplier);
             }
         };
 

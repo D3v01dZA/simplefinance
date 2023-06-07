@@ -8,12 +8,13 @@ import React from "react";
 import { IndexedAccounts, selectAccounts } from "../app/accountSlice";
 
 interface JRawAccountBalance {
-    id: string,
+    accountId: string,
     balance: number,
+    transfer: number,
 }
 
 interface JRawBalances {
-    localDate: string,
+    date: string,
     cashBalance: number,
     liquidAssetsBalance: number,
     illiquidAssetsBalance: number,
@@ -24,13 +25,14 @@ interface JRawBalances {
 }
 
 interface JBalance extends JRawBalances {
-    localDate: string,
     difference: JRawBalances,
 }
 
 enum ViewType {
     TOTALS = "TOTALS",
+    TOTALS_TRANSFERS = "TOTALS_TRANSFERS",
     ACCOUNTS = "ACCOUNTS",
+    ACCOUNTS_TRANSFERS = "ACCOUNTS_TRANSFERS",
 }
 
 enum DateType {
@@ -73,6 +75,17 @@ function lines(viewType: ViewType, hiddenItems: string[], accounts: IndexedAccou
                     <Line type="monotone" dataKey="liabilitiesBalance" stroke={dull("liabilitiesBalance", hiddenItems, totalColorPalette[5])} name="Liabilities" />
                 </React.Fragment>
             );
+        case ViewType.TOTALS_TRANSFERS:
+            const totalsTransferColorPalette = generateColorPalette(5);
+            return (
+                <React.Fragment>
+                    <Line type="monotone" dataKey="cashTransfer" stroke={dull("cashTransfer", hiddenItems, totalsTransferColorPalette[0])} name="Cash" />
+                    <Line type="monotone" dataKey="liquidAssetTransfer" stroke={dull("liquidAssetTransfer", hiddenItems, totalsTransferColorPalette[1])} name="Liquid Assets" />
+                    <Line type="monotone" dataKey="illiquidAssetTransfer" stroke={dull("illiquidAssetTransfer", hiddenItems, totalsTransferColorPalette[2])} name="Iliquid Assets" />
+                    <Line type="monotone" dataKey="retirementTransfer" stroke={dull("retirementTransfer", hiddenItems, totalsTransferColorPalette[3])} name="Retirement" />
+                    <Line type="monotone" dataKey="liabilitiesTransfer" stroke={dull("liabilitiesTransfer", hiddenItems, totalsTransferColorPalette[4])} name="Liabilities" />
+                </React.Fragment>
+            );
         case ViewType.ACCOUNTS:
             const accountColorPalette = generateColorPalette(Object.values(accounts).length);
             return (
@@ -86,28 +99,55 @@ function lines(viewType: ViewType, hiddenItems: string[], accounts: IndexedAccou
                     />)}
                 </React.Fragment>
             );
+        case ViewType.ACCOUNTS_TRANSFERS:
+            const accountTransfersColorPalette = generateColorPalette(Object.values(accounts).length);
+            return (
+                <React.Fragment>
+                    {Object.values(accounts).map((account, index) => <Line
+                        key={account.id}
+                        type="monotone"
+                        dataKey={account.id}
+                        stroke={dull(account.id, hiddenItems, accountTransfersColorPalette[index])}
+                        name={`${account.name} (${titleCase(account.type)})`}
+                    />)}
+                </React.Fragment>
+            );
     }
 }
 
 function calculateBalances(viewType: ViewType, hiddenItems: string[], balances?: JRawBalances) {
-    if (viewType === ViewType.TOTALS) {
-        let filteredBalances: any = balances ? { ...balances } : {};
-        hiddenItems.forEach(item => {
-            delete filteredBalances[item];
-        });
-        return filteredBalances;
-    } else {
-        return (balances?.accountBalances ?? []).reduce<any>((acc, current) => {
-            if (!hiddenItems.includes(current.id)) {
-                acc[current.id] = current.balance;
-            }
-            return acc;
-        }, {});
+    switch (viewType) {
+        case ViewType.TOTALS:
+            let filteredTotals: any = balances ? { ...balances } : {};
+            hiddenItems.forEach(item => {
+                delete filteredTotals[item];
+            });
+            return filteredTotals;
+        case ViewType.TOTALS_TRANSFERS:
+            let filteredTotalsTransfers: any = balances ? { ...balances } : {};
+            hiddenItems.forEach(item => {
+                delete filteredTotalsTransfers[item];
+            });
+            return filteredTotalsTransfers;
+        case ViewType.ACCOUNTS:
+            return (balances?.accountBalances ?? []).reduce<any>((acc, current) => {
+                if (!hiddenItems.includes(current.accountId)) {
+                    acc[current.accountId] = current.balance;
+                }
+                return acc;
+            }, {});
+        case ViewType.ACCOUNTS_TRANSFERS:
+            return (balances?.accountBalances ?? []).reduce<any>((acc, current) => {
+                if (!hiddenItems.includes(current.accountId)) {
+                    acc[current.accountId] = current.transfer;
+                }
+                return acc;
+            }, {});
     }
 }
 
 function calculateData(viewType: ViewType, dataType: DataType, hiddenItems: string[], balance: JBalance): any {
-    const date = balance.localDate.substring(5, balance.localDate.length);
+    const date = balance.date.substring(5, balance.date.length);
     let calculated: any;
     if (dataType === DataType.NET) {
         calculated = calculateBalances(viewType, hiddenItems, balance);

@@ -7,11 +7,11 @@ import lombok.NonNull;
 import net.caltona.simplefinance.db.model.DTransaction;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.Objects;
 
 @Getter
-@EqualsAndHashCode
+@AllArgsConstructor
 public class JTransaction {
 
     @NonNull
@@ -33,17 +33,6 @@ public class JTransaction {
     private String accountId;
 
     private String fromAccountId;
-
-    @java.beans.ConstructorProperties({"id", "description", "date", "value", "type", "accountId", "fromAccountId"})
-    public JTransaction(@NonNull String id, @NonNull String description, @NonNull LocalDate date, @NonNull BigDecimal value, @NonNull DTransaction.Type type, @NonNull String accountId, String fromAccountId) {
-        this.id = id;
-        this.description = description;
-        this.date = date;
-        this.value = value.setScale(2, RoundingMode.FLOOR);
-        this.type = type;
-        this.accountId = accountId;
-        this.fromAccountId = fromAccountId;
-    }
 
     @Getter
     @EqualsAndHashCode
@@ -87,4 +76,16 @@ public class JTransaction {
 
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        JTransaction that = (JTransaction) o;
+        return Objects.equals(id, that.id) && Objects.equals(description, that.description) && Objects.equals(date, that.date) && value.compareTo(that.value) == 0 && type == that.type && Objects.equals(accountId, that.accountId) && Objects.equals(fromAccountId, that.fromAccountId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, description, date, value, type, accountId, fromAccountId);
+    }
 }

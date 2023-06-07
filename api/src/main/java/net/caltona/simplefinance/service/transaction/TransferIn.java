@@ -26,4 +26,14 @@ public class TransferIn implements Transaction {
     public BigDecimal balance(BigDecimal value) {
         return value;
     }
+
+    @Override
+    public BigDecimal transfer(BigDecimal value) {
+        return value.add(this.value);
+    }
+
+    @Override
+    public BigDecimal transferReverse(BigDecimal value) {
+        return value.subtract(this.value);
+    }
 }

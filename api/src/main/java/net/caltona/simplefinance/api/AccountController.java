@@ -11,7 +11,7 @@ import net.caltona.simplefinance.db.model.DAccountConfig;
 import net.caltona.simplefinance.db.model.DTransaction;
 import net.caltona.simplefinance.service.Account;
 import net.caltona.simplefinance.service.AccountService;
-import net.caltona.simplefinance.service.calculator.BalanceCalculator;
+import net.caltona.simplefinance.service.calculator.Calculator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,7 +38,7 @@ public class AccountController {
         List<Account> accounts = accountService.list().stream()
                 .map(DAccount::account)
                 .toList();
-        return new BalanceCalculator(accounts).calculate(LocalDate.now().plus(1, ChronoUnit.DAYS));
+        return new Calculator(accounts).calculate(LocalDate.now().plus(1, ChronoUnit.DAYS));
     }
 
     @Transactional
@@ -52,7 +52,7 @@ public class AccountController {
         List<LocalDate> dates = IntStream.range(1, currentMonth + 1)
                 .mapToObj(month -> YearMonth.of(now.getYear(), month).atEndOfMonth())
                 .toList();
-        return new BalanceCalculator(accounts).calculate(dates);
+        return new Calculator(accounts).calculate(dates);
     }
 
     @Transactional
@@ -69,7 +69,7 @@ public class AccountController {
             week = week.plus(1, ChronoUnit.WEEKS);
         }
         dates.add(week);
-        return new BalanceCalculator(accounts).calculate(dates);
+        return new Calculator(accounts).calculate(dates);
     }
 
     @Transactional

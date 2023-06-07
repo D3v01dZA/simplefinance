@@ -26,4 +26,14 @@ public class Balance implements Transaction {
     public BigDecimal balance(BigDecimal value) {
         return this.value;
     }
+
+    @Override
+    public BigDecimal transfer(BigDecimal value) {
+        return value;
+    }
+
+    @Override
+    public BigDecimal transferReverse(BigDecimal value) {
+        return value;
+    }
 }

@@ -117,8 +117,8 @@ public class AccountService {
     public Optional<DTransaction> createTransaction(DTransaction.NewTransaction newTransaction) {
         return dAccountDAO.findById(newTransaction.getAccountId())
                 .map(dAccount -> {
-                    Optional<DAccount> toAccountOptional = newTransaction.getFromAccountId().flatMap(dAccountDAO::findById);
-                    DTransaction dTransaction = newTransaction.dTransaction(dAccount, toAccountOptional.orElse(null));
+                    Optional<DAccount> fromAccountOptional = newTransaction.getFromAccountId().flatMap(dAccountDAO::findById);
+                    DTransaction dTransaction = newTransaction.dTransaction(dAccount, fromAccountOptional.orElse(null));
                     if (!dTransaction.isValid()) {
                         throw new ExceptionControllerAdvice.BadConfigException("Invalid transaction");
                     }

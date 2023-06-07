@@ -5,8 +5,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import net.caltona.simplefinance.db.model.DAccountConfig;
-import net.caltona.simplefinance.service.calculator.AssetBalanceCalculator;
-import net.caltona.simplefinance.service.calculator.BalanceCalculator;
+import net.caltona.simplefinance.service.calculator.AssetCalculator;
+import net.caltona.simplefinance.service.calculator.Calculator;
 import net.caltona.simplefinance.service.transaction.Transaction;
 
 import java.math.BigDecimal;
@@ -34,13 +34,18 @@ public class AssetAccount implements Account {
     }
 
     @Override
-    public BalanceCalculator.TotalType totalType() {
-        return BalanceCalculator.TotalType.ILLIQUID_ASSET;
+    public Calculator.TotalType totalType() {
+        return Calculator.TotalType.ILLIQUID_ASSET;
     }
 
     @Override
     public BigDecimal calculateBalance(LocalDate date) {
-        return new AssetBalanceCalculator(transactionsSupplier.get()).balance(date);
+        return new AssetCalculator(transactionsSupplier.get()).balance(date);
+    }
+
+    @Override
+    public BigDecimal calculateTransfer(LocalDate date) {
+        return new AssetCalculator(transactionsSupplier.get()).transfer(date);
     }
 
     @Override

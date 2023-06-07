@@ -52,7 +52,7 @@ databaseChangeLog:
                   constraints:
                     nullable: false
                     references: account(id)
-                    foreignKeyName: fk_account_config_to_account
+                    foreignKeyName: fk_account_config_from_account
         - createTable:
             tableName: account_transaction
             columns:
@@ -88,11 +88,11 @@ databaseChangeLog:
                   constraints:
                     nullable: false
                     references: account(id)
-                    foreignKeyName: fk_transaction_account_id_to_account
+                    foreignKeyName: fk_transaction_account_id_from_account
               - column:
-                  name: to_account_id
+                  name: from_account_id
                   type: varchar(36)
                   constraints:
                     nullable: true
                     references: account(id)
-                    foreignKeyName: fk_transaction_to_account_id_to_account
+                    foreignKeyName: fk_transaction_from_account_id_to_account

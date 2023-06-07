@@ -24,6 +24,7 @@ public class DAccountConfig {
     private String name;
 
     @Column
+    @Enumerated(EnumType.STRING)
     private Type type;
 
     @Column

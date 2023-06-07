@@ -5,8 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import net.caltona.simplefinance.db.model.DAccountConfig;
-import net.caltona.simplefinance.service.calculator.BalanceCalculator;
-import net.caltona.simplefinance.service.calculator.PlaceholderBalanceCalculator;
+import net.caltona.simplefinance.service.calculator.Calculator;
 import net.caltona.simplefinance.service.transaction.Transaction;
 
 import java.math.BigDecimal;
@@ -18,7 +17,7 @@ import java.util.function.Supplier;
 @Getter
 @EqualsAndHashCode
 @AllArgsConstructor
-public class PlaceholderAccount implements Account {
+public class ExternalAccount implements Account {
 
     @NonNull
     private final String id;
@@ -29,18 +28,23 @@ public class PlaceholderAccount implements Account {
     @NonNull
     private final Supplier<List<Transaction>> transactionsSupplier;
 
-    public PlaceholderAccount(String id, String name, Supplier<Map<String, Object>> configByNameSupplier, Supplier<List<Transaction>> transactionsSupplier) {
+    public ExternalAccount(String id, String name, Supplier<Map<String, Object>> configByNameSupplier, Supplier<List<Transaction>> transactionsSupplier) {
         this(id, name, transactionsSupplier);
     }
 
     @Override
-    public BalanceCalculator.TotalType totalType() {
-        return BalanceCalculator.TotalType.IGNORED;
+    public Calculator.TotalType totalType() {
+        return Calculator.TotalType.IGNORED;
     }
 
     @Override
     public BigDecimal calculateBalance(LocalDate date) {
-        return new PlaceholderBalanceCalculator(transactionsSupplier.get()).balance();
+        return BigDecimal.ZERO;
+    }
+
+    @Override
+    public BigDecimal calculateTransfer(LocalDate date) {
+        return BigDecimal.ZERO;
     }
 
     @Override

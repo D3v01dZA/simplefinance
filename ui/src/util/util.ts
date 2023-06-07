@@ -1,7 +1,8 @@
 import { ServerState } from "../app/serverSlice";
 
 export function titleCase(value: string) {
-    return value.charAt(0).toUpperCase() + value.substr(1).toLowerCase();
+    const values = value.split("_");
+    return values.map(value => value.charAt(0).toUpperCase() + value.substr(1).toLowerCase()).join(" ");
 }
 
 export function get<T>(server: ServerState, url: String) {

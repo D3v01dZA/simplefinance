@@ -32,6 +32,7 @@ public class DTransaction {
     private BigDecimal value;
 
     @Column
+    @Enumerated(EnumType.STRING)
     private Type type;
 
     @ManyToOne(optional = false)
@@ -39,16 +40,16 @@ public class DTransaction {
     private DAccount dAccount;
 
     @ManyToOne
-    @JoinColumn(name = "to_account_id")
-    private DAccount dToAccount;
+    @JoinColumn(name = "from_account_id")
+    private DAccount dFromAccount;
 
-    public DTransaction(String description, LocalDate date, BigDecimal value, Type type, DAccount dAccount, DAccount dToAccount) {
+    public DTransaction(String description, LocalDate date, BigDecimal value, Type type, DAccount dAccount, DAccount dFromAccount) {
         this.description = description;
         this.date = date.toString();
         this.value = value;
         this.type = type;
         this.dAccount = dAccount;
-        this.dToAccount = dToAccount;
+        this.dFromAccount = dFromAccount;
     }
 
     public boolean isValid() {
@@ -64,22 +65,22 @@ public class DTransaction {
     }
 
     public JTransaction json() {
-        return new JTransaction(id, description, date(), value, type, getDAccount().getId(), getDToAccount().map(DAccount::getId).orElse(null));
+        return new JTransaction(id, description, date(), value, type, getDAccount().getId(), getDFromAccount().map(DAccount::getId).orElse(null));
     }
 
     public Transaction transaction(String accountId) {
         return type.transaction(accountId, this);
     }
 
-    public Optional<DAccount> getDToAccount() {
-        return Optional.ofNullable(dToAccount);
+    public Optional<DAccount> getDFromAccount() {
+        return Optional.ofNullable(dFromAccount);
     }
 
     public enum Type {
         BALANCE{
             @Override
             public boolean isValid(DTransaction dTransaction) {
-                return dTransaction.getDToAccount().isEmpty();
+                return dTransaction.getDFromAccount().isEmpty();
             }
 
             @Override
@@ -87,40 +88,18 @@ public class DTransaction {
                 return new Balance(dTransaction.date(), dTransaction.getValue());
             }
         },
-        ADDITION{
-            @Override
-            public boolean isValid(DTransaction dTransaction) {
-                return dTransaction.getDToAccount().isEmpty();
-            }
-
-            @Override
-            public Transaction transaction(String accountId, DTransaction dTransaction) {
-                return new Addition(dTransaction.date(), dTransaction.getValue());
-            }
-        },
-        SUBTRACTION{
-            @Override
-            public boolean isValid(DTransaction dTransaction) {
-                return dTransaction.getDToAccount().isEmpty();
-            }
-
-            @Override
-            public Transaction transaction(String accountId, DTransaction dTransaction) {
-                return new Subtraction(dTransaction.date(), dTransaction.getValue());
-            }
-        },
         TRANSFER{
             @Override
             public boolean isValid(DTransaction dTransaction) {
-                return dTransaction.getDToAccount().isPresent();
+                return dTransaction.getDFromAccount().isPresent();
             }
 
             @Override
             public Transaction transaction(String accountId, DTransaction dTransaction) {
                 if (dTransaction.getDAccount().getId().equals(accountId)) {
-                    return new TransferOut(dTransaction.date(), dTransaction.getValue());
-                } else if (dTransaction.getDToAccount().orElseThrow().getId().equals(accountId)) {
                     return new TransferIn(dTransaction.date(), dTransaction.getValue());
+                } else if (dTransaction.getDFromAccount().orElseThrow().getId().equals(accountId)) {
+                    return new TransferOut(dTransaction.date(), dTransaction.getValue());
                 }
                 throw new IllegalStateException("Could not find account");
             }
@@ -157,8 +136,8 @@ public class DTransaction {
             return Optional.ofNullable(fromAccountId);
         }
 
-        public DTransaction dTransaction(DAccount account, DAccount toAccount) {
-            return new DTransaction(description, date, value, type, account, toAccount);
+        public DTransaction dTransaction(DAccount account, DAccount fromAccount) {
+            return new DTransaction(description, date, value, type, account, fromAccount);
         }
     }
 

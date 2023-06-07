@@ -1,7 +1,7 @@
 package net.caltona.simplefinance.service;
 
 import net.caltona.simplefinance.db.model.DAccountConfig;
-import net.caltona.simplefinance.service.calculator.BalanceCalculator.TotalType;
+import net.caltona.simplefinance.service.calculator.Calculator.TotalType;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -15,6 +15,8 @@ public interface Account {
     TotalType totalType();
 
     BigDecimal calculateBalance(LocalDate date);
+
+    BigDecimal calculateTransfer(LocalDate date);
 
     boolean canUpdateConfig(DAccountConfig updateAccountConfig);
 
