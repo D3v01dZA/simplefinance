@@ -131,7 +131,9 @@ public class Calculator {
         public Totals() {
             this(BigDecimal.ZERO, new LinkedHashMap<>(), new LinkedHashMap<>());
             for (TotalType value : TotalType.values()) {
-                totalBalances.put(value, new JBalance.TotalBalance(value, BigDecimal.ZERO, BigDecimal.ZERO));
+                if (value != TotalType.IGNORED) {
+                    totalBalances.put(value, new JBalance.TotalBalance(value, BigDecimal.ZERO, BigDecimal.ZERO));
+                }
             }
         }
 

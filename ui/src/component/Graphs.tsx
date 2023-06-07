@@ -105,17 +105,6 @@ function lines(viewType: ViewType, hiddenItems: string[], accounts: IndexedAccou
                     />)}
                 </React.Fragment>
             );
-        case ViewType.TOTALS_TRANSFERS:
-            const totalsTransferColorPalette = generateColorPalette(5);
-            return (
-                <React.Fragment>
-                    <Line type="monotone" dataKey="cashTransfer" stroke={dull("cashTransfer", hiddenItems, totalsTransferColorPalette[0])} name="Cash" />
-                    <Line type="monotone" dataKey="liquidAssetTransfer" stroke={dull("liquidAssetTransfer", hiddenItems, totalsTransferColorPalette[1])} name="Liquid Assets" />
-                    <Line type="monotone" dataKey="illiquidAssetTransfer" stroke={dull("illiquidAssetTransfer", hiddenItems, totalsTransferColorPalette[2])} name="Iliquid Assets" />
-                    <Line type="monotone" dataKey="retirementTransfer" stroke={dull("retirementTransfer", hiddenItems, totalsTransferColorPalette[3])} name="Retirement" />
-                    <Line type="monotone" dataKey="liabilitiesTransfer" stroke={dull("liabilitiesTransfer", hiddenItems, totalsTransferColorPalette[4])} name="Liabilities" />
-                </React.Fragment>
-            );
         case ViewType.ACCOUNTS:
             const accountColorPalette = generateColorPalette(Object.values(accounts).length);
             return (
@@ -125,19 +114,6 @@ function lines(viewType: ViewType, hiddenItems: string[], accounts: IndexedAccou
                         type="monotone"
                         dataKey={account.id}
                         stroke={dull(account.id, hiddenItems, accountColorPalette[index])}
-                        name={`${account.name} (${titleCase(account.type)})`}
-                    />)}
-                </React.Fragment>
-            );
-        case ViewType.ACCOUNTS_TRANSFERS:
-            const accountTransfersColorPalette = generateColorPalette(Object.values(accounts).length);
-            return (
-                <React.Fragment>
-                    {Object.values(accounts).map((account, index) => <Line
-                        key={account.id}
-                        type="monotone"
-                        dataKey={account.id}
-                        stroke={dull(account.id, hiddenItems, accountTransfersColorPalette[index])}
                         name={`${account.name} (${titleCase(account.type)})`}
                     />)}
                 </React.Fragment>
