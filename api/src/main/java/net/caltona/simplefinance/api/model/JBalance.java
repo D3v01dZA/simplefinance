@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
+import net.caltona.simplefinance.service.calculator.Calculator;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -18,37 +19,10 @@ public class JBalance {
     private LocalDate date;
 
     @NonNull
-    private BigDecimal cashBalance;
-
-    @NonNull
-    private BigDecimal cashTransfer;
-
-    @NonNull
-    private BigDecimal liquidAssetsBalance;
-
-    @NonNull
-    private BigDecimal liquidAssetTransfer;
-
-    @NonNull
-    private BigDecimal illiquidAssetsBalance;
-
-    @NonNull
-    private BigDecimal illiquidAssetTransfer;
-
-    @NonNull
-    private BigDecimal retirementBalance;
-
-    @NonNull
-    private BigDecimal retirementTransfer;
-
-    @NonNull
-    private BigDecimal liabilitiesBalance;
-
-    @NonNull
-    private BigDecimal liabilitiesTransfer;
-
-    @NonNull
     private BigDecimal net;
+
+    @NonNull
+    private List<TotalBalance> totalBalances;
 
     @NonNull
     private List<AccountBalance> accountBalances;
@@ -61,37 +35,10 @@ public class JBalance {
     public static class Difference {
 
         @NonNull
-        private BigDecimal cashBalance;
-
-        @NonNull
-        private BigDecimal cashTransfer;
-
-        @NonNull
-        private BigDecimal liquidAssetsBalance;
-
-        @NonNull
-        private BigDecimal liquidAssetTransfer;
-
-        @NonNull
-        private BigDecimal illiquidAssetsBalance;
-
-        @NonNull
-        private BigDecimal illiquidAssetTransfer;
-
-        @NonNull
-        private BigDecimal retirementBalance;
-
-        @NonNull
-        private BigDecimal retirementTransfer;
-
-        @NonNull
-        private BigDecimal liabilitiesBalance;
-
-        @NonNull
-        private BigDecimal liabilitiesTransfer;
-
-        @NonNull
         private BigDecimal net;
+
+        @NonNull
+        private List<TotalBalance> totalBalances;
 
         @NonNull
         private List<AccountBalance> accountBalances;
@@ -105,6 +52,22 @@ public class JBalance {
 
         @NonNull
         private String accountId;
+
+        @NonNull
+        private BigDecimal balance;
+
+        @NonNull
+        private BigDecimal transfer;
+
+    }
+
+    @Getter
+    @EqualsAndHashCode
+    @AllArgsConstructor
+    public static class TotalBalance {
+
+        @NonNull
+        private Calculator.TotalType type;
 
         @NonNull
         private BigDecimal balance;

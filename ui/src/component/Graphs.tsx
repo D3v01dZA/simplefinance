@@ -13,14 +13,16 @@ interface JRawAccountBalance {
     transfer: number,
 }
 
+interface JRawTotalBalance {
+    type: string,
+    balance: number,
+    transfer: number,
+}
+
 interface JRawBalances {
     date: string,
-    cashBalance: number,
-    liquidAssetsBalance: number,
-    illiquidAssetsBalance: number,
-    retirementBalance: number,
-    liabilitiesBalance: number,
     net: number,
+    totalBalances: JRawTotalBalance[],
     accountBalances: JRawAccountBalance[],
 }
 
@@ -45,6 +47,14 @@ enum DataType {
     DIFFERENCE = "DIFFERENCE",
 }
 
+enum TotalType {
+    CASH = "CASH",
+    LIQUID_ASSET = "LIQUID_ASSET",
+    ILLIQUID_ASSET = "ILLIQUID_ASSET",
+    RETIREMENT = "RETIREMENT",
+    LIABILITY = "LIABILITY",
+}
+
 function url(dateType: DateType) {
     switch (dateType) {
         case DateType.MONTHLY:
@@ -67,12 +77,32 @@ function lines(viewType: ViewType, hiddenItems: string[], accounts: IndexedAccou
             const totalColorPalette = generateColorPalette(6);
             return (
                 <React.Fragment>
-                    <Line type="monotone" dataKey="net" stroke={dull("net", hiddenItems, totalColorPalette[0])} name="Net" />
-                    <Line type="monotone" dataKey="cashBalance" stroke={dull("cashBalance", hiddenItems, totalColorPalette[1])} name="Cash" />
-                    <Line type="monotone" dataKey="liquidAssetsBalance" stroke={dull("liquidAssetsBalance", hiddenItems, totalColorPalette[2])} name="Liquid Assets" />
-                    <Line type="monotone" dataKey="illiquidAssetsBalance" stroke={dull("illiquidAssetsBalance", hiddenItems, totalColorPalette[3])} name="Illiquid Assets" />
-                    <Line type="monotone" dataKey="retirementBalance" stroke={dull("retirementBalance", hiddenItems, totalColorPalette[4])} name="Retirement" />
-                    <Line type="monotone" dataKey="liabilitiesBalance" stroke={dull("liabilitiesBalance", hiddenItems, totalColorPalette[5])} name="Liabilities" />
+                    <Line
+                        type="monotone"
+                        dataKey="net"
+                        stroke={dull("net", hiddenItems, totalColorPalette[0])}
+                        name="Net"
+                    />
+                    {Object.values(TotalType).map((totalType, index) => <Line
+                        key={totalType}
+                        type="monotone"
+                        dataKey={totalType}
+                        stroke={dull(totalType, hiddenItems, totalColorPalette[index + 1])}
+                        name={titleCase(totalType)}
+                    />)}
+                </React.Fragment>
+            );
+        case ViewType.TOTALS_TRANSFERS:
+            const totalsTransferColorPalette = generateColorPalette(5);
+            return (
+                <React.Fragment>
+                    {Object.values(TotalType).map((totalType, index) => <Line
+                        key={totalType}
+                        type="monotone"
+                        dataKey={totalType}
+                        stroke={dull(totalType, hiddenItems, totalsTransferColorPalette[index])}
+                        name={titleCase(totalType)}
+                    />)}
                 </React.Fragment>
             );
         case ViewType.TOTALS_TRANSFERS:
@@ -112,23 +142,42 @@ function lines(viewType: ViewType, hiddenItems: string[], accounts: IndexedAccou
                     />)}
                 </React.Fragment>
             );
+        case ViewType.ACCOUNTS_TRANSFERS:
+            const accountTransfersColorPalette = generateColorPalette(Object.values(accounts).length);
+            return (
+                <React.Fragment>
+                    {Object.values(accounts).map((account, index) => <Line
+                        key={account.id}
+                        type="monotone"
+                        dataKey={account.id}
+                        stroke={dull(account.id, hiddenItems, accountTransfersColorPalette[index])}
+                        name={`${account.name} (${titleCase(account.type)})`}
+                    />)}
+                </React.Fragment>
+            );
     }
 }
 
 function calculateBalances(viewType: ViewType, hiddenItems: string[], balances?: JRawBalances) {
     switch (viewType) {
         case ViewType.TOTALS:
-            let filteredTotals: any = balances ? { ...balances } : {};
-            hiddenItems.forEach(item => {
-                delete filteredTotals[item];
-            });
-            return filteredTotals;
+            const main = (balances?.totalBalances ?? []).reduce<any>((acc, current) => {
+                if (!hiddenItems.includes(current.type)) {
+                    acc[current.type] = current.balance;
+                }
+                return acc;
+            }, {});
+            return {
+                ...main,
+                net: balances?.net ?? 0
+            }
         case ViewType.TOTALS_TRANSFERS:
-            let filteredTotalsTransfers: any = balances ? { ...balances } : {};
-            hiddenItems.forEach(item => {
-                delete filteredTotalsTransfers[item];
-            });
-            return filteredTotalsTransfers;
+            return (balances?.totalBalances ?? []).reduce<any>((acc, current) => {
+                if (!hiddenItems.includes(current.type)) {
+                    acc[current.type] = current.transfer;
+                }
+                return acc;
+            }, {});
         case ViewType.ACCOUNTS:
             return (balances?.accountBalances ?? []).reduce<any>((acc, current) => {
                 if (!hiddenItems.includes(current.accountId)) {
