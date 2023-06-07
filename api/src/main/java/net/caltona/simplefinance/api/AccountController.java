@@ -16,13 +16,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 @RestController
 @AllArgsConstructor
@@ -48,10 +46,13 @@ public class AccountController {
                 .map(DAccount::account)
                 .toList();
         LocalDate now = LocalDate.now();
-        int currentMonth = now.getMonthValue();
-        List<LocalDate> dates = IntStream.range(1, currentMonth + 1)
-                .mapToObj(month -> YearMonth.of(now.getYear(), month).atEndOfMonth())
-                .toList();
+        LocalDate month = LocalDate.now().minus(12, ChronoUnit.MONTHS);
+        List<LocalDate> dates = new ArrayList<>();
+        while (!month.isAfter(now)) {
+            dates.add(month);
+            month = month.plus(1, ChronoUnit.MONTHS).withDayOfMonth(1);
+        }
+        dates.add(month);
         return new Calculator(accounts).calculate(dates);
     }
 
@@ -62,7 +63,7 @@ public class AccountController {
                 .map(DAccount::account)
                 .toList();
         LocalDate now = LocalDate.now();
-        LocalDate week = LocalDate.of(now.getYear(), 1, 1);
+        LocalDate week = LocalDate.now().minus(24, ChronoUnit.WEEKS);
         List<LocalDate> dates = new ArrayList<>();
         while (!week.isAfter(now)) {
             dates.add(week);
