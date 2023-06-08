@@ -49,6 +49,28 @@ export function err(message: String | any) {
     }
 }
 
+export function today() {
+    const date = new Date();
+
+    function month() {
+        const month = (date.getMonth() + 1) + "";
+        if (month.length === 1) {
+            return "0" + month;
+        }
+        return month;
+    }
+
+    function day() {
+        const day = date.getDate() + "";
+        if (day.length === 1) {
+            return "0" + day;
+        }
+        return day;
+    }
+
+    return `${date.getFullYear()}-${month()}-${day()}`
+}
+
 export function generateColorPalette(numColors: number): string[] {
     
     // Helper function to convert HSL color to hex color code

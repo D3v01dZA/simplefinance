@@ -4,7 +4,7 @@ import { useParams } from "react-router-dom";
 import { IndexedAccounts, selectAccounts } from "../app/accountSlice";
 import { useAppSelector } from "../app/hooks";
 import { selectServer } from "../app/serverSlice";
-import { del, err, get, post, titleCase } from "../util/util";
+import { del, err, get, post, titleCase, today } from "../util/util";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPenToSquare, faTrash, faPlus } from '@fortawesome/free-solid-svg-icons';
 
@@ -210,7 +210,7 @@ export function Transactions() {
                         <td>
                             <ButtonGroup>
                                 <Button variant="success" onClick={() => {
-                                    setAddingTransaction({ type: TransactionType.BALANCE, accountId: accountId ?? Object.keys(accounts)[0] });
+                                    setAddingTransaction({ type: TransactionType.BALANCE, description: "", date: today(), accountId: accountId ?? Object.keys(accounts)[0] });
                                     setShowAdding(true);
                                 }}>
                                     <FontAwesomeIcon icon={faPlus} />
