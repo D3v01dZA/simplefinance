@@ -13,8 +13,12 @@ export function Header() {
     const dispatch = useAppDispatch();
 
     function refreshAccounts() {
+        function sortAccounts(accounts: JAccount[]) {
+            return accounts.sort((left, right) => left.name.localeCompare(right.name));
+        }
+
         get<JAccount[]>(server, "/api/account/")
-            .then(accounts => dispatch(setAccounts(accounts)))
+            .then(accounts => dispatch(setAccounts(sortAccounts(accounts))))
             .catch(error => err(error));
     }
 

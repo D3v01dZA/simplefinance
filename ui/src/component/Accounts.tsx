@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Card, Container, Modal, Row, Form, ButtonGroup, Table } from "react-bootstrap";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPenToSquare, faPlus, faTrash, faMoneyBillTransfer, faBackwardFast, faBackward, faForward, faForwardFast } from '@fortawesome/free-solid-svg-icons';
@@ -84,6 +84,9 @@ export function Accounts() {
 
     const dispatch = useAppDispatch();
 
+    const [accountTypeFilter, setAccountTypeFilter] = useState<"none" | AccountType>("none");
+    const [filteredAccounts, setFilteredAccounts] = useState<JAccount[]>([]);
+
     const [pageSize, setPageSize] = useState(10);
     const [page, _setPage] = useState(0);
 
@@ -96,26 +99,46 @@ export function Accounts() {
     const [editingAccount, setEditingAccount] = useState<Partial<JAccount>>({});
 
     function refreshAccounts() {
+        function sortAccounts(accounts: JAccount[]) {
+            return accounts.sort((left, right) => left.name.localeCompare(right.name));
+        }
+
         get<JAccount[]>(server, "/api/account/")
-            .then(accounts => dispatch(setAccounts(accounts)))
+            .then(accounts => dispatch(setAccounts(sortAccounts(accounts))))
             .catch(error => err(error));
     }
 
     function accountsToDisplay() {
         if (pageSize === 0) {
-            return Object.values(accounts);
+            return filteredAccounts;
         }
-        return Object.values(accounts).slice(pageSize * page, pageSize * page + pageSize);
+        return filteredAccounts.slice(pageSize * page, pageSize * page + pageSize);
     }
 
     function setPage(newPage: number) {
-        const constrained = constrainedPage(Object.values(accounts).length, pageSize, newPage);
+        const constrained = constrainedPage(filteredAccounts.length, pageSize, newPage);
         _setPage(constrained);
     }
 
+    useEffect(() => {
+        if (accountTypeFilter === "none") {
+            setFilteredAccounts(Object.values(accounts));
+        } else {
+            const filtered = Object.values(accounts).filter(account => account.type === accountTypeFilter);
+            setFilteredAccounts(filtered);
+        }
+    }, [accounts, accountTypeFilter]);
+
     return (
         <Container>
-            <Row xl={2}>
+            <Row xl={3}>
+                <Form.Group>
+                    <Form.Label>Type</Form.Label>
+                    <Form.Select value={accountTypeFilter} onChange={e => setAccountTypeFilter(e.target.value as any)}>
+                        <option value={"none"}></option>
+                        {Object.keys(AccountType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
+                    </Form.Select>
+                </Form.Group>
                 <Form.Group>
                     <Form.Label>Entries Per Page</Form.Label>
                     <Form.Select value={pageSize} onChange={e => setPageSize(parseInt(e.target.value))}>

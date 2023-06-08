@@ -12,8 +12,6 @@ import { faForwardFast } from "@fortawesome/free-solid-svg-icons";
 
 enum TransactionType {
     BALANCE = "BALANCE",
-    ADDITION = "ADDITION",
-    SUBTRACTION = "SUBTRACTION",
     TRANSFER = "TRANSFER",
 }
 
@@ -153,7 +151,10 @@ export function Transactions() {
     const [pageSize, setPageSize] = useState(10);
     const [page, _setPage] = useState(0);
 
+    const [transactionTypeFilter, setTransactionTypeFilter] = useState<"none" | TransactionType>("none");
+
     const [transactions, setTransactions] = useState<JTranscation[]>([]);
+    const [filteredTransactions, setFilteredTransactions] = useState<JTranscation[]>([]);
 
     const [showAdding, setShowAdding] = useState(false);
     const [adding, setAdding] = useState(false);
@@ -165,8 +166,28 @@ export function Transactions() {
 
     function refreshTransactions() {
         function sortTransactions(transactions: JTranscation[]) {
-            return transactions.sort((left, right) => Date.parse(right.date) - Date.parse(left.date))
+            return transactions.sort((left, right) => {
+                const date = Date.parse(right.date) - Date.parse(left.date);
+                if (date !== 0) {
+                    return date;
+                }
+                if (left.type !== right.type) {
+                    if (right.type === TransactionType.BALANCE) {
+                        return 1;
+                    } else {
+                        return -1;
+                    }
+                }
+                if (left.value !== right.value) {
+                    return right.value - left.value;
+                }
+                if (left.description !== right.description) {
+                    return left.description.localeCompare(right.description);
+                }
+                return left.accountId.localeCompare(right.accountId);
+            });
         }
+        
         if (accountId !== undefined) {
             get<JTranscation[]>(server, `/api/account/${accountId}/transaction/`)
                 .then(transactions => setTransactions(sortTransactions(transactions)))
@@ -180,21 +201,37 @@ export function Transactions() {
 
     function transactionsToDisplay() {
         if (pageSize === 0) {
-            return transactions;
+            return filteredTransactions;
         }
-        return transactions.slice(pageSize * page, pageSize * page + pageSize);
+        return filteredTransactions.slice(pageSize * page, pageSize * page + pageSize);
     }
 
     function setPage(newPage: number) {
-        const constrained = constrainedPage(transactions.length, pageSize, newPage);
+        const constrained = constrainedPage(filteredTransactions.length, pageSize, newPage);
         _setPage(constrained);
     }
 
     useEffect(() => refreshTransactions(), []);
 
+    useEffect(() => {
+        if (transactionTypeFilter === "none") {
+            setFilteredTransactions(transactions);
+        } else {
+            const filtered = transactions.filter(transaction => transaction.type === transactionTypeFilter);
+            setFilteredTransactions(filtered);
+        }
+    }, [transactions, transactionTypeFilter]);
+
     return (
         <Container>
-            <Row xl={2}>
+            <Row xl={3}>
+                <Form.Group>
+                    <Form.Label>Type</Form.Label>
+                    <Form.Select value={transactionTypeFilter} onChange={e => setTransactionTypeFilter(e.target.value as any)}>
+                        <option value={"none"}></option>
+                        {Object.keys(TransactionType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
+                    </Form.Select>
+                </Form.Group>
                 <Form.Group>
                     <Form.Label>Entries Per Page</Form.Label>
                     <Form.Select value={pageSize} onChange={e => setPageSize(parseInt(e.target.value))}>
@@ -213,7 +250,7 @@ export function Transactions() {
                         <FontAwesomeIcon icon={faBackward} />
                     </Button>
                     <Button variant="primary">
-                        Page {page + 1}/{maxPage(transactions.length, pageSize) + 1}
+                        Page {page + 1}/{maxPage(filteredTransactions.length, pageSize) + 1}
                     </Button>
                     <Button variant="primary" onClick={() => setPage(page + 1)}>
                         <FontAwesomeIcon icon={faForward} />
