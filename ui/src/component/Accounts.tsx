@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Button, Card, Container, Modal, Row, Form, ButtonGroup, Table } from "react-bootstrap";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPenToSquare, faPlus, faTrash, faMoneyBillTransfer } from '@fortawesome/free-solid-svg-icons';
+import { faPenToSquare, faPlus, faTrash, faMoneyBillTransfer, faBackwardFast, faBackward, faForward, faForwardFast } from '@fortawesome/free-solid-svg-icons';
 import { useAppDispatch, useAppSelector } from "../app/hooks";
 import { selectServer } from "../app/serverSlice";
-import { get, err, titleCase, post, del } from "../util/util";
+import { get, err, titleCase, post, del, constrainedPage, maxPage } from "../util/util";
 import { AccountType, JAccount, selectAccounts, setAccounts } from "../app/accountSlice";
 import { LinkContainer } from "react-router-bootstrap";
 
@@ -84,6 +84,9 @@ export function Accounts() {
 
     const dispatch = useAppDispatch();
 
+    const [pageSize, setPageSize] = useState(10);
+    const [page, _setPage] = useState(0);
+
     const [showAdding, setShowAdding] = useState(false);
     const [adding, setAdding] = useState(false);
     const [addingAccount, setAddingAccount] = useState<Partial<JAccount>>({});
@@ -98,43 +101,86 @@ export function Accounts() {
             .catch(error => err(error));
     }
 
+    function accountsToDisplay() {
+        if (pageSize === 0) {
+            return Object.values(accounts);
+        }
+        return Object.values(accounts).slice(pageSize * page, pageSize * page + pageSize);
+    }
+
+    function setPage(newPage: number) {
+        const constrained = constrainedPage(Object.values(accounts).length, pageSize, newPage);
+        _setPage(constrained);
+    }
+
     return (
         <Container>
-            <Table striped bordered hover>
-                <thead>
-                    <tr>
-                        <th>Type</th>
-                        <th>Name</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {Object.values(accounts).map(account => <Account key={account.id} account={account} edit={() => {
-                        setEditingAccount(account);
-                        setShowEditing(true);
-                    }} del={() => {
-                        if (confirm(`Are you sure you want to delete ${account.name}?`)) {
-                            del(server, `/api/account/${account.id}/`)
-                                .then(() => refreshAccounts())
-                                .catch(error => err(error));
-                        }
-                    }} />)}
-                    <tr>
-                        <td></td>
-                        <td></td>
-                        <td>
-                            <ButtonGroup>
-                                <Button variant="success" onClick={() => {
-                                    setAddingAccount({ type: AccountType.SAVINGS });
-                                    setShowAdding(true);
-                                }}>
-                                    <FontAwesomeIcon icon={faPlus} />
-                                </Button>
-                            </ButtonGroup>
-                        </td>
-                    </tr>
-                </tbody>
-            </Table>
+            <Row xl={2}>
+                <Form.Group>
+                    <Form.Label>Entries Per Page</Form.Label>
+                    <Form.Select value={pageSize} onChange={e => setPageSize(parseInt(e.target.value))}>
+                        <option value={0}>All</option>
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                    </Form.Select>
+                </Form.Group>
+                <ButtonGroup>
+                    <Button variant="primary" onClick={() => setPage(page - 10)}>
+                        <FontAwesomeIcon icon={faBackwardFast} />
+                    </Button>
+                    <Button variant="primary" onClick={() => setPage(page - 1)}>
+                        <FontAwesomeIcon icon={faBackward} />
+                    </Button>
+                    <Button variant="primary">
+                        Page {page + 1}/{maxPage(Object.values(accounts).length, pageSize) + 1}
+                    </Button>
+                    <Button variant="primary" onClick={() => setPage(page + 1)}>
+                        <FontAwesomeIcon icon={faForward} />
+                    </Button>
+                    <Button variant="primary" onClick={() => setPage(page + 10)}>
+                        <FontAwesomeIcon icon={faForwardFast} />
+                    </Button>
+                </ButtonGroup>
+            </Row>
+            <Row>
+                <Table striped bordered hover>
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Name</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {accountsToDisplay().map(account => <Account key={account.id} account={account} edit={() => {
+                            setEditingAccount(account);
+                            setShowEditing(true);
+                        }} del={() => {
+                            if (confirm(`Are you sure you want to delete ${account.name}?`)) {
+                                del(server, `/api/account/${account.id}/`)
+                                    .then(() => refreshAccounts())
+                                    .catch(error => err(error));
+                            }
+                        }} />)}
+                        <tr>
+                            <td></td>
+                            <td></td>
+                            <td>
+                                <ButtonGroup>
+                                    <Button variant="success" onClick={() => {
+                                        setAddingAccount({ type: AccountType.SAVINGS });
+                                        setShowAdding(true);
+                                    }}>
+                                        <FontAwesomeIcon icon={faPlus} />
+                                    </Button>
+                                </ButtonGroup>
+                            </td>
+                        </tr>
+                    </tbody>
+                </Table>
+            </Row>
             <AccountModal show={showAdding} setShow={setShowAdding} account={addingAccount} setAccount={setAddingAccount} saving={adding} save={() => {
                 setAdding(true);
                 post(server, "/api/account/", addingAccount)

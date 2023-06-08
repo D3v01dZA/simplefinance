@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { Button, ButtonGroup, Container, Form, Modal, Table } from "react-bootstrap";
+import { Button, ButtonGroup, Container, Form, Modal, Row, Table } from "react-bootstrap";
 import { useParams } from "react-router-dom";
 import { IndexedAccounts, selectAccounts } from "../app/accountSlice";
 import { useAppSelector } from "../app/hooks";
 import { selectServer } from "../app/serverSlice";
-import { del, err, get, post, titleCase, today } from "../util/util";
+import { constrainedPage, del, err, get, maxPage, post, titleCase, today } from "../util/util";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPenToSquare, faTrash, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faPenToSquare, faTrash, faPlus, faBackward, faBackwardFast } from '@fortawesome/free-solid-svg-icons';
+import { faForward } from "@fortawesome/free-solid-svg-icons";
+import { faForwardFast } from "@fortawesome/free-solid-svg-icons";
 
 enum TransactionType {
     BALANCE = "BALANCE",
@@ -148,6 +150,9 @@ export function Transactions() {
     const server = useAppSelector(selectServer);
     const accounts = useAppSelector(selectAccounts);
 
+    const [pageSize, setPageSize] = useState(10);
+    const [page, _setPage] = useState(0);
+
     const [transactions, setTransactions] = useState<JTranscation[]>([]);
 
     const [showAdding, setShowAdding] = useState(false);
@@ -173,53 +178,96 @@ export function Transactions() {
         }
     }
 
+    function transactionsToDisplay() {
+        if (pageSize === 0) {
+            return transactions;
+        }
+        return transactions.slice(pageSize * page, pageSize * page + pageSize);
+    }
+
+    function setPage(newPage: number) {
+        const constrained = constrainedPage(transactions.length, pageSize, newPage);
+        _setPage(constrained);
+    }
+
     useEffect(() => refreshTransactions(), []);
 
     return (
         <Container>
-            <Table striped bordered hover>
-                <thead>
-                    <tr>
-                        <th>Type</th>
-                        <th>Description</th>
-                        <th>Date</th>
-                        <th>Value</th>
-                        <th>Account</th>
-                        <th>From</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {transactions.map(transaction => <Transaction key={transaction.id} transaction={transaction} accounts={accounts} edit={() => {
-                        setEditingTransaction({...transaction, value: transaction.value.toString()});
-                        setShowEditing(true);
-                    }} del={() => {
-                        if (confirm(`Are you sure you want to delete ${transaction.id}?`)) {
-                            del(server, `/api/account/${transaction.accountId}/transaction/${transaction.id}/`)
-                                .then(() => refreshTransactions())
-                                .catch(error => err(error));
-                        }
-                    }} />)}
-                    <tr>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td>
-                            <ButtonGroup>
-                                <Button variant="success" onClick={() => {
-                                    setAddingTransaction({ type: TransactionType.BALANCE, description: "", date: today(), accountId: accountId ?? Object.keys(accounts)[0] });
-                                    setShowAdding(true);
-                                }}>
-                                    <FontAwesomeIcon icon={faPlus} />
-                                </Button>
-                            </ButtonGroup>
-                        </td>
-                    </tr>
-                </tbody>
-            </Table>
+            <Row xl={2}>
+                <Form.Group>
+                    <Form.Label>Entries Per Page</Form.Label>
+                    <Form.Select value={pageSize} onChange={e => setPageSize(parseInt(e.target.value))}>
+                        <option value={0}>All</option>
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                    </Form.Select>
+                </Form.Group>
+                <ButtonGroup>
+                    <Button variant="primary" onClick={() => setPage(page - 10)}>
+                        <FontAwesomeIcon icon={faBackwardFast} />
+                    </Button>
+                    <Button variant="primary" onClick={() => setPage(page - 1)}>
+                        <FontAwesomeIcon icon={faBackward} />
+                    </Button>
+                    <Button variant="primary">
+                        Page {page + 1}/{maxPage(transactions.length, pageSize) + 1}
+                    </Button>
+                    <Button variant="primary" onClick={() => setPage(page + 1)}>
+                        <FontAwesomeIcon icon={faForward} />
+                    </Button>
+                    <Button variant="primary" onClick={() => setPage(page + 10)}>
+                        <FontAwesomeIcon icon={faForwardFast} />
+                    </Button>
+                </ButtonGroup>
+            </Row>
+            <Row xl={1}>
+                <Table striped bordered hover>
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Date</th>
+                            <th>Value</th>
+                            <th>Account</th>
+                            <th>From</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {transactionsToDisplay().map(transaction => <Transaction key={transaction.id} transaction={transaction} accounts={accounts} edit={() => {
+                            setEditingTransaction({ ...transaction, value: transaction.value.toString() });
+                            setShowEditing(true);
+                        }} del={() => {
+                            if (confirm(`Are you sure you want to delete ${transaction.id}?`)) {
+                                del(server, `/api/account/${transaction.accountId}/transaction/${transaction.id}/`)
+                                    .then(() => refreshTransactions())
+                                    .catch(error => err(error));
+                            }
+                        }} />)}
+                        <tr>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td>
+                                <ButtonGroup>
+                                    <Button variant="success" onClick={() => {
+                                        setAddingTransaction({ type: TransactionType.BALANCE, description: "", date: today(), accountId: accountId ?? Object.keys(accounts)[0] });
+                                        setShowAdding(true);
+                                    }}>
+                                        <FontAwesomeIcon icon={faPlus} />
+                                    </Button>
+                                </ButtonGroup>
+                            </td>
+                        </tr>
+                    </tbody>
+                </Table>
+            </Row>
             <TransactionModal accounts={accounts} singleAccount={accountId !== undefined} show={showAdding} setShow={setShowAdding} transaction={addingTransaction} setTransaction={setAddingTransaction} saving={adding} save={() => {
                 setAdding(true);
                 post(server, `/api/account/${addingTransaction.accountId}/transaction/`, addingTransaction)
@@ -240,6 +288,6 @@ export function Transactions() {
                         setShowEditing(false);
                     });
             }} />
-        </Container>
+        </Container >
     );
 }

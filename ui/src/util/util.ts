@@ -49,6 +49,17 @@ export function err(message: String | any) {
     }
 }
 
+export function constrainedPage(size: number, pageSize: number, page: number) {
+    return Math.max(0, Math.min(page, maxPage(size, pageSize)))
+}
+
+export function maxPage(size: number, pageSize: number) {
+    if (pageSize === 0) {
+        return 0;
+    }
+    return Math.floor((size - 1) / pageSize);
+}
+
 export function today() {
     const date = new Date();
 
