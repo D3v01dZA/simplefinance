@@ -6,7 +6,7 @@ import { useAppSelector } from "../app/hooks";
 import { selectServer } from "../app/serverSlice";
 import { constrainedPage, del, err, get, maxPage, post, titleCase, today } from "../util/util";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPenToSquare, faTrash, faPlus, faBackward, faBackwardFast } from '@fortawesome/free-solid-svg-icons';
+import { faPenToSquare, faTrash, faPlus, faCartPlus, faBackward, faBackwardFast } from '@fortawesome/free-solid-svg-icons';
 import { faForward } from "@fortawesome/free-solid-svg-icons";
 import { faForwardFast } from "@fortawesome/free-solid-svg-icons";
 
@@ -33,6 +33,17 @@ interface WorkingTransaction {
     type: TransactionType,
     accountId: string,
     fromAccountId: string,
+}
+
+interface BulkWorkingTransactions {
+    description: string,
+    date: string,
+    type: TransactionType,
+    fromAccountId?: string,
+    transactions: {
+        accountId: string,
+        value?: string,
+    }[]
 }
 
 function AccountName({ accountId: fromAccountId, accounts }: { accountId: string, accounts: IndexedAccounts }) {
@@ -84,7 +95,7 @@ function TransactionModal({
     show: boolean,
     setShow: (value: boolean) => void,
     transaction: Partial<WorkingTransaction>,
-    setTransaction: (account: Partial<WorkingTransaction>) => void,
+    setTransaction: (transaction: Partial<WorkingTransaction>) => void,
     saving: boolean,
     save: () => void
 }) {
@@ -142,6 +153,111 @@ function TransactionModal({
     );
 }
 
+function BulkTransactionModal({
+    accounts,
+    show,
+    setShow,
+    transactions,
+    setTransactions,
+    saving,
+    save
+}: {
+    accounts: IndexedAccounts,
+    show: boolean,
+    setShow: (value: boolean) => void,
+    transactions: BulkWorkingTransactions,
+    setTransactions: (transactions: BulkWorkingTransactions) => void,
+    saving: boolean,
+    save: () => void
+}) {
+    function editTransaction(index: number, update: Partial<{ accountId: string, value: string }>) {
+        const updatedTransactions = [...transactions.transactions];
+        updatedTransactions[index] = {
+            ...updatedTransactions[index],
+            ...update
+        }
+        setTransactions({ ...transactions, transactions: updatedTransactions })
+    }
+
+    function deleteTransaction(index: number) {
+
+    }
+
+    return (
+        <Modal show={show} onHide={() => setShow(false)} >
+            <Modal.Header closeButton>
+                <Modal.Title>Add Multiple Transactions</Modal.Title>
+            </Modal.Header>
+            <Form>
+                <Form.Group>
+                    <Form.Label>Description</Form.Label>
+                    <Form.Control type="text" value={transactions?.description} onChange={e => setTransactions({ ...transactions, description: e.target.value })}></Form.Control>
+                </Form.Group>
+                <Form.Group>
+                    <Form.Label>Date</Form.Label>
+                    <Form.Control type="date" value={transactions?.date} onChange={e => setTransactions({ ...transactions, date: e.target.value })}></Form.Control>
+                </Form.Group>
+                <Form.Group>
+                    <Form.Label>Type</Form.Label>
+                    <Form.Select value={transactions.type} onChange={e => {
+                        const type = e.target.value as TransactionType;
+                        const fromAccountId = type === TransactionType.TRANSFER ? Object.keys(accounts)[0] : undefined;
+                        setTransactions({ ...transactions, fromAccountId, type });
+                    }}>
+                        {Object.keys(TransactionType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
+                    </Form.Select>
+                </Form.Group>
+                <Form.Group hidden={transactions.type !== TransactionType.TRANSFER}>
+                    <Form.Label>From Account</Form.Label>
+                    <Form.Select disabled={transactions.type !== TransactionType.TRANSFER} value={transactions.fromAccountId} onChange={e => setTransactions({ ...transactions, fromAccountId: e.target.value })}>
+                        {Object.values(accounts).map(account => <option key={account.id} value={account.id}>{account.name} ({titleCase(account.type)})</option>)}
+                    </Form.Select>
+                </Form.Group>
+                {(transactions.transactions).map((transaction, index) => {
+                    return (
+                        <React.Fragment key={index}>
+                            <Form.Group>
+                                <Form.Label>Value</Form.Label>
+                                <Form.Control type="text" value={transaction.value} onChange={e => editTransaction(index, { value: e.target.value })}></Form.Control>
+                            </Form.Group>
+                            <Form.Group>
+                                <Form.Label>Account</Form.Label>
+                                <Form.Select value={transaction?.accountId} onChange={e => editTransaction(index, { accountId: e.target.value })}>
+                                    {Object.values(accounts).map(account => <option key={account.id} value={account.id}>{account.name} ({titleCase(account.type)})</option>)}
+                                </Form.Select>
+                            </Form.Group>
+                            <Form.Group>
+                                <Form.Label>Delete Transaction</Form.Label>
+                                <Form.Group>
+                                    <Button variant="danger" onClick={() => deleteTransaction(index)}>
+                                        Delete Transaction
+                                    </Button>
+                                </Form.Group>
+                            </Form.Group>
+                        </React.Fragment>
+                    );
+                })}
+                <Form.Group>
+                    <Form.Label>Add Transaction</Form.Label>
+                    <Form.Group>
+                        <Button onClick={() => setTransactions({ ...transactions, transactions: transactions.transactions.concat({ accountId: Object.values(accounts)[0].id }) })}>
+                            Add Transaction
+                        </Button>
+                    </Form.Group>
+                </Form.Group>
+            </Form>
+            <Modal.Footer>
+                <Button disabled={saving} variant="secondary" onClick={() => setShow(false)}>
+                    Cancel
+                </Button>
+                <Button disabled={saving} variant="primary" onClick={() => save()}>
+                    Save
+                </Button>
+            </Modal.Footer>
+        </Modal>
+    );
+}
+
 export function Transactions() {
     const { accountId } = useParams();
 
@@ -160,9 +276,22 @@ export function Transactions() {
     const [adding, setAdding] = useState(false);
     const [addingTransaction, setAddingTransaction] = useState<Partial<WorkingTransaction>>({});
 
+    const [showBulkAdding, setShowBulkAdding] = useState(false);
+    const [bulkAdding, setBulkAdding] = useState(false);
+    const [bulkAddingTransactions, setBulkAddingTransactions] = useState<BulkWorkingTransactions>(bulkTranscationsDefault());
+
     const [showEditing, setShowEditing] = useState(false);
     const [editing, setEditing] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<Partial<WorkingTransaction>>({});
+
+    function bulkTranscationsDefault() {
+        return {
+            description: "",
+            date: today(),
+            type: TransactionType.TRANSFER,
+            transactions: []
+        }
+    }
 
     function refreshTransactions() {
         function sortTransactions(transactions: JTranscation[]) {
@@ -187,7 +316,7 @@ export function Transactions() {
                 return left.accountId.localeCompare(right.accountId);
             });
         }
-        
+
         if (accountId !== undefined) {
             get<JTranscation[]>(server, `/api/account/${accountId}/transaction/`)
                 .then(transactions => setTransactions(sortTransactions(transactions)))
@@ -293,6 +422,12 @@ export function Transactions() {
                             <td></td>
                             <td>
                                 <ButtonGroup>
+                                    <Button variant="primary" onClick={() => {
+                                        setBulkAddingTransactions(bulkTranscationsDefault());
+                                        setShowBulkAdding(true);
+                                    }}>
+                                        <FontAwesomeIcon icon={faCartPlus} />
+                                    </Button>
                                     <Button variant="success" onClick={() => {
                                         setAddingTransaction({ type: TransactionType.BALANCE, description: "", date: today(), accountId: accountId ?? Object.keys(accounts)[0] });
                                         setShowAdding(true);
@@ -323,6 +458,18 @@ export function Transactions() {
                     .finally(() => {
                         setEditing(false);
                         setShowEditing(false);
+                    });
+            }} />
+            <BulkTransactionModal accounts={accounts} show={showBulkAdding} setShow={setShowBulkAdding} transactions={bulkAddingTransactions} setTransactions={setBulkAddingTransactions} saving={bulkAdding} save={() => {
+                setBulkAdding(true);
+                Promise.all(bulkAddingTransactions.transactions.map(transaction => post(server, `/api/account/${transaction.accountId}/transaction/`, {
+                    ...bulkAddingTransactions,
+                    ...transaction
+                }))).then(() => refreshTransactions())
+                    .catch(error => err(error))
+                    .finally(() => {
+                        setBulkAdding(false);
+                        setShowBulkAdding(false);
                     });
             }} />
         </Container >
