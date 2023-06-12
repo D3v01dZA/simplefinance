@@ -7,6 +7,7 @@ import net.caltona.simplefinance.db.*;
 import net.caltona.simplefinance.db.model.DAccount;
 import net.caltona.simplefinance.db.model.DAccountConfig;
 import net.caltona.simplefinance.db.model.DTransaction;
+import net.caltona.simplefinance.service.transaction.Transaction;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -107,8 +108,9 @@ public class AccountService {
                     updateTransaction.getDate().ifPresent(dTransaction::date);
                     updateTransaction.getValue().ifPresent(dTransaction::setValue);
                     updateTransaction.getDescription().ifPresent(dTransaction::setDescription);
-                    if (!dTransaction.isValid()) {
-                        throw new ExceptionControllerAdvice.BadConfigException("Invalid transaction");
+                    Validation validation = dTransaction.isValid();
+                    if (!validation.isValid()) {
+                        throw new ExceptionControllerAdvice.BadConfigException(validation.createErrorMessage());
                     }
                     return dTransactionDAO.save(dTransaction);
                 });
@@ -119,8 +121,14 @@ public class AccountService {
                 .map(dAccount -> {
                     Optional<DAccount> fromAccountOptional = newTransaction.getFromAccountId().flatMap(dAccountDAO::findById);
                     DTransaction dTransaction = newTransaction.dTransaction(dAccount, fromAccountOptional.orElse(null));
-                    if (!dTransaction.isValid()) {
-                        throw new ExceptionControllerAdvice.BadConfigException("Invalid transaction");
+                    Validation validation = dTransaction.isValid();
+                    if (!validation.isValid()) {
+                        throw new ExceptionControllerAdvice.BadConfigException(validation.createErrorMessage());
+                    }
+                    Transaction transaction = dTransaction.transaction(dAccount.getId());
+                    Validation accountValidation = dAccount.account().canAddTransaction(transaction);
+                    if (!accountValidation.isValid()) {
+                        throw new ExceptionControllerAdvice.BadConfigException(accountValidation.createErrorMessage());
                     }
                     dAccount.addDTransaction(dTransaction);
                     dAccountDAO.save(dAccount);

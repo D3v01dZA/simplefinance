@@ -75,4 +75,9 @@ public class SavingsAccount implements Account {
     private Optional<BigDecimal> rate() {
         return Optional.ofNullable((BigDecimal) configByNameSupplier.get().get(RATE));
     }
+
+    @Override
+    public Validation canAddTransaction(Transaction transaction) {
+        return transaction.canAddTo(getTransactionsSupplier().get());
+    }
 }

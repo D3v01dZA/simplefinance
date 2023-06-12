@@ -58,4 +58,8 @@ public class CheckingAccount implements Account {
         return false;
     }
 
+    @Override
+    public Validation canAddTransaction(Transaction transaction) {
+        return transaction.canAddTo(getTransactionsSupplier().get());
+    }
 }

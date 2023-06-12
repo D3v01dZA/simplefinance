@@ -3,7 +3,11 @@ package net.caltona.simplefinance.db.model;
 import jakarta.persistence.*;
 import lombok.*;
 import net.caltona.simplefinance.api.model.JTransaction;
-import net.caltona.simplefinance.service.transaction.*;
+import net.caltona.simplefinance.service.Validation;
+import net.caltona.simplefinance.service.transaction.Balance;
+import net.caltona.simplefinance.service.transaction.Transaction;
+import net.caltona.simplefinance.service.transaction.TransferIn;
+import net.caltona.simplefinance.service.transaction.TransferOut;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -52,7 +56,7 @@ public class DTransaction {
         this.dFromAccount = dFromAccount;
     }
 
-    public boolean isValid() {
+    public Validation isValid() {
         return type.isValid(this);
     }
 
@@ -79,8 +83,11 @@ public class DTransaction {
     public enum Type {
         BALANCE{
             @Override
-            public boolean isValid(DTransaction dTransaction) {
-                return dTransaction.getDFromAccount().isEmpty();
+            public Validation isValid(DTransaction dTransaction) {
+                if (dTransaction.getDFromAccount().isPresent()) {
+                    return new Validation("Cannot create a balance with a from account");
+                }
+                return new Validation();
             }
 
             @Override
@@ -90,8 +97,11 @@ public class DTransaction {
         },
         TRANSFER{
             @Override
-            public boolean isValid(DTransaction dTransaction) {
-                return dTransaction.getDFromAccount().isPresent();
+            public Validation isValid(DTransaction dTransaction) {
+                if (dTransaction.getDFromAccount().isEmpty()) {
+                    return new Validation("Cannot create a balance without a from account");
+                }
+                return new Validation();
             }
 
             @Override
@@ -105,7 +115,7 @@ public class DTransaction {
             }
         };
 
-        public abstract boolean isValid(DTransaction dTransaction);
+        public abstract Validation isValid(DTransaction dTransaction);
 
         public abstract Transaction transaction(String accountId, DTransaction dTransaction);
     }

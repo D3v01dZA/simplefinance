@@ -57,4 +57,8 @@ public class ExternalAccount implements Account {
         return false;
     }
 
+    @Override
+    public Validation canAddTransaction(Transaction transaction) {
+        return transaction.canAddTo(getTransactionsSupplier().get());
+    }
 }
