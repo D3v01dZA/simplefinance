@@ -164,7 +164,7 @@ export function Accounts() {
         if (page != null) {
             _setPage(parseInt(page) - 1);
         } else {
-            setPage(0)
+            _setPage(0)
         }
     }, [searchParams])
 
