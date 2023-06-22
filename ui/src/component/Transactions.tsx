@@ -6,9 +6,8 @@ import { useAppSelector } from "../app/hooks";
 import { selectServer } from "../app/serverSlice";
 import { constrainedPage, del, err, get, maxPage, post, titleCase, today } from "../util/util";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPenToSquare, faTrash, faPlus, faCartPlus, faBackward, faBackwardFast } from '@fortawesome/free-solid-svg-icons';
-import { faForward } from "@fortawesome/free-solid-svg-icons";
-import { faForwardFast } from "@fortawesome/free-solid-svg-icons";
+import { faPenToSquare, faTrash, faPlus, faCartPlus } from '@fortawesome/free-solid-svg-icons';
+import { Pagination } from "./Pagination";
 
 enum TransactionType {
     BALANCE = "BALANCE",
@@ -361,33 +360,6 @@ export function Transactions() {
                         {Object.keys(TransactionType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
                     </Form.Select>
                 </Form.Group>
-                <Form.Group>
-                    <Form.Label>Entries Per Page</Form.Label>
-                    <Form.Select value={pageSize} onChange={e => setPageSize(parseInt(e.target.value))}>
-                        <option value={0}>All</option>
-                        <option value={10}>10</option>
-                        <option value={20}>20</option>
-                        <option value={50}>50</option>
-                        <option value={100}>100</option>
-                    </Form.Select>
-                </Form.Group>
-                <ButtonGroup>
-                    <Button variant="primary" onClick={() => setPage(page - 10)}>
-                        <FontAwesomeIcon icon={faBackwardFast} />
-                    </Button>
-                    <Button variant="primary" onClick={() => setPage(page - 1)}>
-                        <FontAwesomeIcon icon={faBackward} />
-                    </Button>
-                    <Button variant="primary">
-                        Page {page + 1}/{maxPage(filteredTransactions.length, pageSize) + 1}
-                    </Button>
-                    <Button variant="primary" onClick={() => setPage(page + 1)}>
-                        <FontAwesomeIcon icon={faForward} />
-                    </Button>
-                    <Button variant="primary" onClick={() => setPage(page + 10)}>
-                        <FontAwesomeIcon icon={faForwardFast} />
-                    </Button>
-                </ButtonGroup>
             </Row>
             <Row xl={1}>
                 <Table striped bordered hover>
@@ -440,6 +412,7 @@ export function Transactions() {
                     </tbody>
                 </Table>
             </Row>
+            <Pagination itemCount={transactions.length} page={page} setPage={setPage} pageSize={pageSize} setPageSize={setPageSize} />
             <TransactionModal accounts={accounts} singleAccount={accountId !== undefined} show={showAdding} setShow={setShowAdding} transaction={addingTransaction} setTransaction={setAddingTransaction} saving={adding} save={() => {
                 setAdding(true);
                 post(server, `/api/account/${addingTransaction.accountId}/transaction/`, addingTransaction)

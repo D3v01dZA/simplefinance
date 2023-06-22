@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
-import { Button, Card, Container, Modal, Row, Form, ButtonGroup, Table } from "react-bootstrap";
+import { Button, Container, Modal, Row, Form, ButtonGroup, Table } from "react-bootstrap";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPenToSquare, faPlus, faTrash, faMoneyBillTransfer, faBackwardFast, faBackward, faForward, faForwardFast } from '@fortawesome/free-solid-svg-icons';
+import { faPenToSquare, faPlus, faTrash, faMoneyBillTransfer } from '@fortawesome/free-solid-svg-icons';
 import { useAppDispatch, useAppSelector } from "../app/hooks";
 import { selectServer } from "../app/serverSlice";
-import { get, err, titleCase, post, del, constrainedPage, maxPage } from "../util/util";
+import { get, err, titleCase, post, del, constrainedPage } from "../util/util";
 import { AccountType, JAccount, selectAccounts, setAccounts } from "../app/accountSlice";
 import { LinkContainer } from "react-router-bootstrap";
+import { Pagination } from "./Pagination";
 
 function Account({ account, edit, del }: { account: JAccount, edit: () => void, del: () => void }) {
     return (
@@ -139,33 +140,6 @@ export function Accounts() {
                         {Object.keys(AccountType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
                     </Form.Select>
                 </Form.Group>
-                <Form.Group>
-                    <Form.Label>Entries Per Page</Form.Label>
-                    <Form.Select value={pageSize} onChange={e => setPageSize(parseInt(e.target.value))}>
-                        <option value={0}>All</option>
-                        <option value={10}>10</option>
-                        <option value={20}>20</option>
-                        <option value={50}>50</option>
-                        <option value={100}>100</option>
-                    </Form.Select>
-                </Form.Group>
-                <ButtonGroup>
-                    <Button variant="primary" onClick={() => setPage(page - 10)}>
-                        <FontAwesomeIcon icon={faBackwardFast} />
-                    </Button>
-                    <Button variant="primary" onClick={() => setPage(page - 1)}>
-                        <FontAwesomeIcon icon={faBackward} />
-                    </Button>
-                    <Button variant="primary">
-                        Page {page + 1}/{maxPage(Object.values(accounts).length, pageSize) + 1}
-                    </Button>
-                    <Button variant="primary" onClick={() => setPage(page + 1)}>
-                        <FontAwesomeIcon icon={faForward} />
-                    </Button>
-                    <Button variant="primary" onClick={() => setPage(page + 10)}>
-                        <FontAwesomeIcon icon={faForwardFast} />
-                    </Button>
-                </ButtonGroup>
             </Row>
             <Row>
                 <Table striped bordered hover>
@@ -204,6 +178,7 @@ export function Accounts() {
                     </tbody>
                 </Table>
             </Row>
+            <Pagination itemCount={Object.values(accounts).length} page={page} setPage={setPage} pageSize={pageSize} setPageSize={setPageSize} />
             <AccountModal show={showAdding} setShow={setShowAdding} account={addingAccount} setAccount={setAddingAccount} saving={adding} save={() => {
                 setAdding(true);
                 post(server, "/api/account/", addingAccount)
