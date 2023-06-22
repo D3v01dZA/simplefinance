@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Button, ButtonGroup, Container, Form, Modal, OverlayTrigger, Popover, Row, Table } from "react-bootstrap";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { IndexedAccounts, selectAccounts } from "../app/accountSlice";
 import { useAppSelector } from "../app/hooks";
 import { selectServer } from "../app/serverSlice";
@@ -436,9 +436,9 @@ export function Transactions() {
                 <Table striped bordered hover>
                     <thead>
                         <tr>
-                            <th>Type  <OverlayTrigger trigger="click" placement="bottom" overlay={transactionTypeFilterPopover}><FontAwesomeIcon icon={faFilter} /></OverlayTrigger></th>
-                            <th>Description <OverlayTrigger trigger="click" placement="bottom" overlay={descriptionFilterPopover}><FontAwesomeIcon icon={faFilter} /></OverlayTrigger></th>
-                            <th>Date <OverlayTrigger trigger="click" placement="bottom" overlay={dateFilterPopover}><FontAwesomeIcon icon={faFilter} /></OverlayTrigger></th>
+                            <th>Type  <OverlayTrigger trigger="click" placement="bottom" overlay={transactionTypeFilterPopover}><FontAwesomeIcon color={transactionTypeFilter === "none"? undefined : "blue" } icon={faFilter} /></OverlayTrigger></th>
+                            <th>Description <OverlayTrigger trigger="click" placement="bottom" overlay={descriptionFilterPopover}><FontAwesomeIcon color={descriptionFilter === ""? undefined : "blue" } icon={faFilter} /></OverlayTrigger></th>
+                            <th>Date <OverlayTrigger trigger="click" placement="bottom" overlay={dateFilterPopover}><FontAwesomeIcon color={dateFilter === ""? undefined : "blue" } icon={faFilter} /></OverlayTrigger></th>
                             <th>Value</th>
                             <th>Account</th>
                             <th>From</th>

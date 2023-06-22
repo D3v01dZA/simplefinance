@@ -194,8 +194,8 @@ export function Accounts() {
                 <Table striped bordered hover>
                     <thead>
                         <tr>
-                            <th>Type <OverlayTrigger trigger="click" placement="bottom" overlay={accountTypeFilterPopover}><FontAwesomeIcon icon={faFilter} /></OverlayTrigger></th>
-                            <th>Name <OverlayTrigger trigger="click" placement="bottom" overlay={nameFilterPopover}><FontAwesomeIcon icon={faFilter} /></OverlayTrigger></th>
+                            <th>Type <OverlayTrigger trigger="click" placement="bottom" overlay={accountTypeFilterPopover}><FontAwesomeIcon color={accountTypeFilter === "none"? undefined : "blue" } icon={faFilter} /></OverlayTrigger></th>
+                            <th>Name <OverlayTrigger trigger="click" placement="bottom" overlay={nameFilterPopover}><FontAwesomeIcon color={nameFilter === ""? undefined : "blue" } icon={faFilter} /></OverlayTrigger></th>
                             <th>Actions</th>
                         </tr>
                     </thead>
