@@ -17,8 +17,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.WeekFields;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -45,8 +47,8 @@ public class AccountController {
         List<Account> accounts = accountService.list().stream()
                 .map(DAccount::account)
                 .toList();
-        LocalDate now = LocalDate.now();
-        LocalDate month = LocalDate.now().minus(12, ChronoUnit.MONTHS);
+        LocalDate now = LocalDate.now().withDayOfMonth(1);
+        LocalDate month = now.minus(12, ChronoUnit.MONTHS);
         List<LocalDate> dates = new ArrayList<>();
         while (!month.isAfter(now)) {
             dates.add(month);
@@ -62,8 +64,8 @@ public class AccountController {
         List<Account> accounts = accountService.list().stream()
                 .map(DAccount::account)
                 .toList();
-        LocalDate now = LocalDate.now();
-        LocalDate week = LocalDate.now().minus(24, ChronoUnit.WEEKS);
+        LocalDate now = LocalDate.now().with(WeekFields.of(Locale.getDefault()).dayOfWeek(), 1);
+        LocalDate week = now.minus(24, ChronoUnit.WEEKS);
         List<LocalDate> dates = new ArrayList<>();
         while (!week.isAfter(now)) {
             dates.add(week);

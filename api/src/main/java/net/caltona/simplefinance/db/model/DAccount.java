@@ -127,6 +127,12 @@ public class DAccount {
                 return new LoanAccount(id, name, configByNameSupplier, transactionsSupplier);
             }
         },
+        CREDIT_CARD {
+            @Override
+            public Account account(String id, String name, Supplier<Map<String, Object>> configByNameSupplier, Supplier<List<Transaction>> transactionsSupplier) {
+                return new CreditCardAccount(id, name, configByNameSupplier, transactionsSupplier);
+            }
+        },
         INVESTMENT {
             @Override
             public Account account(String id, String name, Supplier<Map<String, Object>> configByNameSupplier, Supplier<List<Transaction>> transactionsSupplier) {

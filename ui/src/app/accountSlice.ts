@@ -17,6 +17,7 @@ export enum AccountType {
     SAVINGS = "SAVINGS",
     CHECKING = "CHECKING",
     LOAN = "LOAN",
+    CREDIT_CARD = "CREDIT_CARD",
     INVESTMENT = "INVESTMENT",
     RETIREMENT = "RETIREMENT",
     ASSET = "ASSET",
