@@ -8,8 +8,6 @@ import { constrainedPage, del, err, get, post, titleCase, today } from "../util/
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPenToSquare, faTrash, faPlus, faCartPlus, faFilter } from '@fortawesome/free-solid-svg-icons';
 import { Pagination } from "./Pagination";
-import { useResolvedPath } from "react-router-dom";
-import { useLocation } from "react-router-dom";
 
 enum TransactionType {
     BALANCE = "BALANCE",
