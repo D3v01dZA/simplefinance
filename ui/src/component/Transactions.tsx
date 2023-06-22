@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Button, ButtonGroup, Container, Form, Modal, Row, Table } from "react-bootstrap";
+import { Button, ButtonGroup, Container, Form, Modal, OverlayTrigger, Popover, Row, Table } from "react-bootstrap";
 import { useParams } from "react-router-dom";
 import { IndexedAccounts, selectAccounts } from "../app/accountSlice";
 import { useAppSelector } from "../app/hooks";
 import { selectServer } from "../app/serverSlice";
-import { constrainedPage, del, err, get, maxPage, post, titleCase, today } from "../util/util";
+import { constrainedPage, del, err, get, post, titleCase, today } from "../util/util";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPenToSquare, faTrash, faPlus, faCartPlus } from '@fortawesome/free-solid-svg-icons';
+import { faPenToSquare, faTrash, faPlus, faCartPlus, faFilter } from '@fortawesome/free-solid-svg-icons';
 import { Pagination } from "./Pagination";
 
 enum TransactionType {
@@ -56,11 +56,15 @@ function AccountName({ accountId: fromAccountId, accounts }: { accountId: string
     return (<React.Fragment>{account.name} ({titleCase(account.type)})</React.Fragment>);
 }
 
+function description(transaction: JTranscation) {
+    return transaction.description === "" ? titleCase(transaction.type) : transaction.description;
+}
+
 function Transaction({ transaction, accounts, edit, del }: { transaction: JTranscation, accounts: IndexedAccounts, edit: () => void, del: () => void }) {
     return (
         <tr>
             <td>{titleCase(transaction.type)}</td>
-            <td>{transaction.description === "" ? titleCase(transaction.type) : transaction.description}</td>
+            <td>{description(transaction)}</td>
             <td>{transaction.date}</td>
             <td>{transaction.value}</td>
             <td><AccountName accountId={transaction.accountId} accounts={accounts} /></td>
@@ -179,7 +183,9 @@ function BulkTransactionModal({
     }
 
     function deleteTransaction(index: number) {
-
+        const updatedTransactions = [...transactions.transactions];
+        updatedTransactions.splice(index, 1);
+        setTransactions({ ...transactions, transactions: updatedTransactions })
     }
 
     return (
@@ -267,6 +273,8 @@ export function Transactions() {
     const [page, _setPage] = useState(0);
 
     const [transactionTypeFilter, setTransactionTypeFilter] = useState<"none" | TransactionType>("none");
+    const [descriptionFilter, setDescriptionFilter] = useState("");
+    const [dateFilter, setDateFilter] = useState("");
 
     const [transactions, setTransactions] = useState<JTranscation[]>([]);
     const [filteredTransactions, setFilteredTransactions] = useState<JTranscation[]>([]);
@@ -342,32 +350,57 @@ export function Transactions() {
     useEffect(() => refreshTransactions(), []);
 
     useEffect(() => {
-        if (transactionTypeFilter === "none") {
-            setFilteredTransactions(transactions);
-        } else {
-            const filtered = transactions.filter(transaction => transaction.type === transactionTypeFilter);
-            setFilteredTransactions(filtered);
+        let filtered = transactions;
+        if (transactionTypeFilter !== "none") {
+            filtered = filtered.filter(transaction => transaction.type === transactionTypeFilter);
         }
-    }, [transactions, transactionTypeFilter]);
+        if (descriptionFilter !== "") {
+            const filter = descriptionFilter.toUpperCase();
+            filtered = filtered.filter(transaction => description(transaction).toUpperCase().includes(filter));
+        }
+        if (dateFilter !== "") {
+            const filter = new Date(dateFilter + "T00:00:00").getTime();
+            filtered = filtered.filter(transaction => new Date(transaction.date + "T00:00:00").getTime() === filter);
+        }
+        setFilteredTransactions(filtered);
+    }, [transactions, transactionTypeFilter, descriptionFilter, dateFilter]);
+
+    const transactionTypeFilterPopover = (
+        <Popover>
+            <Popover.Body>
+                <Form.Select value={transactionTypeFilter} onChange={e => setTransactionTypeFilter(e.target.value as any)}>
+                    <option value={"none"}></option>
+                    {Object.keys(TransactionType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
+                </Form.Select>
+            </Popover.Body>
+        </Popover>
+    );
+
+    const descriptionFilterPopover = (
+        <Popover>
+            <Popover.Body>
+                <Form.Control value={descriptionFilter} onChange={e => setDescriptionFilter(e.target.value)}/>
+            </Popover.Body>
+        </Popover>
+    );
+
+    const dateFilterPopover = (
+        <Popover>
+            <Popover.Body>
+                <Form.Control type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)}/>
+            </Popover.Body>
+        </Popover>
+    );
 
     return (
         <Container>
-            <Row xl={3}>
-                <Form.Group>
-                    <Form.Label>Type</Form.Label>
-                    <Form.Select value={transactionTypeFilter} onChange={e => setTransactionTypeFilter(e.target.value as any)}>
-                        <option value={"none"}></option>
-                        {Object.keys(TransactionType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
-                    </Form.Select>
-                </Form.Group>
-            </Row>
             <Row xl={1}>
                 <Table striped bordered hover>
                     <thead>
                         <tr>
-                            <th>Type</th>
-                            <th>Description</th>
-                            <th>Date</th>
+                            <th>Type  <OverlayTrigger trigger="click" placement="bottom" overlay={transactionTypeFilterPopover}><FontAwesomeIcon icon={faFilter} /></OverlayTrigger></th>
+                            <th>Description <OverlayTrigger trigger="click" placement="bottom" overlay={descriptionFilterPopover}><FontAwesomeIcon icon={faFilter} /></OverlayTrigger></th>
+                            <th>Date <OverlayTrigger trigger="click" placement="bottom" overlay={dateFilterPopover}><FontAwesomeIcon icon={faFilter} /></OverlayTrigger></th>
                             <th>Value</th>
                             <th>Account</th>
                             <th>From</th>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Button, Container, Modal, Row, Form, ButtonGroup, Table } from "react-bootstrap";
+import { Button, Container, Modal, Row, Form, ButtonGroup, Table, OverlayTrigger, Popover } from "react-bootstrap";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPenToSquare, faPlus, faTrash, faMoneyBillTransfer } from '@fortawesome/free-solid-svg-icons';
+import { faPenToSquare, faPlus, faTrash, faMoneyBillTransfer, faFilter } from '@fortawesome/free-solid-svg-icons';
 import { useAppDispatch, useAppSelector } from "../app/hooks";
 import { selectServer } from "../app/serverSlice";
 import { get, err, titleCase, post, del, constrainedPage } from "../util/util";
@@ -86,6 +86,7 @@ export function Accounts() {
     const dispatch = useAppDispatch();
 
     const [accountTypeFilter, setAccountTypeFilter] = useState<"none" | AccountType>("none");
+    const [nameFilter, setNameFilter] = useState("");
     const [filteredAccounts, setFilteredAccounts] = useState<JAccount[]>([]);
 
     const [pageSize, setPageSize] = useState(10);
@@ -122,31 +123,45 @@ export function Accounts() {
     }
 
     useEffect(() => {
-        if (accountTypeFilter === "none") {
-            setFilteredAccounts(Object.values(accounts));
-        } else {
-            const filtered = Object.values(accounts).filter(account => account.type === accountTypeFilter);
-            setFilteredAccounts(filtered);
+        let filtered = Object.values(accounts);
+        if (accountTypeFilter !== "none") {
+            filtered = Object.values(accounts).filter(account => account.type === accountTypeFilter);
         }
-    }, [accounts, accountTypeFilter]);
+        if (nameFilter !== "") {
+            const filter = nameFilter.toUpperCase();
+            filtered = filtered.filter(account => account.name.toUpperCase().includes(filter));
+        }
+        setFilteredAccounts(filtered);
+    }, [accounts, accountTypeFilter, nameFilter]);
+
+    const accountTypeFilterPopover = (
+        <Popover>
+            <Popover.Body>
+                <Form.Select value={accountTypeFilter} onChange={e => setAccountTypeFilter(e.target.value as any)}>
+                    <option value={"none"}></option>
+                    {Object.keys(AccountType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
+                </Form.Select>
+            </Popover.Body>
+        </Popover>
+    );
+
+    const nameFilterPopover = (
+        <Popover>
+            <Popover.Body>
+                <Form.Control value={nameFilter} onChange={e => setNameFilter(e.target.value)}/>
+            </Popover.Body>
+        </Popover>
+    );
+
 
     return (
         <Container>
-            <Row xl={3}>
-                <Form.Group>
-                    <Form.Label>Type</Form.Label>
-                    <Form.Select value={accountTypeFilter} onChange={e => setAccountTypeFilter(e.target.value as any)}>
-                        <option value={"none"}></option>
-                        {Object.keys(AccountType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
-                    </Form.Select>
-                </Form.Group>
-            </Row>
             <Row>
                 <Table striped bordered hover>
                     <thead>
                         <tr>
-                            <th>Type</th>
-                            <th>Name</th>
+                            <th>Type <OverlayTrigger trigger="click" placement="bottom" overlay={accountTypeFilterPopover}><FontAwesomeIcon icon={faFilter} /></OverlayTrigger></th>
+                            <th>Name <OverlayTrigger trigger="click" placement="bottom" overlay={nameFilterPopover}><FontAwesomeIcon icon={faFilter} /></OverlayTrigger></th>
                             <th>Actions</th>
                         </tr>
                     </thead>
