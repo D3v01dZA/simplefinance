@@ -8,6 +8,7 @@ import { get, err, titleCase, post, del, constrainedPage } from "../util/util";
 import { AccountType, JAccount, selectAccounts, setAccounts } from "../app/accountSlice";
 import { LinkContainer } from "react-router-bootstrap";
 import { Pagination } from "./Pagination";
+import { useSearchParams } from "react-router-dom";
 
 function Account({ account, edit, del }: { account: JAccount, edit: () => void, del: () => void }) {
     return (
@@ -80,6 +81,8 @@ function AccountModal({
 }
 
 export function Accounts() {
+    const [searchParams, _setSearchParams] = useSearchParams();
+
     const server = useAppSelector(selectServer);
     const accounts = useAppSelector(selectAccounts);
 
@@ -119,7 +122,17 @@ export function Accounts() {
 
     function setPage(newPage: number) {
         const constrained = constrainedPage(filteredAccounts.length, pageSize, newPage);
-        _setPage(constrained);
+        setSearchParams("page", constrained + 1);
+    }
+
+    function setSearchParams(key: string, value: string | number) {
+        if (value === "" || value === "none" || value === 1) {
+            searchParams.delete(key);
+            _setSearchParams(searchParams);
+        } else {
+            searchParams.set(key, value + "");
+            _setSearchParams(searchParams);
+        }
     }
 
     useEffect(() => {
@@ -134,10 +147,31 @@ export function Accounts() {
         setFilteredAccounts(filtered);
     }, [accounts, accountTypeFilter, nameFilter]);
 
+    useEffect(() => {
+        const transactionType = searchParams.get("type");
+        if (transactionType !== null) {
+            setAccountTypeFilter(transactionType as AccountType);
+        } else {
+            setAccountTypeFilter("none");
+        }
+        const description = searchParams.get("name");
+        if (description !== null) {
+            setNameFilter(description);
+        } else {
+            setNameFilter("");
+        }
+        const page = searchParams.get("page");
+        if (page != null) {
+            _setPage(parseInt(page) - 1);
+        } else {
+            setPage(0)
+        }
+    }, [searchParams])
+
     const accountTypeFilterPopover = (
         <Popover>
             <Popover.Body>
-                <Form.Select value={accountTypeFilter} onChange={e => setAccountTypeFilter(e.target.value as any)}>
+                <Form.Select value={accountTypeFilter} onChange={e => setSearchParams("type", e.target.value)}>
                     <option value={"none"}></option>
                     {Object.keys(AccountType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
                 </Form.Select>
@@ -148,7 +182,7 @@ export function Accounts() {
     const nameFilterPopover = (
         <Popover>
             <Popover.Body>
-                <Form.Control value={nameFilter} onChange={e => setNameFilter(e.target.value)}/>
+                <Form.Control value={nameFilter} onChange={e => setSearchParams("name", e.target.value)}/>
             </Popover.Body>
         </Popover>
     );

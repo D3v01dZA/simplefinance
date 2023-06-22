@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Button, ButtonGroup, Container, Form, Modal, OverlayTrigger, Popover, Row, Table } from "react-bootstrap";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { IndexedAccounts, selectAccounts } from "../app/accountSlice";
 import { useAppSelector } from "../app/hooks";
 import { selectServer } from "../app/serverSlice";
@@ -8,6 +8,8 @@ import { constrainedPage, del, err, get, post, titleCase, today } from "../util/
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPenToSquare, faTrash, faPlus, faCartPlus, faFilter } from '@fortawesome/free-solid-svg-icons';
 import { Pagination } from "./Pagination";
+import { useResolvedPath } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 enum TransactionType {
     BALANCE = "BALANCE",
@@ -265,6 +267,7 @@ function BulkTransactionModal({
 
 export function Transactions() {
     const { accountId } = useParams();
+    const [searchParams, _setSearchParams] = useSearchParams();
 
     const server = useAppSelector(selectServer);
     const accounts = useAppSelector(selectAccounts);
@@ -344,7 +347,17 @@ export function Transactions() {
 
     function setPage(newPage: number) {
         const constrained = constrainedPage(filteredTransactions.length, pageSize, newPage);
-        _setPage(constrained);
+        setSearchParams("page", constrained + 1);
+    }
+
+    function setSearchParams(key: string, value: string | number) {
+        if (value === "" || value === "none" || value === 1) {
+            searchParams.delete(key);
+            _setSearchParams(searchParams);
+        } else {
+            searchParams.set(key, value + "");
+            _setSearchParams(searchParams);
+        }
     }
 
     useEffect(() => refreshTransactions(), []);
@@ -365,10 +378,37 @@ export function Transactions() {
         setFilteredTransactions(filtered);
     }, [transactions, transactionTypeFilter, descriptionFilter, dateFilter]);
 
+    useEffect(() => {
+        const transactionType = searchParams.get("type");
+        if (transactionType !== null) {
+            setTransactionTypeFilter(transactionType as TransactionType);
+        } else {
+            setTransactionTypeFilter("none");
+        }
+        const description = searchParams.get("description");
+        if (description !== null) {
+            setDescriptionFilter(description);
+        } else {
+            setDescriptionFilter("");
+        }
+        const date = searchParams.get("date");
+        if (date !== null) {
+            setDateFilter(date);
+        } else {
+            setDateFilter("");
+        }
+        const page = searchParams.get("page");
+        if (page != null) {
+            _setPage(parseInt(page) - 1);
+        } else {
+            _setPage(0);
+        }
+    }, [searchParams]) 
+
     const transactionTypeFilterPopover = (
         <Popover>
             <Popover.Body>
-                <Form.Select value={transactionTypeFilter} onChange={e => setTransactionTypeFilter(e.target.value as any)}>
+                <Form.Select value={transactionTypeFilter} onChange={e => setSearchParams("type", e.target.value)}>
                     <option value={"none"}></option>
                     {Object.keys(TransactionType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
                 </Form.Select>
@@ -379,7 +419,7 @@ export function Transactions() {
     const descriptionFilterPopover = (
         <Popover>
             <Popover.Body>
-                <Form.Control value={descriptionFilter} onChange={e => setDescriptionFilter(e.target.value)}/>
+                <Form.Control value={descriptionFilter} onChange={e => setSearchParams("description", e.target.value)} />
             </Popover.Body>
         </Popover>
     );
@@ -387,7 +427,7 @@ export function Transactions() {
     const dateFilterPopover = (
         <Popover>
             <Popover.Body>
-                <Form.Control type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)}/>
+                <Form.Control type="date" value={dateFilter} onChange={e => setSearchParams("date", e.target.value)} />
             </Popover.Body>
         </Popover>
     );
