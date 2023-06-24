@@ -268,7 +268,7 @@ export function Accounts() {
                     </Table>
                 </Col>
             </Row>
-            <Pagination itemCount={Object.values(accounts).length} page={page} setPage={setPage} pageSize={pageSize} setPageSize={setPageSize} />
+            <Pagination itemCount={filteredAccounts.length} page={page} setPage={setPage} pageSize={pageSize} setPageSize={setPageSize} />
             <AccountModal show={showAdding} setShow={setShowAdding} account={addingAccount} setAccount={setAddingAccount} saving={adding} save={() => {
                 setAdding(true);
                 post(server, "/api/account/", addingAccount)
