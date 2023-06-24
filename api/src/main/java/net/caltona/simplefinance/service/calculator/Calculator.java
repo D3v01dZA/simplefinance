@@ -79,6 +79,11 @@ public class Calculator {
             }
 
             @Override
+            protected BigDecimal calculateFlow(BigDecimal balance, BigDecimal transfer) {
+                return balance.subtract(transfer);
+            }
+
+            @Override
             public Totals addFlow(Totals totals) {
                 return totals;
             }
@@ -88,11 +93,21 @@ public class Calculator {
             public Totals addNet(Totals totals, BigDecimal amount) {
                 return totals.withNet(totals.getNet().add(amount));
             }
+
+            @Override
+            protected BigDecimal calculateFlow(BigDecimal balance, BigDecimal transfer) {
+                return balance.subtract(transfer);
+            }
         },
         LIQUID_ASSET {
             @Override
             public Totals addNet(Totals totals, BigDecimal amount) {
                 return totals.withNet(totals.getNet().add(amount));
+            }
+
+            @Override
+            protected BigDecimal calculateFlow(BigDecimal balance, BigDecimal transfer) {
+                return balance.subtract(transfer);
             }
         },
         ILLIQUID_ASSET {
@@ -100,17 +115,32 @@ public class Calculator {
             public Totals addNet(Totals totals, BigDecimal amount) {
                 return totals.withNet(totals.getNet().add(amount));
             }
+
+            @Override
+            protected BigDecimal calculateFlow(BigDecimal balance, BigDecimal transfer) {
+                return balance.subtract(transfer);
+            }
         },
         RETIREMENT {
             @Override
             public Totals addNet(Totals totals, BigDecimal amount) {
                 return totals.withNet(totals.getNet().add(amount));
             }
+
+            @Override
+            protected BigDecimal calculateFlow(BigDecimal balance, BigDecimal transfer) {
+                return balance.subtract(transfer);
+            }
         },
         LIABILITY {
             @Override
             public Totals addNet(Totals totals, BigDecimal amount) {
                 return totals.withNet(totals.getNet().subtract(amount));
+            }
+
+            @Override
+            protected BigDecimal calculateFlow(BigDecimal balance, BigDecimal transfer) {
+                return balance.subtract(transfer).negate();
             }
         };
 
@@ -128,11 +158,13 @@ public class Calculator {
 
         public Totals addFlow(Totals totals) {
             JBalance.TotalBalance current = totals.getTotalBalances().get(this);
-            totals = totals.withTotalBalance(this, new JBalance.TotalBalance(this, current.getBalance(), current.getTransfer(), current.getBalance().subtract(current.getTransfer())));
+            totals = totals.withTotalBalance(this, new JBalance.TotalBalance(this, current.getBalance(), current.getTransfer(), calculateFlow(current.getBalance(), current.getTransfer())));
             return totals;
         }
 
         protected abstract Totals addNet(Totals totals, BigDecimal amount);
+
+        protected abstract BigDecimal calculateFlow(BigDecimal balance, BigDecimal transfer);
     }
 
     @With
