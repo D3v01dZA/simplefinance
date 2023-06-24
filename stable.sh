@@ -3,5 +3,5 @@
 set -e
 
 echo "Tagging latest as stable"
-docker tag d3v01d/simplefinance:latest d3v01d/simplefinance:stable
-docker push d3v01d/simplefinance:stable
+cd api
+docker buildx build --platform linux/amd64 --push -t d3v01d/simplefinance:stable .
