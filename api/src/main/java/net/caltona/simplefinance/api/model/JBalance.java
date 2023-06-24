@@ -75,6 +75,9 @@ public class JBalance {
         @NonNull
         private BigDecimal transfer;
 
+        @NonNull
+        private BigDecimal flow;
+
     }
 
 }

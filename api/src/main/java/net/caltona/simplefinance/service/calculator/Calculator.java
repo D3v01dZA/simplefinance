@@ -11,6 +11,7 @@ import org.springframework.util.Assert;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Getter
 @EqualsAndHashCode
@@ -47,6 +48,10 @@ public class Calculator {
             totals = totals.withAccountBalance(account.getId(), accountBalance);
         }
 
+        for (TotalType totalType : TotalType.values()) {
+            totals = totalType.addFlow(totals);
+        }
+
         return new JBalance(
                 date,
                 totals.getNet(),
@@ -70,6 +75,11 @@ public class Calculator {
 
             @Override
             public Totals addNet(Totals totals, BigDecimal amount) {
+                return totals;
+            }
+
+            @Override
+            public Totals addFlow(Totals totals) {
                 return totals;
             }
         },
@@ -106,13 +116,19 @@ public class Calculator {
 
         public Totals addTotal(Totals totals, BigDecimal amount) {
             JBalance.TotalBalance current = totals.getTotalBalances().get(this);
-            totals = totals.withTotalBalance(this, new JBalance.TotalBalance(this, current.getBalance().add(amount), current.getTransfer()));
+            totals = totals.withTotalBalance(this, new JBalance.TotalBalance(this, current.getBalance().add(amount), current.getTransfer(), current.getFlow()));
             return addNet(totals, amount);
         }
 
         public Totals addTransfer(Totals totals, BigDecimal amount) {
             JBalance.TotalBalance current = totals.getTotalBalances().get(this);
-            totals = totals.withTotalBalance(this, new JBalance.TotalBalance(this, current.getBalance(), current.getTransfer().add(amount)));
+            totals = totals.withTotalBalance(this, new JBalance.TotalBalance(this, current.getBalance(), current.getTransfer().add(amount), current.getFlow()));
+            return totals;
+        }
+
+        public Totals addFlow(Totals totals) {
+            JBalance.TotalBalance current = totals.getTotalBalances().get(this);
+            totals = totals.withTotalBalance(this, new JBalance.TotalBalance(this, current.getBalance(), current.getTransfer(), current.getBalance().subtract(current.getTransfer())));
             return totals;
         }
 
@@ -132,7 +148,7 @@ public class Calculator {
             this(BigDecimal.ZERO, new LinkedHashMap<>(), new LinkedHashMap<>());
             for (TotalType value : TotalType.values()) {
                 if (value != TotalType.IGNORED) {
-                    totalBalances.put(value, new JBalance.TotalBalance(value, BigDecimal.ZERO, BigDecimal.ZERO));
+                    totalBalances.put(value, new JBalance.TotalBalance(value, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO));
                 }
             }
         }
@@ -178,7 +194,8 @@ public class Calculator {
                 JBalance.TotalBalance difference = new JBalance.TotalBalance(
                         type,
                         newer.getBalance().subtract(previousBalance.getBalance()),
-                        newer.getTransfer().subtract(previousBalance.getTransfer())
+                        newer.getTransfer().subtract(previousBalance.getTransfer()),
+                        newer.getFlow().subtract(previousBalance.getFlow())
                 );
                 result.add(difference);
             }

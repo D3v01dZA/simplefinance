@@ -17,6 +17,7 @@ interface JRawTotalBalance {
     type: string,
     balance: number,
     transfer: number,
+    flow: number,
 }
 
 interface JRawBalances {
@@ -35,6 +36,7 @@ enum ViewType {
     TOTALS_TRANSFERS = "TOTALS_TRANSFERS",
     ACCOUNTS = "ACCOUNTS",
     ACCOUNTS_TRANSFERS = "ACCOUNTS_TRANSFERS",
+    FLOW = "FLOW",
 }
 
 enum DateType {
@@ -131,6 +133,19 @@ function lines(viewType: ViewType, hiddenItems: string[], accounts: IndexedAccou
                     />)}
                 </React.Fragment>
             );
+        case ViewType.FLOW:
+            const flowColorPalette = generateColorPalette(6);
+            return (
+                <React.Fragment>
+                    {Object.values(TotalType).map((totalType, index) => <Line
+                        key={totalType}
+                        type="monotone"
+                        dataKey={totalType}
+                        stroke={dull(totalType, hiddenItems, flowColorPalette[index + 1])}
+                        name={titleCase(totalType)}
+                    />)}
+                </React.Fragment>
+            );
     }
 }
 
@@ -168,6 +183,16 @@ function calculateBalances(viewType: ViewType, hiddenItems: string[], balances?:
                 }
                 return acc;
             }, {});
+        case ViewType.FLOW:
+            const vals = (balances?.totalBalances ?? []).reduce<any>((acc, current) => {
+                if (!hiddenItems.includes(current.type)) {
+                    acc[current.type] = current.flow;
+                }
+                return acc;
+            }, {});
+            return {
+                ...vals
+            }
     }
 }
 
