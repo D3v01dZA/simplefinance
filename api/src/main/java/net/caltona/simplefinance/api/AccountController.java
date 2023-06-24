@@ -77,10 +77,6 @@ public class AccountController {
         return new Calculator(accounts).calculate(dates);
     }
 
-    // ===== Queries =====
-
-
-
     // ===== Accounts =====
 
     @Transactional

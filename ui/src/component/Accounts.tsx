@@ -9,6 +9,7 @@ import { AccountType, JAccount, selectAccounts, setAccounts } from "../app/accou
 import { LinkContainer } from "react-router-bootstrap";
 import { Pagination } from "./Pagination";
 import { useSearchParams } from "react-router-dom";
+import React from "react";
 
 function Account({ account, edit, del }: { account: JAccount, edit: () => void, del: () => void }) {
     return (
@@ -144,6 +145,12 @@ export function Accounts() {
         }
     }
 
+    function clearSearchParams() {
+        [...searchParams.keys()].forEach(key => searchParams.delete(key));
+        _setSearchParams(searchParams);
+    }
+
+
     useEffect(() => {
         let filtered = Object.values(accounts);
         if (accountTypeFilter !== "none") {
@@ -177,13 +184,31 @@ export function Accounts() {
         }
     }, [searchParams])
 
+    const clearFilters = (
+        <React.Fragment>
+            <br />
+            <Row>
+                <Col>
+                    <Button variant="danger" style={{width: "100%"}} onClick={_ => clearSearchParams()}>
+                        Clear Filters
+                    </Button>
+                </Col>
+            </Row>
+        </React.Fragment>
+    );
+
     const accountTypeFilterPopover = (
         <Popover>
             <Popover.Body>
-                <Form.Select value={accountTypeFilter} onChange={e => setSearchParams("type", e.target.value)}>
-                    <option value={"none"}></option>
-                    {Object.keys(AccountType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
-                </Form.Select>
+                <h6>Local Filters</h6>
+                <Form.Group>
+                    <Form.Label>Type</Form.Label>
+                    <Form.Select value={accountTypeFilter} onChange={e => setSearchParams("type", e.target.value)}>
+                        <option value={"none"}></option>
+                        {Object.keys(AccountType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
+                    </Form.Select>
+                </Form.Group>
+                {clearFilters}
             </Popover.Body>
         </Popover>
     );
@@ -191,7 +216,12 @@ export function Accounts() {
     const nameFilterPopover = (
         <Popover>
             <Popover.Body>
-                <Form.Control value={nameFilter} onChange={e => setSearchParams("name", e.target.value)} />
+                <h6>Local Filters</h6>
+                <Form.Group>
+                    <Form.Label>Name</Form.Label>
+                    <Form.Control value={nameFilter} onChange={e => setSearchParams("name", e.target.value)} />
+                </Form.Group>
+                {clearFilters}
             </Popover.Body>
         </Popover>
     );

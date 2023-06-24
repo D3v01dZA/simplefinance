@@ -304,6 +304,7 @@ export function Transactions() {
     const [transactionTypeFilter, setTransactionTypeFilter] = useState<"none" | TransactionType>("none");
     const [descriptionFilter, setDescriptionFilter] = useState("");
     const [dateFilter, setDateFilter] = useState("");
+    const [lastTransactionByTypeFilter, setLastTransactionByTypeFilter] = useState<"none" | TransactionType>("none");
 
     const [transactions, setTransactions] = useState<JTranscation[]>([]);
     const [filteredTransactions, setFilteredTransactions] = useState<JTranscation[]>([]);
@@ -380,8 +381,8 @@ export function Transactions() {
         setSearchParams("page", constrained + 1);
     }
 
-    function setSearchParams(key: string, value: string | number) {
-        if (value === "" || value === "none" || value === 1) {
+    function setSearchParams(key: string, value: string | number | boolean) {
+        if (value === "" || value === "none" || value === 1 || value === false) {
             searchParams.delete(key);
             _setSearchParams(searchParams);
         } else {
@@ -390,23 +391,47 @@ export function Transactions() {
         }
     }
 
+    function clearSearchParams() {
+        [...searchParams.keys()].forEach(key => searchParams.delete(key));
+        _setSearchParams(searchParams);
+    }
+
+    function globalFilterActive() {
+        return lastTransactionByTypeFilter !== "none";
+    }
+
     useEffect(() => refreshTransactions(), []);
 
     useEffect(() => {
-        let filtered = transactions;
-        if (transactionTypeFilter !== "none") {
-            filtered = filtered.filter(transaction => transaction.type === transactionTypeFilter);
+        if (lastTransactionByTypeFilter !== "none") {
+            const encounteredAccountIds = new Set();
+            const filtered = transactions.filter(transaction => {
+                if (transaction.type !== lastTransactionByTypeFilter) {
+                    return false;
+                }
+                if (encounteredAccountIds.has(transaction.accountId)) {
+                    return false;
+                }
+                encounteredAccountIds.add(transaction.accountId);
+                return true;
+            });
+            setFilteredTransactions(filtered);
+        } else {
+            let filtered = transactions;
+            if (transactionTypeFilter !== "none") {
+                filtered = filtered.filter(transaction => transaction.type === transactionTypeFilter);
+            }
+            if (descriptionFilter !== "") {
+                const filter = descriptionFilter.toUpperCase();
+                filtered = filtered.filter(transaction => description(transaction).toUpperCase().includes(filter));
+            }
+            if (dateFilter !== "") {
+                const filter = new Date(dateFilter + "T00:00:00").getTime();
+                filtered = filtered.filter(transaction => new Date(transaction.date + "T00:00:00").getTime() === filter);
+            }
+            setFilteredTransactions(filtered);
         }
-        if (descriptionFilter !== "") {
-            const filter = descriptionFilter.toUpperCase();
-            filtered = filtered.filter(transaction => description(transaction).toUpperCase().includes(filter));
-        }
-        if (dateFilter !== "") {
-            const filter = new Date(dateFilter + "T00:00:00").getTime();
-            filtered = filtered.filter(transaction => new Date(transaction.date + "T00:00:00").getTime() === filter);
-        }
-        setFilteredTransactions(filtered);
-    }, [transactions, transactionTypeFilter, descriptionFilter, dateFilter]);
+    }, [transactions, transactionTypeFilter, descriptionFilter, dateFilter, lastTransactionByTypeFilter]);
 
     useEffect(() => {
         const transactionType = searchParams.get("type");
@@ -433,15 +458,54 @@ export function Transactions() {
         } else {
             _setPage(0);
         }
+        const lastTransactionByType = searchParams.get("lastTransactionByType");
+        if (lastTransactionByType !== null) {
+            setLastTransactionByTypeFilter(lastTransactionByType as TransactionType);
+        } else {
+            setLastTransactionByTypeFilter("none");
+        }
     }, [searchParams])
+
+    const globalFilters = (
+        <React.Fragment>
+            <br />
+            <h6>Global Filters</h6>
+            <Form.Group>
+                <Form.Label>Last Transaction By Type</Form.Label>
+                <Form.Select value={lastTransactionByTypeFilter} onChange={e => setSearchParams("lastTransactionByType", e.target.value)}>
+                    <option value={"none"}></option>
+                    {Object.keys(TransactionType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
+                </Form.Select>
+            </Form.Group>
+        </React.Fragment>
+    )
+
+    const clearFilters = (
+        <React.Fragment>
+            <br />
+            <Row>
+                <Col>
+                    <Button variant="danger" style={{ width: "100%" }} onClick={_ => clearSearchParams()}>
+                        Clear Filters
+                    </Button>
+                </Col>
+            </Row>
+        </React.Fragment>
+    );
 
     const transactionTypeFilterPopover = (
         <Popover>
             <Popover.Body>
-                <Form.Select value={transactionTypeFilter} onChange={e => setSearchParams("type", e.target.value)}>
-                    <option value={"none"}></option>
-                    {Object.keys(TransactionType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
-                </Form.Select>
+                <h6>Local Filters</h6>
+                <Form.Group>
+                    <Form.Label>Type</Form.Label>
+                    <Form.Select disabled={globalFilterActive()} value={transactionTypeFilter} onChange={e => setSearchParams("type", e.target.value)}>
+                        <option value={"none"}></option>
+                        {Object.keys(TransactionType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
+                    </Form.Select>
+                </Form.Group>
+                {globalFilters}
+                {clearFilters}
             </Popover.Body>
         </Popover>
     );
@@ -449,7 +513,13 @@ export function Transactions() {
     const descriptionFilterPopover = (
         <Popover>
             <Popover.Body>
-                <Form.Control value={descriptionFilter} onChange={e => setSearchParams("description", e.target.value)} />
+                <h6>Local Filters</h6>
+                <Form.Group>
+                    <Form.Label>Description</Form.Label>
+                    <Form.Control disabled={globalFilterActive()} value={descriptionFilter} onChange={e => setSearchParams("description", e.target.value)} />
+                </Form.Group>
+                {globalFilters}
+                {clearFilters}
             </Popover.Body>
         </Popover>
     );
@@ -457,7 +527,13 @@ export function Transactions() {
     const dateFilterPopover = (
         <Popover>
             <Popover.Body>
-                <Form.Control type="date" value={dateFilter} onChange={e => setSearchParams("date", e.target.value)} />
+                <h6>Local Filters</h6>
+                <Form.Group>
+                    <Form.Label>Date</Form.Label>
+                    <Form.Control disabled={globalFilterActive()} type="date" value={dateFilter} onChange={e => setSearchParams("date", e.target.value)} />
+                </Form.Group>
+                {globalFilters}
+                {clearFilters}
             </Popover.Body>
         </Popover>
     );
@@ -469,9 +545,9 @@ export function Transactions() {
                     <Table striped bordered hover>
                         <thead>
                             <tr>
-                                <th>Type  <OverlayTrigger trigger="click" placement="bottom" overlay={transactionTypeFilterPopover}><FontAwesomeIcon color={transactionTypeFilter === "none" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
-                                <th>Description <OverlayTrigger trigger="click" placement="bottom" overlay={descriptionFilterPopover}><FontAwesomeIcon color={descriptionFilter === "" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
-                                <th>Date <OverlayTrigger trigger="click" placement="bottom" overlay={dateFilterPopover}><FontAwesomeIcon color={dateFilter === "" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
+                                <th>Type  <OverlayTrigger trigger="click" placement="bottom" overlay={transactionTypeFilterPopover}><FontAwesomeIcon color={globalFilterActive() ? "red" : transactionTypeFilter === "none" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
+                                <th>Description <OverlayTrigger trigger="click" placement="bottom" overlay={descriptionFilterPopover}><FontAwesomeIcon color={globalFilterActive() ? "red" : descriptionFilter === "" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
+                                <th>Date <OverlayTrigger trigger="click" placement="bottom" overlay={dateFilterPopover}><FontAwesomeIcon color={globalFilterActive() ? "red" : dateFilter === "" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
                                 <th>Value</th>
                                 <th>Account</th>
                                 <th>From</th>
