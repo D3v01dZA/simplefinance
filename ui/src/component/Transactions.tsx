@@ -593,7 +593,7 @@ export function Transactions() {
                     </Table>
                 </Col>
             </Row>
-            <Pagination itemCount={transactions.length} page={page} setPage={setPage} pageSize={pageSize} setPageSize={setPageSize} />
+            <Pagination itemCount={filteredTransactions.length} page={page} setPage={setPage} pageSize={pageSize} setPageSize={setPageSize} />
             <TransactionModal accounts={accounts} singleAccount={accountId !== undefined} show={showAdding} setShow={setShowAdding} transaction={addingTransaction} setTransaction={setAddingTransaction} saving={adding} save={() => {
                 setAdding(true);
                 post(server, `/api/account/${addingTransaction.accountId}/transaction/`, addingTransaction)
