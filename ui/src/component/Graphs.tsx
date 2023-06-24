@@ -6,6 +6,7 @@ import { Col, Container, Form, Row } from "react-bootstrap";
 import { CartesianGrid, Legend, Line, LineChart, Tooltip, XAxis, YAxis } from "recharts";
 import React from "react";
 import { IndexedAccounts, selectAccounts } from "../app/accountSlice";
+import { useSearchParams } from "react-router-dom";
 
 interface JRawAccountBalance {
     accountId: string,
@@ -66,14 +67,14 @@ function url(dateType: DateType) {
     }
 }
 
-function dull(id: string, hiddenItems: string[], color: string) {
-    if (hiddenItems.includes(id)) {
+function dull(id: string, hiddenItems: Set<string>, color: string) {
+    if (hiddenItems.has(id)) {
         return "#010101";
     }
     return color;
 }
 
-function lines(viewType: ViewType, hiddenItems: string[], accounts: IndexedAccounts) {
+function lines(viewType: ViewType, hiddenItems: Set<string>, accounts: IndexedAccounts) {
     switch (viewType) {
         case ViewType.TOTALS:
             const totalColorPalette = generateColorPalette(6);
@@ -149,43 +150,48 @@ function lines(viewType: ViewType, hiddenItems: string[], accounts: IndexedAccou
     }
 }
 
-function calculateBalances(viewType: ViewType, hiddenItems: string[], balances?: JRawBalances) {
+function calculateBalances(viewType: ViewType, hiddenItems: Set<string>, balances?: JRawBalances) {
     switch (viewType) {
         case ViewType.TOTALS:
             const main = (balances?.totalBalances ?? []).reduce<any>((acc, current) => {
-                if (!hiddenItems.includes(current.type)) {
+                if (!hiddenItems.has(current.type)) {
                     acc[current.type] = current.balance;
                 }
                 return acc;
             }, {});
+            if (hiddenItems.has("net")) {
+                return {
+                    ...main
+                }
+            }
             return {
                 ...main,
                 net: balances?.net ?? 0
             }
         case ViewType.TOTALS_TRANSFERS:
             return (balances?.totalBalances ?? []).reduce<any>((acc, current) => {
-                if (!hiddenItems.includes(current.type)) {
+                if (!hiddenItems.has(current.type)) {
                     acc[current.type] = current.transfer;
                 }
                 return acc;
             }, {});
         case ViewType.ACCOUNTS:
             return (balances?.accountBalances ?? []).reduce<any>((acc, current) => {
-                if (!hiddenItems.includes(current.accountId)) {
+                if (!hiddenItems.has(current.accountId)) {
                     acc[current.accountId] = current.balance;
                 }
                 return acc;
             }, {});
         case ViewType.ACCOUNTS_TRANSFERS:
             return (balances?.accountBalances ?? []).reduce<any>((acc, current) => {
-                if (!hiddenItems.includes(current.accountId)) {
+                if (!hiddenItems.has(current.accountId)) {
                     acc[current.accountId] = current.transfer;
                 }
                 return acc;
             }, {});
         case ViewType.FLOW:
             const vals = (balances?.totalBalances ?? []).reduce<any>((acc, current) => {
-                if (!hiddenItems.includes(current.type)) {
+                if (!hiddenItems.has(current.type)) {
                     acc[current.type] = current.flow;
                 }
                 return acc;
@@ -196,7 +202,7 @@ function calculateBalances(viewType: ViewType, hiddenItems: string[], balances?:
     }
 }
 
-function calculateData(viewType: ViewType, dataType: DataType, hiddenItems: string[], balance: JBalance): any {
+function calculateData(viewType: ViewType, dataType: DataType, hiddenItems: Set<string>, balance: JBalance): any {
     const date = balance.date.substring(5, balance.date.length);
     let calculated: any;
     if (dataType === DataType.NET) {
@@ -211,20 +217,92 @@ function calculateData(viewType: ViewType, dataType: DataType, hiddenItems: stri
 }
 
 export function Graphs() {
+    const [searchParams, _setSearchParams] = useSearchParams();
     const widthRef = useRef<HTMLDivElement>();
     const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
 
     const server = useAppSelector(selectServer);
     const accounts = useAppSelector(selectAccounts);
 
-    const [viewType, setViewType] = useState(ViewType.TOTALS);
-    const [dateType, setDateType] = useState(DateType.WEEKLY);
-    const [dataType, setDataType] = useState(DataType.NET);
+    const [viewType, _setViewType] = useState(ViewType.TOTALS);
+    const [dateType, _setDateType] = useState(DateType.WEEKLY);
+    const [dataType, _setDataType] = useState(DataType.NET);
 
-    const [hiddenItems, setHiddenItems] = useState<string[]>([]);
+    const [hiddenItems, _setHiddenItems] = useState(new Set<string>());
 
     const [data, setData] = useState<any[]>([]);
     const [balances, setBalances] = useState<JBalance[]>([]);
+
+    function setSearchParams(key: string, value: string | number | undefined | string[]) {
+        if (Array.isArray(value)) {
+            searchParams.delete(key);
+            value.forEach(val => searchParams.append(key, val));
+        } else if (value === undefined || value === "" || value === "none" || value === 1) {
+            searchParams.delete(key);
+        } else {
+            searchParams.set(key, value + "");
+        }
+        _setSearchParams(searchParams);
+    }
+
+    function setViewType(viewType: ViewType) {
+        if (viewType === ViewType.TOTALS) {
+            setSearchParams("viewType", undefined);
+        } else {
+            setSearchParams("viewType", viewType);
+        }
+    }
+
+    function setDateType(dateType: DateType) {
+        if (dateType === DateType.WEEKLY) {
+            setSearchParams("dateType", undefined);
+        } else {
+            setSearchParams("dateType", dateType);
+        }
+    }
+
+    function setDataType(dataType: DataType) {
+        if (dataType === DataType.NET) {
+            setSearchParams("dataType", undefined);
+        } else {
+            setSearchParams("dataType", dataType);
+        }
+    }
+
+    function setHiddenItems(hiddenItems: Set<string>) {
+        if (hiddenItems.size === 0) {
+            setSearchParams("hiddenItems", undefined);
+        } else {
+            setSearchParams("hiddenItems", [...hiddenItems]);
+        }
+    }
+
+    useEffect(() => {
+        const _viewType = searchParams.get("viewType");
+        if (_viewType !== null) {
+            _setViewType(_viewType as ViewType);
+        } else {
+            _setViewType(ViewType.TOTALS);
+        }
+        const _dateType = searchParams.get("dateType");
+        if (_dateType !== null) {
+            _setDateType(_dateType as DateType);
+        } else {
+            _setDateType(DateType.WEEKLY);
+        }
+        const _dataType = searchParams.get("dataType");
+        if (_dataType != null) {
+            _setDataType(_dataType as DataType);
+        } else {
+            _setDataType(DataType.NET);
+        }
+        const _hiddenItems = searchParams.getAll("hiddenItems");
+        if (_hiddenItems !== null) {
+            _setHiddenItems(new Set(_hiddenItems));
+        } else {
+            _setHiddenItems(new Set());
+        }
+    }, [searchParams]); 
 
     useEffect(() => {
         get<JBalance[]>(server, url(dateType))
@@ -233,13 +311,13 @@ export function Graphs() {
     }, [dateType]);
 
     useEffect(() => {
-        setHiddenItems([]);
+        setHiddenItems(new Set());
     }, [viewType]);
 
     useEffect(() => {
         const data = balances.map(balance => calculateData(viewType, dataType, hiddenItems, balance));
         setData(data);
-    }, [balances, dataType, viewType, hiddenItems])
+    }, [balances, dataType, viewType, hiddenItems]);
 
     return (
         <Container>
@@ -278,10 +356,14 @@ export function Graphs() {
                         <YAxis />
                         <Legend onClick={e => {
                             if (e.dataKey) {
-                                if (hiddenItems.includes(e.dataKey)) {
-                                    setHiddenItems(hiddenItems.filter(item => item !== e.dataKey))
+                                if (hiddenItems.has(e.dataKey)) {
+                                    const replaced = new Set<string>(hiddenItems);
+                                    replaced.delete(e.dataKey);
+                                    setHiddenItems(replaced);
                                 } else {
-                                    setHiddenItems(hiddenItems.concat(e.dataKey))
+                                    const replaced = new Set<string>(hiddenItems);
+                                    replaced.add(e.dataKey);
+                                    setHiddenItems(replaced);
                                 }
                             }
                         }} />
