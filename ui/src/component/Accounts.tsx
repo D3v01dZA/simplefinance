@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Container, Modal, Row, Form, ButtonGroup, Table, OverlayTrigger, Popover } from "react-bootstrap";
+import { Button, Container, Modal, Row, Form, ButtonGroup, Table, OverlayTrigger, Popover, Col } from "react-bootstrap";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPenToSquare, faPlus, faTrash, faMoneyBillTransfer, faFilter } from '@fortawesome/free-solid-svg-icons';
 import { useAppDispatch, useAppSelector } from "../app/hooks";
@@ -34,6 +34,13 @@ function Account({ account, edit, del }: { account: JAccount, edit: () => void, 
     );
 }
 
+function isNameValid(name: string | undefined) {
+    if (name === undefined || name === "") {
+        return false;
+    }
+    return true;
+}
+
 function AccountModal({
     show,
     setShow,
@@ -56,18 +63,20 @@ function AccountModal({
             <Modal.Header closeButton>
                 <Modal.Title>{isAdd ? "Add" : "Edit"} Account</Modal.Title>
             </Modal.Header>
-            <Form>
-                <Form.Group>
-                    <Form.Label>Name</Form.Label>
-                    <Form.Control type="text" value={account?.name} onChange={e => setAccount({ ...account, name: e.target.value })}></Form.Control>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label>Type</Form.Label>
-                    <Form.Select disabled={!isAdd} value={account?.type} onChange={e => setAccount({ ...account, type: e.target.value as AccountType })}>
-                        {Object.keys(AccountType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
-                    </Form.Select>
-                </Form.Group>
-            </Form>
+            <Modal.Body>
+                <Form>
+                    <Form.Group>
+                        <Form.Label>Name</Form.Label>
+                        <Form.Control type="text" isInvalid={!isNameValid(account?.name)} value={account?.name} onChange={e => setAccount({ ...account, name: e.target.value })}></Form.Control>
+                    </Form.Group>
+                    <Form.Group>
+                        <Form.Label>Type</Form.Label>
+                        <Form.Select disabled={!isAdd} value={account?.type} onChange={e => setAccount({ ...account, type: e.target.value as AccountType })}>
+                            {Object.keys(AccountType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
+                        </Form.Select>
+                    </Form.Group>
+                </Form>
+            </Modal.Body>
             <Modal.Footer>
                 <Button disabled={saving} variant="secondary" onClick={() => setShow(false)}>
                     Cancel
@@ -182,7 +191,7 @@ export function Accounts() {
     const nameFilterPopover = (
         <Popover>
             <Popover.Body>
-                <Form.Control value={nameFilter} onChange={e => setSearchParams("name", e.target.value)}/>
+                <Form.Control value={nameFilter} onChange={e => setSearchParams("name", e.target.value)} />
             </Popover.Body>
         </Popover>
     );
@@ -191,41 +200,43 @@ export function Accounts() {
     return (
         <Container>
             <Row>
-                <Table striped bordered hover>
-                    <thead>
-                        <tr>
-                            <th>Type <OverlayTrigger trigger="click" placement="bottom" overlay={accountTypeFilterPopover}><FontAwesomeIcon color={accountTypeFilter === "none"? undefined : "blue" } icon={faFilter} /></OverlayTrigger></th>
-                            <th>Name <OverlayTrigger trigger="click" placement="bottom" overlay={nameFilterPopover}><FontAwesomeIcon color={nameFilter === ""? undefined : "blue" } icon={faFilter} /></OverlayTrigger></th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {accountsToDisplay().map(account => <Account key={account.id} account={account} edit={() => {
-                            setEditingAccount(account);
-                            setShowEditing(true);
-                        }} del={() => {
-                            if (confirm(`Are you sure you want to delete ${account.name}?`)) {
-                                del(server, `/api/account/${account.id}/`)
-                                    .then(() => refreshAccounts())
-                                    .catch(error => err(error));
-                            }
-                        }} />)}
-                        <tr>
-                            <td></td>
-                            <td></td>
-                            <td>
-                                <ButtonGroup>
-                                    <Button variant="success" onClick={() => {
-                                        setAddingAccount({ type: AccountType.SAVINGS });
-                                        setShowAdding(true);
-                                    }}>
-                                        <FontAwesomeIcon icon={faPlus} />
-                                    </Button>
-                                </ButtonGroup>
-                            </td>
-                        </tr>
-                    </tbody>
-                </Table>
+                <Col>
+                    <Table striped bordered hover>
+                        <thead>
+                            <tr>
+                                <th>Type <OverlayTrigger trigger="click" placement="bottom" overlay={accountTypeFilterPopover}><FontAwesomeIcon color={accountTypeFilter === "none" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
+                                <th>Name <OverlayTrigger trigger="click" placement="bottom" overlay={nameFilterPopover}><FontAwesomeIcon color={nameFilter === "" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {accountsToDisplay().map(account => <Account key={account.id} account={account} edit={() => {
+                                setEditingAccount(account);
+                                setShowEditing(true);
+                            }} del={() => {
+                                if (confirm(`Are you sure you want to delete ${account.name}?`)) {
+                                    del(server, `/api/account/${account.id}/`)
+                                        .then(() => refreshAccounts())
+                                        .catch(error => err(error));
+                                }
+                            }} />)}
+                            <tr>
+                                <td></td>
+                                <td></td>
+                                <td>
+                                    <ButtonGroup>
+                                        <Button variant="success" onClick={() => {
+                                            setAddingAccount({ type: AccountType.SAVINGS });
+                                            setShowAdding(true);
+                                        }}>
+                                            <FontAwesomeIcon icon={faPlus} />
+                                        </Button>
+                                    </ButtonGroup>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </Table>
+                </Col>
             </Row>
             <Pagination itemCount={Object.values(accounts).length} page={page} setPage={setPage} pageSize={pageSize} setPageSize={setPageSize} />
             <AccountModal show={showAdding} setShow={setShowAdding} account={addingAccount} setAccount={setAddingAccount} saving={adding} save={() => {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Button, ButtonGroup, Container, Form, Modal, OverlayTrigger, Popover, Row, Table } from "react-bootstrap";
+import { Button, ButtonGroup, Col, Container, Form, Modal, OverlayTrigger, Popover, Row, Table } from "react-bootstrap";
 import { useParams, useSearchParams } from "react-router-dom";
 import { IndexedAccounts, selectAccounts } from "../app/accountSlice";
 import { useAppSelector } from "../app/hooks";
@@ -34,15 +34,17 @@ interface WorkingTransaction {
     fromAccountId: string,
 }
 
+interface BulkWorkingTransactionsTransaction {
+    accountId: string,
+    value?: string,
+}
+
 interface BulkWorkingTransactions {
     description: string,
     date: string,
     type: TransactionType,
     fromAccountId?: string,
-    transactions: {
-        accountId: string,
-        value?: string,
-    }[]
+    transactions: BulkWorkingTransactionsTransaction[]
 }
 
 function AccountName({ accountId: fromAccountId, accounts }: { accountId: string, accounts: IndexedAccounts }) {
@@ -58,6 +60,17 @@ function AccountName({ accountId: fromAccountId, accounts }: { accountId: string
 
 function description(transaction: JTranscation) {
     return transaction.description === "" ? titleCase(transaction.type) : transaction.description;
+}
+
+function isValueValid(value: string | undefined) {
+    if (value === undefined || value === "") {
+        return false;
+    }
+    const float = parseFloat(value);
+    if (Number.isNaN(float)) {
+        return false;
+    }
+    return true;
 }
 
 function Transaction({ transaction, accounts, edit, del }: { transaction: JTranscation, accounts: IndexedAccounts, edit: () => void, del: () => void }) {
@@ -108,42 +121,44 @@ function TransactionModal({
             <Modal.Header closeButton>
                 <Modal.Title>{isAdd ? "Add" : "Edit"} Transaction</Modal.Title>
             </Modal.Header>
-            <Form>
-                <Form.Group>
-                    <Form.Label>Description</Form.Label>
-                    <Form.Control type="text" value={transaction?.description} onChange={e => setTransaction({ ...transaction, description: e.target.value })}></Form.Control>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label>Date</Form.Label>
-                    <Form.Control type="date" value={transaction?.date} onChange={e => setTransaction({ ...transaction, date: e.target.value })}></Form.Control>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label>Value</Form.Label>
-                    <Form.Control type="text" value={transaction?.value} onChange={e => setTransaction({ ...transaction, value: e.target.value })}></Form.Control>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label>Type</Form.Label>
-                    <Form.Select disabled={!isAdd} value={transaction.type} onChange={e => {
-                        const type = e.target.value as TransactionType;
-                        const fromAccountId = type === TransactionType.TRANSFER ? Object.keys(accounts)[0] : undefined;
-                        setTransaction({ ...transaction, fromAccountId, type });
-                    }}>
-                        {Object.keys(TransactionType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
-                    </Form.Select>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label>Account</Form.Label>
-                    <Form.Select disabled={!isAdd || singleAccount} value={transaction?.accountId} onChange={e => setTransaction({ ...transaction, accountId: e.target.value })}>
-                        {Object.values(accounts).map(account => <option key={account.id} value={account.id}>{account.name} ({titleCase(account.type)})</option>)}
-                    </Form.Select>
-                </Form.Group>
-                <Form.Group hidden={transaction.type !== TransactionType.TRANSFER}>
-                    <Form.Label>From Account</Form.Label>
-                    <Form.Select disabled={!isAdd || transaction.type !== TransactionType.TRANSFER} value={transaction?.fromAccountId} onChange={e => setTransaction({ ...transaction, fromAccountId: e.target.value })}>
-                        {Object.values(accounts).map(account => <option key={account.id} value={account.id}>{account.name} ({titleCase(account.type)})</option>)}
-                    </Form.Select>
-                </Form.Group>
-            </Form>
+            <Modal.Body>
+                <Form>
+                    <Form.Group>
+                        <Form.Label>Description</Form.Label>
+                        <Form.Control type="text" value={transaction?.description} onChange={e => setTransaction({ ...transaction, description: e.target.value })}></Form.Control>
+                    </Form.Group>
+                    <Form.Group>
+                        <Form.Label>Date</Form.Label>
+                        <Form.Control type="date" value={transaction?.date} onChange={e => setTransaction({ ...transaction, date: e.target.value })}></Form.Control>
+                    </Form.Group>
+                    <Form.Group>
+                        <Form.Label>Value</Form.Label>
+                        <Form.Control type="text" isInvalid={!isValueValid(transaction?.value)} value={transaction?.value} onChange={e => setTransaction({ ...transaction, value: e.target.value })}></Form.Control>
+                    </Form.Group>
+                    <Form.Group>
+                        <Form.Label>Type</Form.Label>
+                        <Form.Select disabled={!isAdd} value={transaction.type} onChange={e => {
+                            const type = e.target.value as TransactionType;
+                            const fromAccountId = type === TransactionType.TRANSFER ? Object.keys(accounts)[0] : undefined;
+                            setTransaction({ ...transaction, fromAccountId, type });
+                        }}>
+                            {Object.keys(TransactionType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
+                        </Form.Select>
+                    </Form.Group>
+                    <Form.Group>
+                        <Form.Label>Account</Form.Label>
+                        <Form.Select disabled={!isAdd || singleAccount} value={transaction?.accountId} onChange={e => setTransaction({ ...transaction, accountId: e.target.value })}>
+                            {Object.values(accounts).map(account => <option key={account.id} value={account.id}>{account.name} ({titleCase(account.type)})</option>)}
+                        </Form.Select>
+                    </Form.Group>
+                    <Form.Group hidden={transaction.type !== TransactionType.TRANSFER}>
+                        <Form.Label>From Account</Form.Label>
+                        <Form.Select disabled={!isAdd || transaction.type !== TransactionType.TRANSFER} value={transaction?.fromAccountId} onChange={e => setTransaction({ ...transaction, fromAccountId: e.target.value })}>
+                            {Object.values(accounts).map(account => <option key={account.id} value={account.id}>{account.name} ({titleCase(account.type)})</option>)}
+                        </Form.Select>
+                    </Form.Group>
+                </Form>
+            </Modal.Body>
             <Modal.Footer>
                 <Button disabled={saving} variant="secondary" onClick={() => setShow(false)}>
                     Cancel
@@ -193,64 +208,77 @@ function BulkTransactionModal({
             <Modal.Header closeButton>
                 <Modal.Title>Add Multiple Transactions</Modal.Title>
             </Modal.Header>
-            <Form>
-                <Form.Group>
-                    <Form.Label>Description</Form.Label>
-                    <Form.Control type="text" value={transactions?.description} onChange={e => setTransactions({ ...transactions, description: e.target.value })}></Form.Control>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label>Date</Form.Label>
-                    <Form.Control type="date" value={transactions?.date} onChange={e => setTransactions({ ...transactions, date: e.target.value })}></Form.Control>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label>Type</Form.Label>
-                    <Form.Select value={transactions.type} onChange={e => {
-                        const type = e.target.value as TransactionType;
-                        const fromAccountId = type === TransactionType.TRANSFER ? Object.keys(accounts)[0] : undefined;
-                        setTransactions({ ...transactions, fromAccountId, type });
-                    }}>
-                        {Object.keys(TransactionType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
-                    </Form.Select>
-                </Form.Group>
-                <Form.Group hidden={transactions.type !== TransactionType.TRANSFER}>
-                    <Form.Label>From Account</Form.Label>
-                    <Form.Select disabled={transactions.type !== TransactionType.TRANSFER} value={transactions.fromAccountId} onChange={e => setTransactions({ ...transactions, fromAccountId: e.target.value })}>
-                        {Object.values(accounts).map(account => <option key={account.id} value={account.id}>{account.name} ({titleCase(account.type)})</option>)}
-                    </Form.Select>
-                </Form.Group>
-                {(transactions.transactions).map((transaction, index) => {
-                    return (
-                        <React.Fragment key={index}>
-                            <Form.Group>
-                                <Form.Label>Value</Form.Label>
-                                <Form.Control type="text" value={transaction.value} onChange={e => editTransaction(index, { value: e.target.value })}></Form.Control>
-                            </Form.Group>
-                            <Form.Group>
-                                <Form.Label>Account</Form.Label>
-                                <Form.Select value={transaction?.accountId} onChange={e => editTransaction(index, { accountId: e.target.value })}>
-                                    {Object.values(accounts).map(account => <option key={account.id} value={account.id}>{account.name} ({titleCase(account.type)})</option>)}
-                                </Form.Select>
-                            </Form.Group>
-                            <Form.Group>
-                                <Form.Label>Delete Transaction</Form.Label>
-                                <Form.Group>
-                                    <Button variant="danger" onClick={() => deleteTransaction(index)}>
-                                        Delete Transaction
-                                    </Button>
-                                </Form.Group>
-                            </Form.Group>
-                        </React.Fragment>
-                    );
-                })}
-                <Form.Group>
-                    <Form.Label>Add Transaction</Form.Label>
+            <Modal.Body>
+                <Form>
                     <Form.Group>
-                        <Button onClick={() => setTransactions({ ...transactions, transactions: transactions.transactions.concat({ accountId: Object.values(accounts)[0].id }) })}>
-                            Add Transaction
-                        </Button>
+                        <Form.Label>Description</Form.Label>
+                        <Form.Control type="text" value={transactions?.description} onChange={e => setTransactions({ ...transactions, description: e.target.value })}></Form.Control>
                     </Form.Group>
-                </Form.Group>
-            </Form>
+                    <Form.Group>
+                        <Form.Label>Date</Form.Label>
+                        <Form.Control type="date" value={transactions?.date} onChange={e => setTransactions({ ...transactions, date: e.target.value })}></Form.Control>
+                    </Form.Group>
+                    <Form.Group>
+                        <Form.Label>Type</Form.Label>
+                        <Form.Select value={transactions.type} onChange={e => {
+                            const type = e.target.value as TransactionType;
+                            const fromAccountId = type === TransactionType.TRANSFER ? Object.keys(accounts)[0] : undefined;
+                            setTransactions({ ...transactions, fromAccountId, type });
+                        }}>
+                            {Object.keys(TransactionType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
+                        </Form.Select>
+                    </Form.Group>
+                    <Form.Group hidden={transactions.type !== TransactionType.TRANSFER}>
+                        <Form.Label>From Account</Form.Label>
+                        <Form.Select disabled={transactions.type !== TransactionType.TRANSFER} value={transactions.fromAccountId} onChange={e => setTransactions({ ...transactions, fromAccountId: e.target.value })}>
+                            {Object.values(accounts).map(account => <option key={account.id} value={account.id}>{account.name} ({titleCase(account.type)})</option>)}
+                        </Form.Select>
+                    </Form.Group>
+                    {(transactions.transactions).map((transaction, index) => {
+                        return (
+                            <React.Fragment key={index}>
+                                <Form.Group>
+                                    <Form.Label>Value</Form.Label>
+                                    <Form.Control type="text" isInvalid={!isValueValid(transaction.value)} value={transaction.value} onChange={e => editTransaction(index, { value: e.target.value })}></Form.Control>
+                                </Form.Group>
+                                <Form.Group>
+                                    <Form.Label>Account</Form.Label>
+                                    <Form.Select value={transaction?.accountId} onChange={e => editTransaction(index, { accountId: e.target.value })}>
+                                        {Object.values(accounts).map(account => <option key={account.id} value={account.id}>{account.name} ({titleCase(account.type)})</option>)}
+                                    </Form.Select>
+                                </Form.Group>
+                                <br />
+                                <Row>
+                                    <Col>
+                                        {index !== transactions.transactions.length - 1 ? (
+                                            <ButtonGroup className="float-end">
+                                                <Button variant="danger" onClick={() => deleteTransaction(index)}>
+                                                    Delete Transaction
+                                                </Button>
+                                            </ButtonGroup>
+                                        ) : (
+                                            <ButtonGroup className="float-end">
+                                                <Button onClick={() => setTransactions({ ...transactions, transactions: transactions.transactions.concat({ accountId: Object.values(accounts)[0].id }) })}>
+                                                    Add Transaction
+                                                </Button>
+                                                <Button variant="danger" onClick={() => deleteTransaction(index)}>
+                                                    Delete Transaction
+                                                </Button>
+                                            </ButtonGroup>
+                                        )}
+                                    </Col>
+                                </Row>
+                            </React.Fragment>
+                        );
+                    })}
+                    <br />
+                    <Row>
+                        <Col>
+
+                        </Col>
+                    </Row>
+                </Form>
+            </Modal.Body>
             <Modal.Footer>
                 <Button disabled={saving} variant="secondary" onClick={() => setShow(false)}>
                     Cancel
@@ -292,13 +320,17 @@ export function Transactions() {
     const [editing, setEditing] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<Partial<WorkingTransaction>>({});
 
-    function bulkTranscationsDefault() {
-        return {
+    function bulkTranscationsDefault(transaction?: BulkWorkingTransactionsTransaction) {
+        let bulk: BulkWorkingTransactions = {
             description: "",
             date: today(),
             type: TransactionType.TRANSFER,
             transactions: []
         }
+        if (transaction !== undefined) {
+            bulk.transactions.push(transaction);
+        }
+        return bulk;
     }
 
     function refreshTransactions() {
@@ -401,7 +433,7 @@ export function Transactions() {
         } else {
             _setPage(0);
         }
-    }, [searchParams]) 
+    }, [searchParams])
 
     const transactionTypeFilterPopover = (
         <Popover>
@@ -433,55 +465,57 @@ export function Transactions() {
     return (
         <Container>
             <Row xl={1}>
-                <Table striped bordered hover>
-                    <thead>
-                        <tr>
-                            <th>Type  <OverlayTrigger trigger="click" placement="bottom" overlay={transactionTypeFilterPopover}><FontAwesomeIcon color={transactionTypeFilter === "none"? undefined : "blue" } icon={faFilter} /></OverlayTrigger></th>
-                            <th>Description <OverlayTrigger trigger="click" placement="bottom" overlay={descriptionFilterPopover}><FontAwesomeIcon color={descriptionFilter === ""? undefined : "blue" } icon={faFilter} /></OverlayTrigger></th>
-                            <th>Date <OverlayTrigger trigger="click" placement="bottom" overlay={dateFilterPopover}><FontAwesomeIcon color={dateFilter === ""? undefined : "blue" } icon={faFilter} /></OverlayTrigger></th>
-                            <th>Value</th>
-                            <th>Account</th>
-                            <th>From</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {transactionsToDisplay().map(transaction => <Transaction key={transaction.id} transaction={transaction} accounts={accounts} edit={() => {
-                            setEditingTransaction({ ...transaction, value: transaction.value.toString() });
-                            setShowEditing(true);
-                        }} del={() => {
-                            if (confirm(`Are you sure you want to delete ${transaction.id}?`)) {
-                                del(server, `/api/account/${transaction.accountId}/transaction/${transaction.id}/`)
-                                    .then(() => refreshTransactions())
-                                    .catch(error => err(error));
-                            }
-                        }} />)}
-                        <tr>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td>
-                                <ButtonGroup>
-                                    <Button variant="primary" onClick={() => {
-                                        setBulkAddingTransactions(bulkTranscationsDefault());
-                                        setShowBulkAdding(true);
-                                    }}>
-                                        <FontAwesomeIcon icon={faCartPlus} />
-                                    </Button>
-                                    <Button variant="success" onClick={() => {
-                                        setAddingTransaction({ type: TransactionType.BALANCE, description: "", date: today(), accountId: accountId ?? Object.keys(accounts)[0] });
-                                        setShowAdding(true);
-                                    }}>
-                                        <FontAwesomeIcon icon={faPlus} />
-                                    </Button>
-                                </ButtonGroup>
-                            </td>
-                        </tr>
-                    </tbody>
-                </Table>
+                <Col>
+                    <Table striped bordered hover>
+                        <thead>
+                            <tr>
+                                <th>Type  <OverlayTrigger trigger="click" placement="bottom" overlay={transactionTypeFilterPopover}><FontAwesomeIcon color={transactionTypeFilter === "none" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
+                                <th>Description <OverlayTrigger trigger="click" placement="bottom" overlay={descriptionFilterPopover}><FontAwesomeIcon color={descriptionFilter === "" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
+                                <th>Date <OverlayTrigger trigger="click" placement="bottom" overlay={dateFilterPopover}><FontAwesomeIcon color={dateFilter === "" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
+                                <th>Value</th>
+                                <th>Account</th>
+                                <th>From</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {transactionsToDisplay().map(transaction => <Transaction key={transaction.id} transaction={transaction} accounts={accounts} edit={() => {
+                                setEditingTransaction({ ...transaction, value: transaction.value.toString() });
+                                setShowEditing(true);
+                            }} del={() => {
+                                if (confirm(`Are you sure you want to delete ${transaction.id}?`)) {
+                                    del(server, `/api/account/${transaction.accountId}/transaction/${transaction.id}/`)
+                                        .then(() => refreshTransactions())
+                                        .catch(error => err(error));
+                                }
+                            }} />)}
+                            <tr>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td>
+                                    <ButtonGroup>
+                                        <Button variant="primary" onClick={() => {
+                                            setBulkAddingTransactions(bulkTranscationsDefault({ accountId: Object.values(accounts)[0].id }));
+                                            setShowBulkAdding(true);
+                                        }}>
+                                            <FontAwesomeIcon icon={faCartPlus} />
+                                        </Button>
+                                        <Button variant="success" onClick={() => {
+                                            setAddingTransaction({ type: TransactionType.BALANCE, description: "", date: today(), accountId: accountId ?? Object.keys(accounts)[0] });
+                                            setShowAdding(true);
+                                        }}>
+                                            <FontAwesomeIcon icon={faPlus} />
+                                        </Button>
+                                    </ButtonGroup>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </Table>
+                </Col>
             </Row>
             <Pagination itemCount={transactions.length} page={page} setPage={setPage} pageSize={pageSize} setPageSize={setPageSize} />
             <TransactionModal accounts={accounts} singleAccount={accountId !== undefined} show={showAdding} setShow={setShowAdding} transaction={addingTransaction} setTransaction={setAddingTransaction} saving={adding} save={() => {

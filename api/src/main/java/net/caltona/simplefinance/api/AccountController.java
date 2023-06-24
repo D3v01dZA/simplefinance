@@ -32,6 +32,8 @@ public class AccountController {
     @Autowired
     private final AccountService accountService;
 
+    // ===== Summaries =====
+
     @Transactional
     @GetMapping("/api/net/")
     public JBalance net() {
@@ -75,6 +77,12 @@ public class AccountController {
         return new Calculator(accounts).calculate(dates);
     }
 
+    // ===== Queries =====
+
+
+
+    // ===== Accounts =====
+
     @Transactional
     @GetMapping("/api/account/")
     public List<JAccount> list() {
@@ -110,6 +118,8 @@ public class AccountController {
         return accountService.delete(id)
                 .map(DAccount::json);
     }
+
+    // ===== Account Configs =====
 
     @Transactional
     @GetMapping("/api/account/{id}/config/")
@@ -150,6 +160,8 @@ public class AccountController {
         return accountService.deleteAccountConfig(id, configId)
                 .map(DAccountConfig::json);
     }
+
+    // ===== Transactions =====
 
     @Transactional
     @GetMapping("/api/transaction/")

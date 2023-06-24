@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAppSelector } from "../app/hooks";
 import { selectServer } from "../app/serverSlice";
 import { err, generateColorPalette, get, titleCase } from "../util/util";
-import { Container, Form, Row } from "react-bootstrap";
+import { Col, Container, Form, Row } from "react-bootstrap";
 import { CartesianGrid, Legend, Line, LineChart, Tooltip, XAxis, YAxis } from "recharts";
 import React from "react";
 import { IndexedAccounts, selectAccounts } from "../app/accountSlice";
@@ -219,42 +219,50 @@ export function Graphs() {
     return (
         <Container>
             <Row xs={1} md={2} xl={3}>
-                <Form.Group>
-                    <Form.Label>View Type</Form.Label>
-                    <Form.Select value={viewType} onChange={e => setViewType(e.target.value as ViewType)}>
-                        {Object.keys(ViewType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
-                    </Form.Select>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label>Date Type</Form.Label>
-                    <Form.Select value={dateType} onChange={e => setDateType(e.target.value as DateType)}>
-                        {Object.keys(DateType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
-                    </Form.Select>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label>Data Type</Form.Label>
-                    <Form.Select value={dataType} onChange={e => setDataType(e.target.value as DataType)}>
-                        {Object.keys(DataType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
-                    </Form.Select>
-                </Form.Group>
+                <Col>
+                    <Form.Group>
+                        <Form.Label>View Type</Form.Label>
+                        <Form.Select value={viewType} onChange={e => setViewType(e.target.value as ViewType)}>
+                            {Object.keys(ViewType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
+                        </Form.Select>
+                    </Form.Group>
+                </Col>
+                <Col>
+                    <Form.Group>
+                        <Form.Label>Date Type</Form.Label>
+                        <Form.Select value={dateType} onChange={e => setDateType(e.target.value as DateType)}>
+                            {Object.keys(DateType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
+                        </Form.Select>
+                    </Form.Group>
+                </Col>
+                <Col>
+                    <Form.Group>
+                        <Form.Label>Data Type</Form.Label>
+                        <Form.Select value={dataType} onChange={e => setDataType(e.target.value as DataType)}>
+                            {Object.keys(DataType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
+                        </Form.Select>
+                    </Form.Group>
+                </Col>
             </Row>
             <Row ref={widthRef} xl={1} className="justify-content-center">
-                <LineChart width={(widthRef.current?.offsetWidth ?? 0) * 0.95} height={vh * 0.7} data={data}>
-                    {lines(viewType, hiddenItems, accounts)}
-                    <CartesianGrid stroke="#ccc" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Legend onClick={e => {
-                        if (e.dataKey) {
-                            if (hiddenItems.includes(e.dataKey)) {
-                                setHiddenItems(hiddenItems.filter(item => item !== e.dataKey))
-                            } else {
-                                setHiddenItems(hiddenItems.concat(e.dataKey))
+                <Col>
+                    <LineChart width={(widthRef.current?.offsetWidth ?? 0) * 0.95} height={vh * 0.7} data={data}>
+                        {lines(viewType, hiddenItems, accounts)}
+                        <CartesianGrid stroke="#ccc" />
+                        <XAxis dataKey="date" />
+                        <YAxis />
+                        <Legend onClick={e => {
+                            if (e.dataKey) {
+                                if (hiddenItems.includes(e.dataKey)) {
+                                    setHiddenItems(hiddenItems.filter(item => item !== e.dataKey))
+                                } else {
+                                    setHiddenItems(hiddenItems.concat(e.dataKey))
+                                }
                             }
-                        }
-                    }} />
-                    <Tooltip />
-                </LineChart>
+                        }} />
+                        <Tooltip />
+                    </LineChart>
+                </Col>
             </Row>
         </Container>
     )
