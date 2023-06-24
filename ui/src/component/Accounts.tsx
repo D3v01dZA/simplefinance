@@ -102,7 +102,7 @@ export function Accounts() {
     const [nameFilter, setNameFilter] = useState("");
     const [filteredAccounts, setFilteredAccounts] = useState<JAccount[]>([]);
 
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize, _setPageSize] = useState(10);
     const [page, _setPage] = useState(0);
 
     const [showAdding, setShowAdding] = useState(false);
@@ -135,8 +135,16 @@ export function Accounts() {
         setSearchParams("page", constrained + 1);
     }
 
-    function setSearchParams(key: string, value: string | number) {
-        if (value === "" || value === "none" || value === 1) {
+    function setPageSize(pageSize: number) {
+        if (pageSize === 10) {
+            setSearchParams("pageSize", undefined);
+        } else {
+            setSearchParams("pageSize", pageSize);
+        }
+    }
+
+    function setSearchParams(key: string, value: string | number | undefined) {
+        if (value === undefined || value === "" || value === "none" || value === 1) {
             searchParams.delete(key);
             _setSearchParams(searchParams);
         } else {
@@ -182,14 +190,20 @@ export function Accounts() {
         } else {
             _setPage(0)
         }
-    }, [searchParams])
+        const pageSize = searchParams.get("pageSize");
+        if (pageSize != null) {
+            _setPageSize(parseInt(pageSize));
+        } else {
+            _setPageSize(10);
+        }
+    }, [searchParams]) 
 
     const clearFilters = (
         <React.Fragment>
             <br />
             <Row>
                 <Col>
-                    <Button variant="danger" style={{width: "100%"}} onClick={_ => clearSearchParams()}>
+                    <Button variant="danger" style={{ width: "100%" }} onClick={_ => clearSearchParams()}>
                         Clear Filters
                     </Button>
                 </Col>

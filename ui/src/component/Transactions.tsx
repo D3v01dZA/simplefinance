@@ -298,7 +298,7 @@ export function Transactions() {
     const server = useAppSelector(selectServer);
     const accounts = useAppSelector(selectAccounts);
 
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize, _setPageSize] = useState(10);
     const [page, _setPage] = useState(0);
 
     const [transactionTypeFilter, setTransactionTypeFilter] = useState<"none" | TransactionType>("none");
@@ -381,8 +381,16 @@ export function Transactions() {
         setSearchParams("page", constrained + 1);
     }
 
-    function setSearchParams(key: string, value: string | number | boolean) {
-        if (value === "" || value === "none" || value === 1 || value === false) {
+    function setPageSize(pageSize: number) {
+        if (pageSize === 10) {
+            setSearchParams("pageSize", undefined);
+        } else {
+            setSearchParams("pageSize", pageSize);
+        }
+    }
+
+    function setSearchParams(key: string, value: string | number | undefined) {
+        if (value === undefined || value === "" || value === "none" || value === 1) {
             searchParams.delete(key);
             _setSearchParams(searchParams);
         } else {
@@ -452,17 +460,23 @@ export function Transactions() {
         } else {
             setDateFilter("");
         }
+        const lastTransactionByType = searchParams.get("lastTransactionByType");
+        if (lastTransactionByType !== null) {
+            setLastTransactionByTypeFilter(lastTransactionByType as TransactionType);
+        } else {
+            setLastTransactionByTypeFilter("none");
+        }
         const page = searchParams.get("page");
         if (page != null) {
             _setPage(parseInt(page) - 1);
         } else {
             _setPage(0);
         }
-        const lastTransactionByType = searchParams.get("lastTransactionByType");
-        if (lastTransactionByType !== null) {
-            setLastTransactionByTypeFilter(lastTransactionByType as TransactionType);
+        const pageSize = searchParams.get("pageSize");
+        if (pageSize != null) {
+            _setPageSize(parseInt(pageSize));
         } else {
-            setLastTransactionByTypeFilter("none");
+            _setPageSize(10);
         }
     }, [searchParams])
 
