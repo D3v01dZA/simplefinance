@@ -4,7 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
-import net.caltona.simplefinance.service.calculator.Calculator;
+import net.caltona.simplefinance.service.calculator.FlowGroupingType;
+import net.caltona.simplefinance.service.calculator.TotalType;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -27,6 +28,9 @@ public class JBalance {
     @NonNull
     private List<AccountBalance> accountBalances;
 
+    @NonNull
+    private List<FlowGrouping> flowGroupings;
+
     private Difference difference;
 
     @Getter
@@ -42,6 +46,9 @@ public class JBalance {
 
         @NonNull
         private List<AccountBalance> accountBalances;
+
+        @NonNull
+        private List<FlowGrouping> flowGroupings;
 
     }
 
@@ -67,7 +74,7 @@ public class JBalance {
     public static class TotalBalance {
 
         @NonNull
-        private Calculator.TotalType type;
+        private TotalType type;
 
         @NonNull
         private BigDecimal balance;
@@ -77,6 +84,19 @@ public class JBalance {
 
         @NonNull
         private BigDecimal flow;
+
+    }
+
+    @Getter
+    @EqualsAndHashCode
+    @AllArgsConstructor
+    public static class FlowGrouping {
+
+        @NonNull
+        private FlowGroupingType type;
+
+        @NonNull
+        private BigDecimal value;
 
     }
 

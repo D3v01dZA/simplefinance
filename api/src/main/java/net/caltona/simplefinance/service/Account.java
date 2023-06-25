@@ -1,7 +1,7 @@
 package net.caltona.simplefinance.service;
 
 import net.caltona.simplefinance.db.model.DAccountConfig;
-import net.caltona.simplefinance.service.calculator.Calculator.TotalType;
+import net.caltona.simplefinance.service.calculator.TotalType;
 import net.caltona.simplefinance.service.transaction.Transaction;
 
 import java.math.BigDecimal;

@@ -5,7 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import net.caltona.simplefinance.db.model.DAccountConfig;
-import net.caltona.simplefinance.service.calculator.Calculator;
+import net.caltona.simplefinance.service.calculator.TotalType;
 import net.caltona.simplefinance.service.transaction.Transaction;
 
 import java.math.BigDecimal;
@@ -33,8 +33,8 @@ public class ExternalAccount implements Account {
     }
 
     @Override
-    public Calculator.TotalType totalType() {
-        return Calculator.TotalType.IGNORED;
+    public TotalType totalType() {
+        return TotalType.IGNORED;
     }
 
     @Override

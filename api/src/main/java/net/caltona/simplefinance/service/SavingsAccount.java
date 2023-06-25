@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.caltona.simplefinance.db.model.DAccountConfig;
 import net.caltona.simplefinance.service.calculator.AssetCalculator;
-import net.caltona.simplefinance.service.calculator.Calculator;
+import net.caltona.simplefinance.service.calculator.TotalType;
 import net.caltona.simplefinance.service.transaction.Transaction;
 
 import java.math.BigDecimal;
@@ -36,8 +36,8 @@ public class SavingsAccount implements Account {
     private final static String RATE = "rate";
 
     @Override
-    public Calculator.TotalType totalType() {
-        return Calculator.TotalType.CASH;
+    public TotalType totalType() {
+        return TotalType.SHORT_TERM_ASSET;
     }
 
     @Override

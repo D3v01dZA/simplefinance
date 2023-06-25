@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.caltona.simplefinance.db.model.DAccountConfig;
 import net.caltona.simplefinance.service.calculator.AssetCalculator;
-import net.caltona.simplefinance.service.calculator.Calculator;
+import net.caltona.simplefinance.service.calculator.TotalType;
 import net.caltona.simplefinance.service.transaction.Transaction;
 
 import java.math.BigDecimal;
@@ -34,8 +34,8 @@ public class RetirementAccount implements Account {
     }
 
     @Override
-    public Calculator.TotalType totalType() {
-        return Calculator.TotalType.RETIREMENT;
+    public TotalType totalType() {
+        return TotalType.RETIREMENT_ASSET;
     }
 
     @Override

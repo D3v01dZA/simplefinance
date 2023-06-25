@@ -3,7 +3,6 @@ package net.caltona.simplefinance.service.calculator;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.With;
 import net.caltona.simplefinance.api.model.JBalance;
 import net.caltona.simplefinance.service.Account;
 import org.springframework.util.Assert;
@@ -11,7 +10,6 @@ import org.springframework.util.Assert;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Getter
 @EqualsAndHashCode
@@ -43,13 +41,22 @@ public class Calculator {
             BigDecimal balance = account.calculateBalance(date);
             BigDecimal transfer = account.calculateTransfer(date);
             JBalance.AccountBalance accountBalance = new JBalance.AccountBalance(account.getId(), balance, transfer);
-            totals = account.totalType().addTotal(totals, balance);
-            totals = account.totalType().addTransfer(totals, transfer);
-            totals = totals.withAccountBalance(account.getId(), accountBalance);
+            TotalType totalType = account.totalType();
+            if (totalType != TotalType.IGNORED) {
+                totalType.getCalculationType().addNet(totals, balance);
+                totalType.getCalculationType().addTotal(totalType, totals, balance);
+                totalType.getCalculationType().addTransfer(totalType, totals, transfer);
+                totals.getAccountBalances().put(account.getId(), accountBalance);
+            }
         }
 
         for (TotalType totalType : TotalType.values()) {
-            totals = totalType.addFlow(totals);
+            CalculationType calculationType = totalType.getCalculationType();
+            if (calculationType != CalculationType.IGNORED) {
+                BigDecimal flow = calculationType.calculateFlow(totalType, totals);
+                calculationType.addFlow(totalType, totals, flow);
+                totalType.getFlowGroupingType().addFlowGrouping(totals, flow);
+            }
         }
 
         return new JBalance(
@@ -57,220 +64,98 @@ public class Calculator {
                 totals.getNet(),
                 List.copyOf(totals.getTotalBalances().values()),
                 List.copyOf(totals.getAccountBalances().values()),
-                previous != null && previous.getNet().compareTo(BigDecimal.ZERO) != 0 ? totals.difference(previous) : null
+                List.copyOf(totals.getFlowGroupings().values()),
+                previous != null && previous.getNet().compareTo(BigDecimal.ZERO) != 0 ? calculateDifference(totals, previous) : null
         );
     }
 
-    public enum TotalType {
-        IGNORED {
-            @Override
-            public Totals addTotal(Totals totals, BigDecimal amount) {
-                return totals;
-            }
-
-            @Override
-            public Totals addTransfer(Totals totals, BigDecimal amount) {
-                return totals;
-            }
-
-            @Override
-            public Totals addNet(Totals totals, BigDecimal amount) {
-                return totals;
-            }
-
-            @Override
-            protected BigDecimal calculateFlow(BigDecimal balance, BigDecimal transfer) {
-                return balance.subtract(transfer);
-            }
-
-            @Override
-            public Totals addFlow(Totals totals) {
-                return totals;
-            }
-        },
-        CASH {
-            @Override
-            public Totals addNet(Totals totals, BigDecimal amount) {
-                return totals.withNet(totals.getNet().add(amount));
-            }
-
-            @Override
-            protected BigDecimal calculateFlow(BigDecimal balance, BigDecimal transfer) {
-                return balance.subtract(transfer);
-            }
-        },
-        LIQUID_ASSET {
-            @Override
-            public Totals addNet(Totals totals, BigDecimal amount) {
-                return totals.withNet(totals.getNet().add(amount));
-            }
-
-            @Override
-            protected BigDecimal calculateFlow(BigDecimal balance, BigDecimal transfer) {
-                return balance.subtract(transfer);
-            }
-        },
-        ILLIQUID_ASSET {
-            @Override
-            public Totals addNet(Totals totals, BigDecimal amount) {
-                return totals.withNet(totals.getNet().add(amount));
-            }
-
-            @Override
-            protected BigDecimal calculateFlow(BigDecimal balance, BigDecimal transfer) {
-                return balance.subtract(transfer);
-            }
-        },
-        RETIREMENT {
-            @Override
-            public Totals addNet(Totals totals, BigDecimal amount) {
-                return totals.withNet(totals.getNet().add(amount));
-            }
-
-            @Override
-            protected BigDecimal calculateFlow(BigDecimal balance, BigDecimal transfer) {
-                return balance.subtract(transfer);
-            }
-        },
-        LIABILITY {
-            @Override
-            public Totals addNet(Totals totals, BigDecimal amount) {
-                return totals.withNet(totals.getNet().subtract(amount));
-            }
-
-            @Override
-            protected BigDecimal calculateFlow(BigDecimal balance, BigDecimal transfer) {
-                return balance.subtract(transfer).negate();
-            }
-        };
-
-        public Totals addTotal(Totals totals, BigDecimal amount) {
-            JBalance.TotalBalance current = totals.getTotalBalances().get(this);
-            totals = totals.withTotalBalance(this, new JBalance.TotalBalance(this, current.getBalance().add(amount), current.getTransfer(), current.getFlow()));
-            return addNet(totals, amount);
-        }
-
-        public Totals addTransfer(Totals totals, BigDecimal amount) {
-            JBalance.TotalBalance current = totals.getTotalBalances().get(this);
-            totals = totals.withTotalBalance(this, new JBalance.TotalBalance(this, current.getBalance(), current.getTransfer().add(amount), current.getFlow()));
-            return totals;
-        }
-
-        public Totals addFlow(Totals totals) {
-            JBalance.TotalBalance current = totals.getTotalBalances().get(this);
-            totals = totals.withTotalBalance(this, new JBalance.TotalBalance(this, current.getBalance(), current.getTransfer(), calculateFlow(current.getBalance(), current.getTransfer())));
-            return totals;
-        }
-
-        protected abstract Totals addNet(Totals totals, BigDecimal amount);
-
-        protected abstract BigDecimal calculateFlow(BigDecimal balance, BigDecimal transfer);
+    private JBalance.Difference calculateDifference(Totals totals, JBalance previous) {
+        return new JBalance.Difference(
+                totals.getNet().subtract(previous.getNet()),
+                calculateTotalDifference(totals, previous.getTotalBalances()),
+                calculateAccountDifference(totals, previous.getAccountBalances()),
+                calculateFlowGroupingDifference(totals, previous.getFlowGroupings())
+        );
     }
 
-    @With
-    @Getter
-    @AllArgsConstructor
-    public static class Totals {
+    private List<JBalance.TotalBalance> calculateTotalDifference(Totals totals, List<JBalance.TotalBalance> previousBalances) {
+        List<JBalance.TotalBalance> result = new ArrayList<>();
+        Set<TotalType> seenTypes = new HashSet<>();
 
-        private BigDecimal net;
-        private LinkedHashMap<TotalType, JBalance.TotalBalance> totalBalances;
-        private LinkedHashMap<String, JBalance.AccountBalance> accountBalances;
-
-        public Totals() {
-            this(BigDecimal.ZERO, new LinkedHashMap<>(), new LinkedHashMap<>());
-            for (TotalType value : TotalType.values()) {
-                if (value != TotalType.IGNORED) {
-                    totalBalances.put(value, new JBalance.TotalBalance(value, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO));
-                }
-            }
-        }
-
-        public JBalance.Difference difference(JBalance previous) {
-            return new JBalance.Difference(
-                    net.subtract(previous.getNet()),
-                    calculateTotalDifference(previous.getTotalBalances()),
-                    calculateAccountDifference(previous.getAccountBalances())
+        for (JBalance.TotalBalance previousBalance : previousBalances) {
+            TotalType type = previousBalance.getType();
+            seenTypes.add(type);
+            JBalance.TotalBalance newer = totals.getTotalBalances().get(type);
+            Assert.notNull(newer, "Missing total");
+            JBalance.TotalBalance difference = new JBalance.TotalBalance(
+                    type,
+                    newer.getBalance().subtract(previousBalance.getBalance()),
+                    newer.getTransfer().subtract(previousBalance.getTransfer()),
+                    newer.getFlow().subtract(previousBalance.getFlow())
             );
+            result.add(difference);
         }
 
-        private Totals withTotalBalance(TotalType type, JBalance.TotalBalance totalBalance) {
-            LinkedHashMap<TotalType, JBalance.TotalBalance> totalBalances = new LinkedHashMap<>(this.totalBalances);
-            totalBalances.put(type, totalBalance);
-            return new Totals(
-                    net,
-                    totalBalances,
-                    accountBalances
+        Set<TotalType> remainingIds = new HashSet<>(totals.getTotalBalances().keySet());
+        remainingIds.removeAll(seenTypes);
+        Assert.isTrue(remainingIds.isEmpty(), "Totals difference error");
+        return result;
+    }
+
+    private List<JBalance.FlowGrouping> calculateFlowGroupingDifference(Totals totals, List<JBalance.FlowGrouping> previousFlowGroupings) {
+        List<JBalance.FlowGrouping> result = new ArrayList<>();
+        Set<FlowGroupingType> seenTypes = new HashSet<>();
+
+        for (JBalance.FlowGrouping previousFlowGrouping : previousFlowGroupings) {
+            FlowGroupingType type = previousFlowGrouping.getType();
+            seenTypes.add(type);
+            JBalance.FlowGrouping newer = totals.getFlowGroupings().get(type);
+            Assert.notNull(newer, "Missing flow grouping");
+            JBalance.FlowGrouping difference = new JBalance.FlowGrouping(
+                    type,
+                    newer.getValue().subtract(previousFlowGrouping.getValue())
             );
+            result.add(difference);
         }
 
-        private Totals withAccountBalance(String accountId, JBalance.AccountBalance accountBalance) {
-            LinkedHashMap<String, JBalance.AccountBalance> accountBalances = new LinkedHashMap<>(this.accountBalances);
-            Assert.isTrue(!accountBalances.containsKey(accountId), "Account id is duplicated");
-            accountBalances.put(accountId, accountBalance);
-            return new Totals(
-                    net,
-                    totalBalances,
-                    accountBalances
-            );
-        }
+        Set<FlowGroupingType> remainingIds = new HashSet<>(totals.getFlowGroupings().keySet());
+        remainingIds.removeAll(seenTypes);
+        Assert.isTrue(remainingIds.isEmpty(), "Flow grouping difference error");
+        return result;
+    }
 
-        private List<JBalance.TotalBalance> calculateTotalDifference(List<JBalance.TotalBalance> previousBalances) {
-            List<JBalance.TotalBalance> result = new ArrayList<>();
-            Set<TotalType> seenTypes = new HashSet<>();
+    private List<JBalance.AccountBalance> calculateAccountDifference(Totals totals, List<JBalance.AccountBalance> previousBalances) {
+        List<JBalance.AccountBalance> result = new ArrayList<>();
+        Set<String> usedIds = new HashSet<>();
 
-            for (JBalance.TotalBalance previousBalance : previousBalances) {
-                TotalType type = previousBalance.getType();
-                seenTypes.add(type);
-                JBalance.TotalBalance newer = totalBalances.get(type);
-                Assert.notNull(newer, "Missing total");
-                JBalance.TotalBalance difference = new JBalance.TotalBalance(
-                        type,
+        for (JBalance.AccountBalance previousBalance : previousBalances) {
+            String id = previousBalance.getAccountId();
+            usedIds.add(id);
+            JBalance.AccountBalance newer = totals.getAccountBalances().get(id);
+            if (newer != null) {
+                JBalance.AccountBalance difference = new JBalance.AccountBalance(
+                        id,
                         newer.getBalance().subtract(previousBalance.getBalance()),
-                        newer.getTransfer().subtract(previousBalance.getTransfer()),
-                        newer.getFlow().subtract(previousBalance.getFlow())
+                        newer.getTransfer().subtract(previousBalance.getTransfer())
+                );
+                result.add(difference);
+            } else {
+                JBalance.AccountBalance difference = new JBalance.AccountBalance(
+                        id,
+                        previousBalance.getBalance().negate(),
+                        previousBalance.getTransfer().negate()
                 );
                 result.add(difference);
             }
-
-            Set<TotalType> remainingIds = new HashSet<>(totalBalances.keySet());
-            remainingIds.removeAll(seenTypes);
-            Assert.isTrue(remainingIds.isEmpty(), "Totals difference error");
-            return result;
         }
 
-        private List<JBalance.AccountBalance> calculateAccountDifference(List<JBalance.AccountBalance> previousBalances) {
-            List<JBalance.AccountBalance> result = new ArrayList<>();
-            Set<String> usedIds = new HashSet<>();
-
-            for (JBalance.AccountBalance previousBalance : previousBalances) {
-                String id = previousBalance.getAccountId();
-                usedIds.add(id);
-                JBalance.AccountBalance newer = accountBalances.get(id);
-                if (newer != null) {
-                    JBalance.AccountBalance difference = new JBalance.AccountBalance(
-                            id,
-                            newer.getBalance().subtract(previousBalance.getBalance()),
-                            newer.getTransfer().subtract(previousBalance.getTransfer())
-                    );
-                    result.add(difference);
-                } else {
-                    JBalance.AccountBalance difference = new JBalance.AccountBalance(
-                            id,
-                            previousBalance.getBalance().negate(),
-                            previousBalance.getTransfer().negate()
-                    );
-                    result.add(difference);
-                }
-            }
-
-            Set<String> remainingIds = new HashSet<>(accountBalances.keySet());
-            remainingIds.removeAll(usedIds);
-            for (String remainingId : remainingIds) {
-                result.add(accountBalances.get(remainingId));
-            }
-            return result;
+        Set<String> remainingIds = new HashSet<>(totals.getAccountBalances().keySet());
+        remainingIds.removeAll(usedIds);
+        for (String remainingId : remainingIds) {
+            result.add(totals.getAccountBalances().get(remainingId));
         }
-
+        return result;
     }
+
 
 }

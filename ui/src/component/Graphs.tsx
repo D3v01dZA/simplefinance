@@ -21,11 +21,17 @@ interface JRawTotalBalance {
     flow: number,
 }
 
+interface JRawFlowGrouping {
+    type: string,
+    value: number,
+}
+
 interface JRawBalances {
     date: string,
     net: number,
     totalBalances: JRawTotalBalance[],
     accountBalances: JRawAccountBalance[],
+    flowGroupings: JRawFlowGrouping[],
 }
 
 interface JBalance extends JRawBalances {
@@ -38,6 +44,14 @@ enum ViewType {
     ACCOUNTS = "ACCOUNTS",
     ACCOUNTS_TRANSFERS = "ACCOUNTS_TRANSFERS",
     FLOW = "FLOW",
+    FLOW_GROUPING = "FLOW_GROUPING",
+}
+
+enum FlowGroupingType {
+    CASH = "CASH",
+    GAIN = "GAIN",
+    APPRECIATION = "APPRECIATION",
+    INTEREST = "INTEREST",
 }
 
 enum DateType {
@@ -52,10 +66,13 @@ enum DataType {
 
 enum TotalType {
     CASH = "CASH",
-    LIQUID_ASSET = "LIQUID_ASSET",
-    ILLIQUID_ASSET = "ILLIQUID_ASSET",
-    RETIREMENT = "RETIREMENT",
-    LIABILITY = "LIABILITY",
+    SHORT_TERM_ASSET = "SHORT_TERM_ASSET",
+    LONG_TERM_ASSET = "LONG_TERM_ASSET",
+    PHYSICAL_ASSET = "PHYSICAL_ASSET",
+    RETIREMENT_ASSET = "RETIREMENT_ASSET",
+    CASH_LIABILITY = "CASH_LIABILITY",
+    SHORT_TERM_LIABILITY = "SHORT_TERM_LIABILITY",
+    LONG_TERM_LIABILITY = "LONG_TERM_LIABILITY",
 }
 
 function url(dateType: DateType) {
@@ -147,6 +164,19 @@ function lines(viewType: ViewType, hiddenItems: Set<string>, accounts: IndexedAc
                     />)}
                 </React.Fragment>
             );
+        case ViewType.FLOW_GROUPING:
+            const flowGoupingColorPalette = generateColorPalette(6);
+            return (
+                <React.Fragment>
+                    {Object.values(FlowGroupingType).map((flowGroupingType, index) => <Line
+                        key={flowGroupingType}
+                        type="monotone"
+                        dataKey={flowGroupingType}
+                        stroke={dull(flowGroupingType, hiddenItems, flowGoupingColorPalette[index + 1])}
+                        name={titleCase(flowGroupingType)}
+                    />)}
+                </React.Fragment>
+            );
     }
 }
 
@@ -190,15 +220,19 @@ function calculateBalances(viewType: ViewType, hiddenItems: Set<string>, balance
                 return acc;
             }, {});
         case ViewType.FLOW:
-            const vals = (balances?.totalBalances ?? []).reduce<any>((acc, current) => {
+            return (balances?.totalBalances ?? []).reduce<any>((acc, current) => {
                 if (!hiddenItems.has(current.type)) {
                     acc[current.type] = current.flow;
                 }
                 return acc;
             }, {});
-            return {
-                ...vals
-            }
+        case ViewType.FLOW_GROUPING:
+            return (balances?.flowGroupings ?? []).reduce<any>((acc, current) => {
+                if (!hiddenItems.has(current.type)) {
+                    acc[current.type] = current.value;
+                }
+                return acc;
+            }, {});
     }
 }
 
@@ -302,7 +336,7 @@ export function Graphs() {
         } else {
             _setHiddenItems(new Set());
         }
-    }, [searchParams]); 
+    }, [searchParams]);
 
     useEffect(() => {
         get<JBalance[]>(server, url(dateType))

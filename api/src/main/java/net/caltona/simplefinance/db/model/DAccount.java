@@ -145,7 +145,7 @@ public class DAccount {
                 return new RetirementAccount(id, name, configByNameSupplier, transactionsSupplier);
             }
         },
-        ASSET {
+        PHYSICAL_ASSET {
             @Override
             public Account account(String id, String name, Supplier<Map<String, Object>> configByNameSupplier, Supplier<List<Transaction>> transactionsSupplier) {
                 return new AssetAccount(id, name, configByNameSupplier, transactionsSupplier);

@@ -96,3 +96,14 @@ databaseChangeLog:
                     nullable: true
                     references: account(id)
                     foreignKeyName: fk_transaction_from_account_id_to_account
+  - changeSet:
+      id:  2
+      author:  altonac
+      changes:
+        - update:
+            tableName: account
+            columns:
+              - column:
+                  name: type
+                  value: "PHYSICAL_ASSET"
+            where: "type='ASSET'"
