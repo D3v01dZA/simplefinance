@@ -2,6 +2,9 @@
 
 set -e
 
+echo "Testing for running docker"
+docker ps > /dev/null
+
 echo "Changing ui server"
 cd ui
 git checkout ./src/app/serverSlice.ts
