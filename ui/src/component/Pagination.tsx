@@ -3,7 +3,7 @@ import { Button, ButtonGroup, Col, Form, Row } from "react-bootstrap";
 import { faBackwardFast, faBackward, faForward, faForwardFast } from '@fortawesome/free-solid-svg-icons';
 import { maxPage } from "../util/util";
 
-export const DEFAULT_PAGE_SIZE = 20;
+export const DEFAULT_PAGE_SIZE = 15;
 
 export function Pagination({ itemCount, page, setPage, pageSize, setPageSize }: { itemCount: number, page: number, setPage: (page: number) => void, pageSize: number, setPageSize: (pageSize: number) => void }) {
     return (
@@ -15,6 +15,7 @@ export function Pagination({ itemCount, page, setPage, pageSize, setPageSize }: 
                         <Form.Select value={pageSize} onChange={e => setPageSize(parseInt(e.target.value))}>
                             <option value={0}>All</option>
                             <option value={10}>10 Per Page</option>
+                            <option value={15}>15 Per Page</option>
                             <option value={20}>20 Per Page</option>
                             <option value={50}>50 Per Page</option>
                             <option value={100}>100 Per Page</option>
