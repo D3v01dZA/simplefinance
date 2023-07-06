@@ -3,6 +3,8 @@ import { Button, ButtonGroup, Col, Form, Row } from "react-bootstrap";
 import { faBackwardFast, faBackward, faForward, faForwardFast } from '@fortawesome/free-solid-svg-icons';
 import { maxPage } from "../util/util";
 
+export const DEFAULT_PAGE_SIZE = 10;
+
 export function Pagination({ itemCount, page, setPage, pageSize, setPageSize }: { itemCount: number, page: number, setPage: (page: number) => void, pageSize: number, setPageSize: (pageSize: number) => void }) {
     return (
         <Row xs={1} xl={2}>

@@ -7,7 +7,7 @@ import { selectServer } from "../app/serverSlice";
 import { get, err, titleCase, post, del, constrainedPage } from "../util/util";
 import { AccountType, JAccount, selectAccounts, setAccounts } from "../app/accountSlice";
 import { LinkContainer } from "react-router-bootstrap";
-import { Pagination } from "./Pagination";
+import { DEFAULT_PAGE_SIZE, Pagination } from "./Pagination";
 import { useSearchParams } from "react-router-dom";
 import React from "react";
 
@@ -102,7 +102,7 @@ export function Accounts() {
     const [nameFilter, setNameFilter] = useState("");
     const [filteredAccounts, setFilteredAccounts] = useState<JAccount[]>([]);
 
-    const [pageSize, _setPageSize] = useState(10);
+    const [pageSize, _setPageSize] = useState(DEFAULT_PAGE_SIZE);
     const [page, _setPage] = useState(0);
 
     const [showAdding, setShowAdding] = useState(false);
@@ -136,7 +136,7 @@ export function Accounts() {
     }
 
     function setPageSize(pageSize: number) {
-        if (pageSize === 10) {
+        if (pageSize === DEFAULT_PAGE_SIZE) {
             setSearchParams("pageSize", undefined);
         } else {
             setSearchParams("pageSize", pageSize);
@@ -194,7 +194,7 @@ export function Accounts() {
         if (pageSize != null) {
             _setPageSize(parseInt(pageSize));
         } else {
-            _setPageSize(10);
+            _setPageSize(DEFAULT_PAGE_SIZE);
         }
     }, [searchParams]) 
 

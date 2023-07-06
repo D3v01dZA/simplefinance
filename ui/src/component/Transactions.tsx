@@ -7,7 +7,7 @@ import { selectServer } from "../app/serverSlice";
 import { constrainedPage, del, err, get, post, titleCase, today } from "../util/util";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPenToSquare, faTrash, faPlus, faCartPlus, faFilter } from '@fortawesome/free-solid-svg-icons';
-import { Pagination } from "./Pagination";
+import { DEFAULT_PAGE_SIZE, Pagination } from "./Pagination";
 
 enum TransactionType {
     BALANCE = "BALANCE",
@@ -298,7 +298,7 @@ export function Transactions() {
     const server = useAppSelector(selectServer);
     const accounts = useAppSelector(selectAccounts);
 
-    const [pageSize, _setPageSize] = useState(10);
+    const [pageSize, _setPageSize] = useState(DEFAULT_PAGE_SIZE);
     const [page, _setPage] = useState(0);
 
     const [transactionTypeFilter, setTransactionTypeFilter] = useState<"none" | TransactionType>("none");
@@ -382,7 +382,7 @@ export function Transactions() {
     }
 
     function setPageSize(pageSize: number) {
-        if (pageSize === 10) {
+        if (pageSize === DEFAULT_PAGE_SIZE) {
             setSearchParams("pageSize", undefined);
         } else {
             setSearchParams("pageSize", pageSize);
@@ -476,7 +476,7 @@ export function Transactions() {
         if (pageSize != null) {
             _setPageSize(parseInt(pageSize));
         } else {
-            _setPageSize(10);
+            _setPageSize(DEFAULT_PAGE_SIZE);
         }
     }, [searchParams])
 
