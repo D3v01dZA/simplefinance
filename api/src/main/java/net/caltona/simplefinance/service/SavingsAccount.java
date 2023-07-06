@@ -5,7 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import net.caltona.simplefinance.db.model.DAccountConfig;
-import net.caltona.simplefinance.service.calculator.AssetCalculator;
+import net.caltona.simplefinance.service.calculator.AccountCalculator;
 import net.caltona.simplefinance.service.calculator.TotalType;
 import net.caltona.simplefinance.service.transaction.Transaction;
 
@@ -42,12 +42,12 @@ public class SavingsAccount implements Account {
 
     @Override
     public BigDecimal calculateBalance(LocalDate date) {
-        return new AssetCalculator(transactionsSupplier.get()).balance(date);
+        return new AccountCalculator(transactionsSupplier.get(), false).balance(date);
     }
 
     @Override
     public BigDecimal calculateTransfer(LocalDate date) {
-        return new AssetCalculator(transactionsSupplier.get()).transfer(date);
+        return new AccountCalculator(transactionsSupplier.get(), false).transfer(date);
     }
 
     @Override

@@ -42,21 +42,17 @@ public class Calculator {
             BigDecimal transfer = account.calculateTransfer(date);
             JBalance.AccountBalance accountBalance = new JBalance.AccountBalance(account.getId(), balance, transfer);
             TotalType totalType = account.totalType();
-            if (totalType != TotalType.IGNORED) {
-                totalType.getCalculationType().addNet(totals, balance);
-                totalType.getCalculationType().addTotal(totalType, totals, balance);
-                totalType.getCalculationType().addTransfer(totalType, totals, transfer);
-                totals.getAccountBalances().put(account.getId(), accountBalance);
-            }
+            totalType.getCalculationType().addNet(totals, balance);
+            totalType.getCalculationType().addTotal(totalType, totals, balance);
+            totalType.getCalculationType().addTransfer(totalType, totals, transfer);
+            totals.getAccountBalances().put(account.getId(), accountBalance);
         }
 
         for (TotalType totalType : TotalType.values()) {
             CalculationType calculationType = totalType.getCalculationType();
-            if (calculationType != CalculationType.IGNORED) {
-                BigDecimal flow = calculationType.calculateFlow(totalType, totals);
-                calculationType.addFlow(totalType, totals, flow);
-                totalType.getFlowGroupingType().addFlowGrouping(totals, flow);
-            }
+            BigDecimal flow = calculationType.calculateFlow(totalType, totals);
+            calculationType.addFlow(totalType, totals, flow);
+            totalType.getFlowGroupingType().addFlowGrouping(totals, flow);
         }
 
         return new JBalance(

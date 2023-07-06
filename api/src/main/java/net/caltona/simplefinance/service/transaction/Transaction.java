@@ -17,8 +17,6 @@ public interface Transaction {
 
     BigDecimal transfer(BigDecimal value);
 
-    BigDecimal transferReverse(BigDecimal value);
-
     Validation canAddTo(List<Transaction> transactions);
 
 }

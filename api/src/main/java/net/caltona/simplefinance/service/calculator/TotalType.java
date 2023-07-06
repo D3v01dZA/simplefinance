@@ -6,15 +6,15 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum TotalType {
-    IGNORED(CalculationType.IGNORED, FlowGroupingType.IGNORED),
-    CASH(CalculationType.ASSET, FlowGroupingType.CASH),
-    SHORT_TERM_ASSET(CalculationType.ASSET, FlowGroupingType.GAIN),
-    LONG_TERM_ASSET(CalculationType.ASSET, FlowGroupingType.GAIN),
-    PHYSICAL_ASSET(CalculationType.ASSET, FlowGroupingType.APPRECIATION),
-    RETIREMENT_ASSET(CalculationType.ASSET, FlowGroupingType.GAIN),
-    CASH_LIABILITY(CalculationType.LIABILITY, FlowGroupingType.CASH),
-    SHORT_TERM_LIABILITY(CalculationType.LIABILITY, FlowGroupingType.INTEREST),
-    LONG_TERM_LIABILITY(CalculationType.LIABILITY, FlowGroupingType.INTEREST);
+    EXTERNAL(CalculationType.NOT_IGNORED, FlowGroupingType.EXTERNAL),
+    CASH(CalculationType.NOT_IGNORED, FlowGroupingType.CASH),
+    SHORT_TERM_ASSET(CalculationType.NOT_IGNORED, FlowGroupingType.GAIN),
+    LONG_TERM_ASSET(CalculationType.NOT_IGNORED, FlowGroupingType.GAIN),
+    PHYSICAL_ASSET(CalculationType.NOT_IGNORED, FlowGroupingType.APPRECIATION),
+    RETIREMENT_ASSET(CalculationType.NOT_IGNORED, FlowGroupingType.GAIN),
+    CASH_LIABILITY(CalculationType.NOT_IGNORED, FlowGroupingType.CASH),
+    SHORT_TERM_LIABILITY(CalculationType.NOT_IGNORED, FlowGroupingType.INTEREST),
+    LONG_TERM_LIABILITY(CalculationType.NOT_IGNORED, FlowGroupingType.INTEREST);
 
     private final CalculationType calculationType;
 

@@ -41,11 +41,6 @@ public class TransferOut implements Transaction {
     }
 
     @Override
-    public BigDecimal transferReverse(BigDecimal value) {
-        return value.add(this.value);
-    }
-
-    @Override
     public Validation canAddTo(List<Transaction> transactions) {
         return new Validation();
     }

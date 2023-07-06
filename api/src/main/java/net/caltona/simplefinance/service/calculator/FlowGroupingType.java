@@ -5,7 +5,7 @@ import net.caltona.simplefinance.api.model.JBalance;
 import java.math.BigDecimal;
 
 public enum FlowGroupingType {
-    IGNORED,
+    EXTERNAL,
     CASH,
     GAIN,
     APPRECIATION,

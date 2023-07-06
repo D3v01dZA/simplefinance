@@ -41,11 +41,6 @@ public class TransferIn implements Transaction {
     }
 
     @Override
-    public BigDecimal transferReverse(BigDecimal value) {
-        return value.subtract(this.value);
-    }
-
-    @Override
     public Validation canAddTo(List<Transaction> transactions) {
         return new Validation();
     }

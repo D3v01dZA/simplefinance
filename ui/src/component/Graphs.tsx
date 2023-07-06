@@ -48,6 +48,7 @@ enum ViewType {
 }
 
 enum FlowGroupingType {
+    EXTERNAL = "EXTERNAL",
     CASH = "CASH",
     GAIN = "GAIN",
     APPRECIATION = "APPRECIATION",
@@ -66,6 +67,7 @@ enum DataType {
 
 enum TotalType {
     CASH = "CASH",
+    EXTERNAL = "EXTERNAL",
     SHORT_TERM_ASSET = "SHORT_TERM_ASSET",
     LONG_TERM_ASSET = "LONG_TERM_ASSET",
     PHYSICAL_ASSET = "PHYSICAL_ASSET",

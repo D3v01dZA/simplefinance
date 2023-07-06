@@ -26,7 +26,7 @@ public enum CalculationType {
             return balance.subtract(transfer);
         }
     },
-    ASSET {
+    NOT_IGNORED {
         @Override
         public void addNet(Totals totals, BigDecimal amount) {
             totals.setNet(totals.getNet().add(amount));
@@ -35,17 +35,6 @@ public enum CalculationType {
         @Override
         protected BigDecimal calculateFlow(BigDecimal balance, BigDecimal transfer) {
             return balance.subtract(transfer);
-        }
-    },
-    LIABILITY {
-        @Override
-        public void addNet(Totals totals, BigDecimal amount) {
-            totals.setNet(totals.getNet().subtract(amount));
-        }
-
-        @Override
-        protected BigDecimal calculateFlow(BigDecimal balance, BigDecimal transfer) {
-            return balance.subtract(transfer).negate();
         }
     };
 

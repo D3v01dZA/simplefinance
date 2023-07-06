@@ -41,11 +41,6 @@ public class Balance implements Transaction {
     }
 
     @Override
-    public BigDecimal transferReverse(BigDecimal value) {
-        return value;
-    }
-
-    @Override
     public Validation canAddTo(List<Transaction> transactions) {
         if (transactions.stream().anyMatch(transaction -> transaction.type() == DTransaction.Type.BALANCE && transaction.date().equals(date))) {
             return new Validation("Balance already exists on this date");

@@ -5,7 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import net.caltona.simplefinance.db.model.DAccountConfig;
-import net.caltona.simplefinance.service.calculator.LiabilityCalculator;
+import net.caltona.simplefinance.service.calculator.AccountCalculator;
 import net.caltona.simplefinance.service.calculator.TotalType;
 import net.caltona.simplefinance.service.transaction.Transaction;
 
@@ -40,12 +40,12 @@ public class CreditCardAccount implements Account {
 
     @Override
     public BigDecimal calculateBalance(LocalDate date) {
-        return new LiabilityCalculator(transactionsSupplier.get()).balance(date);
+        return new AccountCalculator(transactionsSupplier.get(), true).balance(date);
     }
 
     @Override
     public BigDecimal calculateTransfer(LocalDate date) {
-        return new LiabilityCalculator(transactionsSupplier.get()).transfer(date);
+        return new AccountCalculator(transactionsSupplier.get(), false).transfer(date);
     }
 
     @Override
