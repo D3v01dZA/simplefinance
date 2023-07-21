@@ -6,7 +6,7 @@ import { useAppSelector } from "../app/hooks";
 import { selectServer } from "../app/serverSlice";
 import { constrainedPage, del, err, get, post, titleCase, today } from "../util/util";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPenToSquare, faTrash, faPlus, faCartPlus, faFilter } from '@fortawesome/free-solid-svg-icons';
+import { faPenToSquare, faTrash, faPlus, faCartPlus, faFilter, faBalanceScale } from '@fortawesome/free-solid-svg-icons';
 import { DEFAULT_PAGE_SIZE, Pagination } from "./Pagination";
 
 enum TransactionType {
@@ -34,6 +34,10 @@ interface WorkingTransaction {
     fromAccountId: string,
 }
 
+interface BalanceAddingTranscations {
+    [accountId: string]: string
+}
+
 interface BulkWorkingTransactionsTransaction {
     accountId: string,
     value?: string,
@@ -47,11 +51,11 @@ interface BulkWorkingTransactions {
     transactions: BulkWorkingTransactionsTransaction[]
 }
 
-function AccountName({ accountId: fromAccountId, accounts }: { accountId: string, accounts: IndexedAccounts }) {
-    if (fromAccountId === undefined || fromAccountId === null) {
+function AccountName({ accountId: accountId, accounts }: { accountId: string, accounts: IndexedAccounts }) {
+    if (accountId === undefined || accountId === null) {
         return (<React.Fragment />);
     }
-    const account = accounts[fromAccountId];
+    const account = accounts[accountId];
     if (account == undefined || account === null) {
         return <React.Fragment>ERRROR</React.Fragment>
     }
@@ -71,6 +75,20 @@ function isValueValid(value: string | undefined) {
         return false;
     }
     return true;
+}
+
+function filterTransactions(transactions: JTranscation[], transactionType: TransactionType) {
+    const encounteredAccountIds = new Set();
+    return transactions.filter(transaction => {
+        if (transaction.type !== transactionType) {
+            return false;
+        }
+        if (encounteredAccountIds.has(transaction.accountId)) {
+            return false;
+        }
+        encounteredAccountIds.add(transaction.accountId);
+        return true;
+    });
 }
 
 function Transaction({ transaction, accounts, edit, del }: { transaction: JTranscation, accounts: IndexedAccounts, edit: () => void, del: () => void }) {
@@ -291,6 +309,96 @@ function BulkTransactionModal({
     );
 }
 
+function BalanceTransactionModal({
+    accounts,
+    show,
+    setShow,
+    transactions,
+    balanceAddingTransactions,
+    setBalanceAddingTransactions,
+    saving,
+    save
+}: {
+    accounts: IndexedAccounts,
+    show: boolean,
+    setShow: (value: boolean) => void,
+    transactions: JTranscation[],
+    balanceAddingTransactions: BalanceAddingTranscations,
+    setBalanceAddingTransactions: (value: BalanceAddingTranscations) => void,
+    saving: boolean,
+    save: () => void
+}) {
+    const mappedTransactions = filterTransactions(transactions, TransactionType.BALANCE).reduce<{[accountId: string] : JTranscation}>((acc, current) => {
+        acc[current.accountId] = current;
+        return acc;
+    }, {});
+
+    function editTransaction(accountId: string, value: string) {
+        if (value === undefined || value === "") {
+            const copy = {...balanceAddingTransactions}
+            delete copy[accountId];
+            setBalanceAddingTransactions(copy);
+        } else {
+            setBalanceAddingTransactions({
+                ...balanceAddingTransactions,
+                [accountId]: value
+            });
+        }
+    }
+
+    function placeholder(accountId: string) {
+        let transaction = mappedTransactions[accountId];
+        if (!transaction || transaction.date === today()) {
+            return undefined;
+        }
+        return transaction.value + "";
+    }
+
+    function value(accountId: string): string {
+        let transaction = mappedTransactions[accountId];
+        if (!transaction || transaction.date !== today()) {
+            return balanceAddingTransactions[accountId];
+        }
+        return transaction.value + "";
+    }
+
+    function disabled(accountId: string) {
+        let transaction = mappedTransactions[accountId];
+        if (!transaction || transaction.date !== today()) {
+            return false;
+        }
+        return true;
+    }
+
+    return (
+        <Modal show={show} onHide={() => setShow(false)} >
+            <Modal.Header closeButton>
+                <Modal.Title>Add Multiple Balance Transactions</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                {
+                    Object.keys(accounts).map(id => {
+                        return (
+                            <Form.Group key={id}>
+                                <Form.Label><AccountName accountId={id} accounts={accounts}/></Form.Label>
+                                <Form.Control type="text" className="colored-placeholder" value={value(id)} placeholder={placeholder(id)} disabled={disabled(id)} isInvalid={value(id) !== undefined && !isValueValid(value(id))} onChange={e => editTransaction(id, e.target.value)}></Form.Control>
+                            </Form.Group>
+                        )
+                    })
+                }
+            </Modal.Body>
+            <Modal.Footer>
+                <Button disabled={saving} variant="secondary" onClick={() => setShow(false)}>
+                    Cancel
+                </Button>
+                <Button disabled={saving} variant="primary" onClick={() => save()}>
+                    Save
+                </Button>
+            </Modal.Footer>
+        </Modal>
+    );
+}
+
 export function Transactions() {
     const { accountId } = useParams();
     const [searchParams, _setSearchParams] = useSearchParams();
@@ -312,6 +420,10 @@ export function Transactions() {
     const [showAdding, setShowAdding] = useState(false);
     const [adding, setAdding] = useState(false);
     const [addingTransaction, setAddingTransaction] = useState<Partial<WorkingTransaction>>({});
+
+    const [showBalanceAdding, setShowBalanceAdding] = useState(false);
+    const [balanceAdding, setBalanceAdding] = useState(false);
+    const [balanceAddingTransactions, setBalanceAddingTransactions] = useState<BalanceAddingTranscations>({});
 
     const [showBulkAdding, setShowBulkAdding] = useState(false);
     const [bulkAdding, setBulkAdding] = useState(false);
@@ -412,18 +524,7 @@ export function Transactions() {
 
     useEffect(() => {
         if (lastTransactionByTypeFilter !== "none") {
-            const encounteredAccountIds = new Set();
-            const filtered = transactions.filter(transaction => {
-                if (transaction.type !== lastTransactionByTypeFilter) {
-                    return false;
-                }
-                if (encounteredAccountIds.has(transaction.accountId)) {
-                    return false;
-                }
-                encounteredAccountIds.add(transaction.accountId);
-                return true;
-            });
-            setFilteredTransactions(filtered);
+            setFilteredTransactions(filterTransactions(transactions, lastTransactionByTypeFilter));
         } else {
             let filtered = transactions;
             if (transactionTypeFilter !== "none") {
@@ -594,6 +695,12 @@ export function Transactions() {
                                         }}>
                                             <FontAwesomeIcon icon={faCartPlus} />
                                         </Button>
+                                        <Button variant="warning" onClick={() => {
+                                            setBalanceAddingTransactions({});
+                                            setShowBalanceAdding(true);
+                                        }}>
+                                            <FontAwesomeIcon icon={faBalanceScale} />
+                                        </Button>
                                         <Button variant="success" onClick={() => {
                                             setAddingTransaction({ type: TransactionType.BALANCE, description: "", date: today(), accountId: accountId ?? Object.keys(accounts)[0] });
                                             setShowAdding(true);
@@ -638,6 +745,23 @@ export function Transactions() {
                     .finally(() => {
                         setBulkAdding(false);
                         setShowBulkAdding(false);
+                    });
+            }} />
+            <BalanceTransactionModal accounts={accounts} show={showBalanceAdding} setShow={setShowBalanceAdding} transactions={transactions} balanceAddingTransactions={balanceAddingTransactions} setBalanceAddingTransactions={setBalanceAddingTransactions} saving={balanceAdding} save={() => {
+                setBalanceAdding(true);
+                Promise.all(Object.entries(balanceAddingTransactions).map(([id, value]) => {
+                    let transaction = {
+                        description: "",
+                        date: today(),
+                        value: value,
+                        type: TransactionType.BALANCE,
+                    }
+                    return post(server, `/api/account/${id}/transaction/`, transaction);
+                })).then(() => refreshTransactions())
+                    .catch(error => err(error))
+                    .finally(() => {
+                        setBalanceAdding(false);
+                        setShowBalanceAdding(false);
                     });
             }} />
         </Container >
