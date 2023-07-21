@@ -8,6 +8,7 @@ public enum FlowGroupingType {
     EXTERNAL,
     CASH,
     GAIN,
+    RETIREMENT,
     APPRECIATION,
     INTEREST;
 

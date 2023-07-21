@@ -51,6 +51,7 @@ enum FlowGroupingType {
     EXTERNAL = "EXTERNAL",
     CASH = "CASH",
     GAIN = "GAIN",
+    RETIREMENT = "RETIREMENT",
     APPRECIATION = "APPRECIATION",
     INTEREST = "INTEREST",
 }

@@ -11,7 +11,7 @@ public enum TotalType {
     SHORT_TERM_ASSET(CalculationType.NOT_IGNORED, FlowGroupingType.GAIN),
     LONG_TERM_ASSET(CalculationType.NOT_IGNORED, FlowGroupingType.GAIN),
     PHYSICAL_ASSET(CalculationType.NOT_IGNORED, FlowGroupingType.APPRECIATION),
-    RETIREMENT_ASSET(CalculationType.NOT_IGNORED, FlowGroupingType.GAIN),
+    RETIREMENT_ASSET(CalculationType.NOT_IGNORED, FlowGroupingType.RETIREMENT),
     CASH_LIABILITY(CalculationType.NOT_IGNORED, FlowGroupingType.CASH),
     SHORT_TERM_LIABILITY(CalculationType.NOT_IGNORED, FlowGroupingType.INTEREST),
     LONG_TERM_LIABILITY(CalculationType.NOT_IGNORED, FlowGroupingType.INTEREST);
