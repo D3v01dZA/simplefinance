@@ -77,10 +77,13 @@ function isValueValid(value: string | undefined) {
     return true;
 }
 
-function filterTransactions(transactions: JTranscation[], transactionType: TransactionType) {
+function filterTransactions(transactions: JTranscation[], transactionType: TransactionType, predicate?: (transaction: JTranscation) => boolean) {
     const encounteredAccountIds = new Set();
     return transactions.filter(transaction => {
         if (transaction.type !== transactionType) {
+            return false;
+        }
+        if (predicate && !predicate(transaction)) {
             return false;
         }
         if (encounteredAccountIds.has(transaction.accountId)) {
@@ -313,6 +316,8 @@ function BalanceTransactionModal({
     accounts,
     show,
     setShow,
+    date,
+    setDate,
     transactions,
     balanceAddingTransactions,
     setBalanceAddingTransactions,
@@ -322,13 +327,16 @@ function BalanceTransactionModal({
     accounts: IndexedAccounts,
     show: boolean,
     setShow: (value: boolean) => void,
+    date: string,
+    setDate: (value: string) => void,
     transactions: JTranscation[],
     balanceAddingTransactions: BalanceAddingTranscations,
     setBalanceAddingTransactions: (value: BalanceAddingTranscations) => void,
     saving: boolean,
     save: () => void
 }) {
-    const mappedTransactions = filterTransactions(transactions, TransactionType.BALANCE).reduce<{[accountId: string] : JTranscation}>((acc, current) => {
+    let actualDate = new Date(date);
+    const mappedTransactions = filterTransactions(transactions, TransactionType.BALANCE, transaction => new Date(transaction.date) <= actualDate).reduce<{[accountId: string] : JTranscation}>((acc, current) => {
         acc[current.accountId] = current;
         return acc;
     }, {});
@@ -348,7 +356,7 @@ function BalanceTransactionModal({
 
     function placeholder(accountId: string) {
         let transaction = mappedTransactions[accountId];
-        if (!transaction || transaction.date === today()) {
+        if (!transaction || transaction.date === date) {
             return undefined;
         }
         return transaction.value + "";
@@ -356,15 +364,15 @@ function BalanceTransactionModal({
 
     function value(accountId: string): string {
         let transaction = mappedTransactions[accountId];
-        if (!transaction || transaction.date !== today()) {
-            return balanceAddingTransactions[accountId];
+        if (!transaction || transaction.date !== date) {
+            return balanceAddingTransactions[accountId] ?? "";
         }
         return transaction.value + "";
     }
 
     function disabled(accountId: string) {
         let transaction = mappedTransactions[accountId];
-        if (!transaction || transaction.date !== today()) {
+        if (!transaction || transaction.date !== date) {
             return false;
         }
         return true;
@@ -376,12 +384,16 @@ function BalanceTransactionModal({
                 <Modal.Title>Add Multiple Balance Transactions</Modal.Title>
             </Modal.Header>
             <Modal.Body>
+                <Form.Group>
+                    <Form.Label>Date</Form.Label>
+                    <Form.Control type="date" value={date} onChange={e => setDate(e.target.value)}></Form.Control>
+                </Form.Group>
                 {
                     Object.keys(accounts).map(id => {
                         return (
                             <Form.Group key={id}>
                                 <Form.Label><AccountName accountId={id} accounts={accounts}/></Form.Label>
-                                <Form.Control type="text" className="colored-placeholder" value={value(id)} placeholder={placeholder(id)} disabled={disabled(id)} isInvalid={value(id) !== undefined && !isValueValid(value(id))} onChange={e => editTransaction(id, e.target.value)}></Form.Control>
+                                <Form.Control type="text" className="colored-placeholder" value={value(id)} placeholder={placeholder(id)} disabled={disabled(id)} isInvalid={value(id) !== "" && !isValueValid(value(id))} onChange={e => editTransaction(id, e.target.value)}></Form.Control>
                             </Form.Group>
                         )
                     })
@@ -423,6 +435,7 @@ export function Transactions() {
 
     const [showBalanceAdding, setShowBalanceAdding] = useState(false);
     const [balanceAdding, setBalanceAdding] = useState(false);
+    const [balanceAddingDate, setBalanceAddingDate] = useState(today());
     const [balanceAddingTransactions, setBalanceAddingTransactions] = useState<BalanceAddingTranscations>({});
 
     const [showBulkAdding, setShowBulkAdding] = useState(false);
@@ -697,6 +710,7 @@ export function Transactions() {
                                         </Button>
                                         <Button variant="warning" onClick={() => {
                                             setBalanceAddingTransactions({});
+                                            setBalanceAddingDate(today());
                                             setShowBalanceAdding(true);
                                         }}>
                                             <FontAwesomeIcon icon={faBalanceScale} />
@@ -747,12 +761,12 @@ export function Transactions() {
                         setShowBulkAdding(false);
                     });
             }} />
-            <BalanceTransactionModal accounts={accounts} show={showBalanceAdding} setShow={setShowBalanceAdding} transactions={transactions} balanceAddingTransactions={balanceAddingTransactions} setBalanceAddingTransactions={setBalanceAddingTransactions} saving={balanceAdding} save={() => {
+            <BalanceTransactionModal accounts={accounts} show={showBalanceAdding} setShow={setShowBalanceAdding} date={balanceAddingDate} setDate={setBalanceAddingDate} transactions={transactions} balanceAddingTransactions={balanceAddingTransactions} setBalanceAddingTransactions={setBalanceAddingTransactions} saving={balanceAdding} save={() => {
                 setBalanceAdding(true);
                 Promise.all(Object.entries(balanceAddingTransactions).map(([id, value]) => {
                     let transaction = {
                         description: "",
-                        date: today(),
+                        date: balanceAddingDate,
                         value: value,
                         type: TransactionType.BALANCE,
                     }
