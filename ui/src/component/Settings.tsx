@@ -34,6 +34,7 @@ export function Settings() {
                     .then(() => refreshSettings())
                     .catch(error => err(error))
                     .finally(() => {
+                        setUpdatedDefaultTransactionFromAccountId("");
                         setSavingUpdatedDefaultTransactionFromAccountId(false);
                     });
             } else {
@@ -41,10 +42,10 @@ export function Settings() {
                     .then(() => refreshSettings())
                     .catch(error => err(error))
                     .finally(() => {
+                        setUpdatedDefaultTransactionFromAccountId("");
                         setSavingUpdatedDefaultTransactionFromAccountId(false);
                     });
             }
-            
         }
     }
 
@@ -63,7 +64,7 @@ export function Settings() {
             <Row xs={1} md={1} xl={1}>
                 <Col>
                     <ButtonGroup className="float-end">
-                        <Button variant="primary" disabled={updatedDefaultTransactionFromAccountId === ""} onClick={() => save()}>
+                        <Button variant="primary" disabled={savingUpdatedDefaultTransactionFromAccountId || updatedDefaultTransactionFromAccountId === ""} onClick={() => save()}>
                             Save
                         </Button>
                     </ButtonGroup>
