@@ -151,15 +151,16 @@ public class DTransaction {
         }
     }
 
-    @Getter
     @EqualsAndHashCode
     @AllArgsConstructor
     public static class UpdateTransaction {
 
         @NonNull
+        @Getter
         private String accountId;
 
         @NonNull
+        @Getter
         private String id;
 
         private String description;

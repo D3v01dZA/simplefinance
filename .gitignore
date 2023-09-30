@@ -39,6 +39,7 @@ out/
 
 ### DB
 database.db
+database.db.bak
 
 ### Me
 **/MyE2ETests.java

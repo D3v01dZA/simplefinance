@@ -1,4 +1,6 @@
+import { IndexedAccounts } from "../app/accountSlice";
 import { ServerState } from "../app/serverSlice";
+import { IndexedSettings, SettingKey } from "../app/settingSlice";
 
 export function titleCase(value: string) {
     const values = value.split("_");
@@ -80,6 +82,17 @@ export function today() {
     }
 
     return `${date.getFullYear()}-${month()}-${day()}`
+}
+
+export function defaultAccountId(settings: IndexedSettings, accounts: IndexedAccounts) {
+    const found = settings[SettingKey.DEFAULT_TRANSACTION_FROM_ACCOUNT_ID];
+    if (found) {
+        const foundAccount = accounts[found.value];
+        if (foundAccount) {
+            return foundAccount.id;
+        }
+    }
+    return Object.values(accounts)[0]?.id ?? "";
 }
 
 export function generateColorPalette(numColors: number): string[] {

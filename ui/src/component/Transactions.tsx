@@ -4,10 +4,12 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { IndexedAccounts, selectAccounts } from "../app/accountSlice";
 import { useAppSelector } from "../app/hooks";
 import { selectServer } from "../app/serverSlice";
-import { constrainedPage, del, err, get, post, titleCase, today } from "../util/util";
+import { constrainedPage, defaultAccountId, del, err, get, post, titleCase, today } from "../util/util";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPenToSquare, faTrash, faPlus, faCartPlus, faFilter, faBalanceScale } from '@fortawesome/free-solid-svg-icons';
 import { DEFAULT_PAGE_SIZE, Pagination } from "./Pagination";
+import { AccountName } from "../util/common";
+import { IndexedSettings, selectSettings } from "../app/settingSlice";
 
 enum TransactionType {
     BALANCE = "BALANCE",
@@ -55,17 +57,6 @@ interface BulkWorkingTransactions {
     type: TransactionType,
     fromAccountId?: string,
     transactions: BulkWorkingTransactionsTransaction[]
-}
-
-function AccountName({ accountId: accountId, accounts }: { accountId: string, accounts: IndexedAccounts }) {
-    if (accountId === undefined || accountId === null) {
-        return (<React.Fragment />);
-    }
-    const account = accounts[accountId];
-    if (account == undefined || account === null) {
-        return <React.Fragment>ERRROR</React.Fragment>
-    }
-    return (<React.Fragment>{account.name} ({titleCase(account.type)})</React.Fragment>);
 }
 
 function description(transaction: JTranscation) {
@@ -125,6 +116,7 @@ function Transaction({ transaction, accounts, edit, del }: { transaction: JTrans
 
 function TransactionModal({
     accounts,
+    settings,
     singleAccount,
     show,
     setShow,
@@ -134,6 +126,7 @@ function TransactionModal({
     save
 }: {
     accounts: IndexedAccounts,
+    settings: IndexedSettings,
     singleAccount: boolean,
     show: boolean,
     setShow: (value: boolean) => void,
@@ -166,7 +159,7 @@ function TransactionModal({
                         <Form.Label>Type</Form.Label>
                         <Form.Select disabled={!isAdd} value={transaction.type} onChange={e => {
                             const type = e.target.value as TransactionType;
-                            const fromAccountId = type === TransactionType.TRANSFER ? Object.keys(accounts)[0] : undefined;
+                            const fromAccountId = type === TransactionType.TRANSFER ? defaultAccountId(settings, accounts) : undefined;
                             setTransaction({ ...transaction, fromAccountId, type });
                         }}>
                             {Object.keys(TransactionType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
@@ -200,6 +193,7 @@ function TransactionModal({
 
 function BulkTransactionModal({
     accounts,
+    settings,
     show,
     setShow,
     transactions,
@@ -208,6 +202,7 @@ function BulkTransactionModal({
     save
 }: {
     accounts: IndexedAccounts,
+    settings: IndexedSettings,
     show: boolean,
     setShow: (value: boolean) => void,
     transactions: BulkWorkingTransactions,
@@ -249,7 +244,7 @@ function BulkTransactionModal({
                         <Form.Label>Type</Form.Label>
                         <Form.Select value={transactions.type} onChange={e => {
                             const type = e.target.value as TransactionType;
-                            const fromAccountId = type === TransactionType.TRANSFER ? Object.keys(accounts)[0] : undefined;
+                            const fromAccountId = type === TransactionType.TRANSFER ? defaultAccountId(settings, accounts) : undefined;
                             setTransactions({ ...transactions, fromAccountId, type });
                         }}>
                             {Object.keys(TransactionType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
@@ -285,7 +280,7 @@ function BulkTransactionModal({
                                             </ButtonGroup>
                                         ) : (
                                             <ButtonGroup className="float-end">
-                                                <Button onClick={() => setTransactions({ ...transactions, transactions: transactions.transactions.concat({ accountId: Object.values(accounts)[0].id }) })}>
+                                                <Button onClick={() => setTransactions({ ...transactions, transactions: transactions.transactions.concat({ accountId: defaultAccountId(settings, accounts) }) })}>
                                                     Add Transaction
                                                 </Button>
                                                 <Button variant="danger" onClick={() => deleteTransaction(index)}>
@@ -423,6 +418,7 @@ export function Transactions() {
 
     const server = useAppSelector(selectServer);
     const accounts = useAppSelector(selectAccounts);
+    const settings = useAppSelector(selectSettings);
 
     const [pageSize, _setPageSize] = useState(DEFAULT_PAGE_SIZE);
     const [page, _setPage] = useState(0);
@@ -459,6 +455,7 @@ export function Transactions() {
             description: "",
             date: today(),
             type: TransactionType.TRANSFER,
+            fromAccountId: defaultAccountId(settings, accounts),
             transactions: []
         }
         if (transaction !== undefined) {
@@ -750,7 +747,7 @@ export function Transactions() {
                                 <td>
                                     <ButtonGroup>
                                         <Button variant="primary" onClick={() => {
-                                            setBulkAddingTransactions(bulkTranscationsDefault({ accountId: Object.values(accounts)[0].id }));
+                                            setBulkAddingTransactions(bulkTranscationsDefault({ accountId: Object.keys(accounts)[0] }));
                                             setShowBulkAdding(true);
                                         }}>
                                             <FontAwesomeIcon icon={faCartPlus} />
@@ -776,7 +773,7 @@ export function Transactions() {
                 </Col>
             </Row>
             <Pagination itemCount={filteredTransactions.length} page={page} setPage={setPage} pageSize={pageSize} setPageSize={setPageSize} />
-            <TransactionModal accounts={accounts} singleAccount={accountId !== undefined} show={showAdding} setShow={setShowAdding} transaction={addingTransaction} setTransaction={setAddingTransaction} saving={adding} save={() => {
+            <TransactionModal accounts={accounts} settings={settings} singleAccount={accountId !== undefined} show={showAdding} setShow={setShowAdding} transaction={addingTransaction} setTransaction={setAddingTransaction} saving={adding} save={() => {
                 setAdding(true);
                 post(server, `/api/account/${addingTransaction.accountId}/transaction/`, addingTransaction)
                     .then(() => refreshTransactions())
@@ -786,7 +783,7 @@ export function Transactions() {
                         setShowAdding(false);
                     });
             }} />
-            <TransactionModal accounts={accounts} singleAccount={accountId !== undefined} show={showEditing} setShow={setShowEditing} transaction={editingTransaction} setTransaction={setEditingTransaction} saving={editing} save={() => {
+            <TransactionModal accounts={accounts} settings={settings} singleAccount={accountId !== undefined} show={showEditing} setShow={setShowEditing} transaction={editingTransaction} setTransaction={setEditingTransaction} saving={editing} save={() => {
                 setEditing(true);
                 post(server, `/api/account/${editingTransaction.accountId}/transaction/${editingTransaction.id}/`, editingTransaction)
                     .then(() => refreshTransactions())
@@ -796,7 +793,7 @@ export function Transactions() {
                         setShowEditing(false);
                     });
             }} />
-            <BulkTransactionModal accounts={accounts} show={showBulkAdding} setShow={setShowBulkAdding} transactions={bulkAddingTransactions} setTransactions={setBulkAddingTransactions} saving={bulkAdding} save={() => {
+            <BulkTransactionModal accounts={accounts} settings={settings} show={showBulkAdding} setShow={setShowBulkAdding} transactions={bulkAddingTransactions} setTransactions={setBulkAddingTransactions} saving={bulkAdding} save={() => {
                 setBulkAdding(true);
                 Promise.all(bulkAddingTransactions.transactions.map(transaction => post(server, `/api/account/${transaction.accountId}/transaction/`, {
                     ...bulkAddingTransactions,

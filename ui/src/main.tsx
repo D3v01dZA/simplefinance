@@ -9,6 +9,7 @@ import { Header } from "./component/Header"
 import { Accounts } from "./component/Accounts"
 import { Transactions } from "./component/Transactions";
 import { Graphs } from "./component/Graphs";
+import { Settings } from "./component/Settings";
 
 const router = createHashRouter([
   {
@@ -34,6 +35,10 @@ const router = createHashRouter([
       {
         path: "/graphs",
         element: <Graphs />
+      },
+      {
+        path: "/settings",
+        element: <Settings />
       }
     ]
   },

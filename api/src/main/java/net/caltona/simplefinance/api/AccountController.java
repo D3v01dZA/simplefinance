@@ -2,6 +2,7 @@ package net.caltona.simplefinance.api;
 
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import lombok.NonNull;
 import net.caltona.simplefinance.api.model.JAccount;
 import net.caltona.simplefinance.api.model.JAccountConfig;
 import net.caltona.simplefinance.api.model.JBalance;
@@ -29,7 +30,7 @@ import java.util.stream.Collectors;
 @CrossOrigin(origins = "*")
 public class AccountController {
 
-    @Autowired
+    @NonNull
     private final AccountService accountService;
 
     // ===== Summaries =====

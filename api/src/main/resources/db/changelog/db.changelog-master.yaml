@@ -107,3 +107,26 @@ databaseChangeLog:
                   name: type
                   value: "PHYSICAL_ASSET"
             where: "type='ASSET'"
+  - changeSet:
+      id:  3
+      author:  altonac
+      changes:
+        - createTable:
+            tableName: setting
+            columns:
+              - column:
+                  name:  id
+                  type:  varchar(36)
+                  constraints:
+                    primaryKey:  true
+                    nullable:  false
+              - column:
+                  name: key
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: value
+                  type: varchar(255)
+                  constraints:
+                    nullable: false

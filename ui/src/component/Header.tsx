@@ -6,6 +6,7 @@ import { useAppDispatch, useAppSelector } from "../app/hooks";
 import { selectServer } from "../app/serverSlice";
 import { err, get } from "../util/util";
 import { JAccount, setAccounts } from "../app/accountSlice";
+import { JSetting, setSettings } from "../app/settingSlice";
 
 export function Header() {   
     const server = useAppSelector(selectServer);
@@ -22,7 +23,16 @@ export function Header() {
             .catch(error => err(error));
     }
 
-    useEffect(() => refreshAccounts(), []);
+    function refreshSettings() {
+        get<JSetting[]>(server, "/api/setting/")
+            .then(settings => dispatch(setSettings(settings)))
+            .catch(error => err(error));
+    }
+
+    useEffect(() => {
+        refreshSettings();
+        refreshAccounts();
+    }, []);
 
     return (
         <React.Fragment>
@@ -40,6 +50,9 @@ export function Header() {
                             </LinkContainer>
                             <LinkContainer to="/graphs">
                                 <Nav.Link>Graphs</Nav.Link>
+                            </LinkContainer>
+                            <LinkContainer to="/settings">
+                                <Nav.Link>Settings</Nav.Link>
                             </LinkContainer>
                         </Nav>
                     </Navbar.Collapse>
