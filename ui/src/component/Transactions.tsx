@@ -14,6 +14,12 @@ enum TransactionType {
     TRANSFER = "TRANSFER",
 }
 
+enum LastSType {
+    DAYS = "DAYS",
+    WEEKS = "WEEKS",
+    MONTHS = "MONTHS"
+}
+
 interface JTranscation {
     id: string,
     description: string,
@@ -424,6 +430,8 @@ export function Transactions() {
     const [transactionTypeFilter, setTransactionTypeFilter] = useState<"none" | TransactionType>("none");
     const [descriptionFilter, setDescriptionFilter] = useState("");
     const [dateFilter, setDateFilter] = useState("");
+    const [lastNFilter, setLastNFilter] = useState("");
+    const [lastSFilter, setLastSFilter] = useState<LastSType>(LastSType.DAYS);
     const [lastTransactionByTypeFilter, setLastTransactionByTypeFilter] = useState<"none" | TransactionType>("none");
 
     const [transactions, setTransactions] = useState<JTranscation[]>([]);
@@ -551,9 +559,28 @@ export function Transactions() {
                 const filter = new Date(dateFilter + "T00:00:00").getTime();
                 filtered = filtered.filter(transaction => new Date(transaction.date + "T00:00:00").getTime() === filter);
             }
+            if (lastNFilter !== "") {
+                const lastNFilterCount = parseInt(lastNFilter);
+                let date = new Date();
+                date.setHours(0);
+                date.setMinutes(0);
+                date.setSeconds(0);
+                switch (lastSFilter) {
+                    case LastSType.DAYS:
+                        date.setDate(date.getDate() - lastNFilterCount);
+                        break;
+                    case LastSType.WEEKS:
+                        date.setDate(date.getDate() - (lastNFilterCount * 7));
+                        break;
+                    case LastSType.MONTHS:
+                        date.setDate(date.getDate() - (lastNFilterCount * 31));
+                        break;
+                }
+                filtered = filtered.filter(transaction => new Date(transaction.date + "T00:00:00").getTime() >= date.getTime());
+            }
             setFilteredTransactions(filtered);
         }
-    }, [transactions, transactionTypeFilter, descriptionFilter, dateFilter, lastTransactionByTypeFilter]);
+    }, [transactions, transactionTypeFilter, descriptionFilter, dateFilter, lastTransactionByTypeFilter, lastSFilter, lastNFilter]);
 
     useEffect(() => {
         const transactionType = searchParams.get("type");
@@ -591,6 +618,18 @@ export function Transactions() {
             _setPageSize(parseInt(pageSize));
         } else {
             _setPageSize(DEFAULT_PAGE_SIZE);
+        }
+        const lastN = searchParams.get("lastN");
+        if (lastN != null) {
+            setLastNFilter(lastN);
+        } else {
+            setLastNFilter("");
+        }
+        const lastS = searchParams.get("lastS");
+        if (lastS != null) {
+            setLastSFilter(lastS as LastSType);
+        } else {
+            setLastSFilter(LastSType.DAYS);
         }
     }, [searchParams])
 
@@ -659,6 +698,14 @@ export function Transactions() {
                 <Form.Group>
                     <Form.Label>Date</Form.Label>
                     <Form.Control disabled={globalFilterActive()} type="date" value={dateFilter} onChange={e => setSearchParams("date", e.target.value)} />
+                </Form.Group>
+                <Form.Group>
+                    <Form.Label>Last</Form.Label>
+                    <Form.Control disabled={globalFilterActive()} isInvalid={lastNFilter !== "" && !isValueValid(lastNFilter)} type="text" value={lastNFilter} onChange={e => setSearchParams("lastN", e.target.value)} />
+                    <Form.Select disabled={globalFilterActive()} value={lastSFilter} onChange={e => setSearchParams("lastS", e.target.value)}>
+                        <option value={"none"}></option>
+                        {Object.keys(LastSType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
+                    </Form.Select>
                 </Form.Group>
                 {globalFilters}
                 {clearFilters}
