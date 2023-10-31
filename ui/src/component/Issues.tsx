@@ -111,9 +111,11 @@ export function Issues() {
                 <Col>
                     <Table striped bordered hover>
                         <thead>
-                            <th>Type</th>
-                            <th>Date</th>
-                            <th>Account</th>
+                            <tr>
+                                <th>Type</th>
+                                <th>Date</th>
+                                <th>Account</th>
+                            </tr>
                         </thead>
                         <tbody>
                             {issuesToDisplay().map(issue => (
