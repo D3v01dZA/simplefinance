@@ -37,19 +37,19 @@ export function Issues() {
     function refreshIssues() {
         function sortIssues(issues: JIssue[]) {
             return issues.sort((left, right) => {
-                let issueType = left.issueType.localeCompare(right.issueType);
+                let issueType = right.issueType.localeCompare(left.issueType);
                 if (issueType != 0) {
                     return issueType;
                 }
-                let date = Date.parse(left.date) - Date.parse(right.date);
+                let date = Date.parse(right.date) - Date.parse(left.date);
                 if (date != 0) {
                     return date;
                 }
-                let accountId = left.accountId.localeCompare(right.accountId);
+                let accountId = right.accountId.localeCompare(left.accountId);
                 if (accountId != 0) {
                     return accountId;
                 }
-                return left.transactionId.localeCompare(right.transactionId);
+                return right.transactionId.localeCompare(left.transactionId);
             });
         }
 
@@ -121,7 +121,6 @@ export function Issues() {
                                     <td>{titleCase(issue.issueType)}</td>
                                     <td>{issue.date}</td>
                                     <td><AccountName accounts={accounts} accountId={issue.accountId} /></td>
-                                    <td></td>
                                 </tr>
                             ))}
                         </tbody>
