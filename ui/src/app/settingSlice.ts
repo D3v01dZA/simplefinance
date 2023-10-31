@@ -2,7 +2,8 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit"
 import { RootState } from "./store";
 
 export enum SettingKey {
-    DEFAULT_TRANSACTION_FROM_ACCOUNT_ID = "DEFAULT_TRANSACTION_FROM_ACCOUNT_ID"
+    DEFAULT_TRANSACTION_FROM_ACCOUNT_ID = "DEFAULT_TRANSACTION_FROM_ACCOUNT_ID",
+    TRANSFER_WITHOUT_BALANCE_IGNORED_ACCOUNTS = "TRANSFER_WITHOUT_BALANCE_IGNORED_ACCOUNTS",
 }
 
 export interface SettingState {

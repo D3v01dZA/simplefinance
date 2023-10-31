@@ -14,7 +14,7 @@ public class JSetting {
     private String id;
 
     @NonNull
-    private String key;
+    private DSetting.Key key;
 
     @NonNull
     private String value;
@@ -25,7 +25,7 @@ public class JSetting {
     public static class NewSetting {
 
         @NonNull
-        private String key;
+        private DSetting.Key key;
 
         @NonNull
         private String value;
@@ -42,7 +42,7 @@ public class JSetting {
     public static class UpdateSetting {
 
         @NonNull
-        private String key;
+        private DSetting.Key key;
 
         @NonNull
         private String value;

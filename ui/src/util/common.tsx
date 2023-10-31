@@ -8,7 +8,7 @@ export function AccountName({ accountId: accountId, accounts }: { accountId: str
     }
     const account = accounts[accountId];
     if (account == undefined || account === null) {
-        return <React.Fragment>ERRROR</React.Fragment>
+        return <React.Fragment>ERROR</React.Fragment>
     }
     return (<React.Fragment>{account.name} ({titleCase(account.type)})</React.Fragment>);
 }

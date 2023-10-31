@@ -8,6 +8,8 @@ import net.caltona.simplefinance.service.transaction.Balance;
 import net.caltona.simplefinance.service.transaction.Transaction;
 import net.caltona.simplefinance.service.transaction.TransferIn;
 import net.caltona.simplefinance.service.transaction.TransferOut;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -39,11 +41,13 @@ public class DTransaction {
     @Enumerated(EnumType.STRING)
     private Type type;
 
-    @ManyToOne(optional = false)
+    @Fetch(FetchMode.JOIN)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "account_id")
     private DAccount dAccount;
 
-    @ManyToOne
+    @Fetch(FetchMode.JOIN)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "from_account_id")
     private DAccount dFromAccount;
 

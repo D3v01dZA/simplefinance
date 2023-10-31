@@ -18,12 +18,12 @@ public class DSetting {
     private String id;
 
     @Column
-    private String key;
+    private Key key;
 
     @Column
     private String value;
 
-    public DSetting(String key, String value) {
+    public DSetting(Key key, String value) {
         this.key = key;
         this.value = value;
     }
@@ -32,13 +32,20 @@ public class DSetting {
         return new JSetting(id, key, value);
     }
 
+    public enum Key {
+
+        DEFAULT_TRANSACTION_FROM_ACCOUNT_ID,
+        TRANSFER_WITHOUT_BALANCE_IGNORED_ACCOUNTS
+
+    }
+
     @Getter
     @EqualsAndHashCode
     @AllArgsConstructor
     public static class NewSetting {
 
         @NonNull
-        private String key;
+        private Key key;
 
         @NonNull
         private String value;
@@ -58,7 +65,7 @@ public class DSetting {
         private String id;
 
         @NonNull
-        private String key;
+        private Key key;
 
         @NonNull
         private String value;

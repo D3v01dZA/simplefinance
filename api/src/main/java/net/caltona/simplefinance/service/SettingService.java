@@ -25,6 +25,10 @@ public class SettingService {
         return dSettingDAO.findById(id);
     }
 
+    public Optional<DSetting> findByKey(DSetting.Key key) {
+        return dSettingDAO.findByKey(key);
+    }
+
     public DSetting create(DSetting.NewSetting newSetting) {
         return dSettingDAO.save(newSetting.dSetting());
     }

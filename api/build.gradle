@@ -23,6 +23,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.liquibase:liquibase-core'
 	implementation 'org.hibernate:hibernate-community-dialects:6.1.7.Final'
+	implementation 'com.google.guava:guava:32.1.3-jre'
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'org.xerial:sqlite-jdbc'
 	annotationProcessor 'org.projectlombok:lombok'

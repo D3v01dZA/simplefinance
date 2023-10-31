@@ -13,7 +13,6 @@ import net.caltona.simplefinance.db.model.DTransaction;
 import net.caltona.simplefinance.service.Account;
 import net.caltona.simplefinance.service.AccountService;
 import net.caltona.simplefinance.service.calculator.Calculator;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;

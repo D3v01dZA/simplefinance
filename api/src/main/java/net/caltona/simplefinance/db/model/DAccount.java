@@ -5,6 +5,8 @@ import lombok.*;
 import net.caltona.simplefinance.api.model.JAccount;
 import net.caltona.simplefinance.service.*;
 import net.caltona.simplefinance.service.transaction.Transaction;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -32,13 +34,16 @@ public class DAccount {
     @Enumerated(EnumType.STRING)
     private Type type;
 
-    @OneToMany(mappedBy = "dAccount", cascade = CascadeType.REMOVE)
+    @Fetch(FetchMode.SUBSELECT)
+    @OneToMany(mappedBy = "dAccount", cascade = CascadeType.REMOVE, fetch = FetchType.EAGER)
     private List<DAccountConfig> dAccountConfigs;
 
-    @OneToMany(mappedBy = "dAccount", cascade = CascadeType.REMOVE)
+    @Fetch(FetchMode.SUBSELECT)
+    @OneToMany(mappedBy = "dAccount", cascade = CascadeType.REMOVE, fetch = FetchType.EAGER)
     private List<DTransaction> dTransactions;
 
-    @OneToMany(mappedBy = "dFromAccount", cascade = CascadeType.REMOVE)
+    @Fetch(FetchMode.SUBSELECT)
+    @OneToMany(mappedBy = "dFromAccount", cascade = CascadeType.REMOVE, fetch = FetchType.EAGER)
     private List<DTransaction> dFromTransactions;
 
     public DAccount(String name, Type type) {
