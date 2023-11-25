@@ -59,7 +59,12 @@ public class IssueService {
                                 .anyMatch(dTransaction -> dTransaction.getType() == DTransaction.Type.BALANCE);
                         if (!hasBalance) {
                             return transfers.stream()
-                                    .map(dTransaction -> new TransferWithoutBalance(entry.getKey(), dTransaction.getId(), dTransaction.getDate()));
+                                    .map(dTransaction -> {
+                                        if (dTransaction.getDAccount().getId().equals(entry.getKey())) {
+                                            return new TransferWithoutBalance(entry.getKey(), dTransaction.getId(), dTransaction.getDate());
+                                        }
+                                        return new TransferWithoutBalance(dTransaction.getDFromAccount().get().getId(), dTransaction.getId(), dTransaction.getDate());
+                                    });
                         }
                     }
                     return Stream.of();
