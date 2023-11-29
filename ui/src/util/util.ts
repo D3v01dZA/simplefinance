@@ -95,6 +95,17 @@ export function defaultAccountId(settings: IndexedSettings, accounts: IndexedAcc
     return Object.values(accounts)[0]?.id ?? "";
 }
 
+export function accountTitle(accountId: string, accounts: IndexedAccounts) {
+    if (accountId === undefined || accountId === null) {
+        return "";
+    }
+    const account = accounts[accountId];
+    if (account == undefined || account === null) {
+        return "ERROR";
+    }
+    return account.name + " (" + titleCase(account.type) + ")";
+}
+
 export function generateColorPalette(numColors: number): string[] {
     
     // Helper function to convert HSL color to hex color code
