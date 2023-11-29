@@ -121,7 +121,7 @@ const EMPTY_SANKEY = { "nodes": [{ "name": "EMPTY", "color": "" }, { "name": "EM
 function lines(viewType: ViewType, hiddenItems: Set<string>, accounts: IndexedAccounts) {
     switch (viewType) {
         case ViewType.TOTALS:
-            const totalColorPalette = generateColorPalette(6);
+            const totalColorPalette = generateColorPalette(1 + Object.values(TotalType).length);
             return (
                 <React.Fragment>
                     <Line
@@ -140,7 +140,7 @@ function lines(viewType: ViewType, hiddenItems: Set<string>, accounts: IndexedAc
                 </React.Fragment>
             );
         case ViewType.TOTALS_TRANSFERS:
-            const totalsTransferColorPalette = generateColorPalette(5);
+            const totalsTransferColorPalette = generateColorPalette(1 + Object.values(TotalType).length);
             return (
                 <React.Fragment>
                     {Object.values(TotalType).map((totalType, index) => <Line
@@ -179,7 +179,7 @@ function lines(viewType: ViewType, hiddenItems: Set<string>, accounts: IndexedAc
                 </React.Fragment>
             );
         case ViewType.FLOW:
-            const flowColorPalette = generateColorPalette(6);
+            const flowColorPalette = generateColorPalette(1 + Object.values(TotalType).length);
             return (
                 <React.Fragment>
                     {Object.values(TotalType).map((totalType, index) => <Line
@@ -192,7 +192,7 @@ function lines(viewType: ViewType, hiddenItems: Set<string>, accounts: IndexedAc
                 </React.Fragment>
             );
         case ViewType.FLOW_GROUPING:
-            const flowGoupingColorPalette = generateColorPalette(6);
+            const flowGoupingColorPalette = generateColorPalette(1 + Object.values(FlowGroupingType).length);
             return (
                 <React.Fragment>
                     {Object.values(FlowGroupingType).map((flowGroupingType, index) => <Line
@@ -542,7 +542,7 @@ function SankeyLink({ sourceX, targetX, sourceY, targetY, sourceControlX, target
 }
 
 export function Graphs() {
-    const DEFAULT_GRAPH_TYPE = GraphType.SANKEY;
+    const DEFAULT_GRAPH_TYPE = GraphType.LINE;
     const DEFAULT_VIEW_TYPE = ViewType.TOTALS;
     const DEFAULT_DATE_TYPE = DateType.WEEKLY;
     const DEFAULT_DATA_TYPE = DataType.DIFFERENCE;
