@@ -305,7 +305,7 @@ function calculateSankey(viewType: ViewType, dataType: DataType, accounts: Index
         function decideLiability() {
             if (viewType == ViewType.TOTALS) {
                 return net ? "Liabilities" : "Decrease"
-            } 
+            }
             return "Expense"
         }
 
@@ -377,7 +377,7 @@ function calculateSankey(viewType: ViewType, dataType: DataType, accounts: Index
         function decideLiability() {
             if (viewType == ViewType.ACCOUNTS) {
                 return net ? "Liabilities" : "Decrease"
-            } 
+            }
             return "Expense"
         }
 
@@ -543,8 +543,8 @@ function SankeyLink({ sourceX, targetX, sourceY, targetY, sourceControlX, target
 
 export function Graphs() {
     const DEFAULT_GRAPH_TYPE = GraphType.LINE;
-    const DEFAULT_VIEW_TYPE = ViewType.TOTALS;
-    const DEFAULT_DATE_TYPE = DateType.WEEKLY;
+    const DEFAULT_VIEW_TYPE = ViewType.FLOW_GROUPING;
+    const DEFAULT_DATE_TYPE = DateType.MONTHLY;
     const DEFAULT_DATA_TYPE = DataType.DIFFERENCE;
 
     const [searchParams, _setSearchParams] = useSearchParams();
@@ -555,6 +555,7 @@ export function Graphs() {
     const accounts = useAppSelector(selectAccounts);
 
     const [graphType, _setGraphType] = useState(DEFAULT_GRAPH_TYPE);
+    const [sankeyDate, setSankeyDate] = useState("");
     const [viewType, _setViewType] = useState(DEFAULT_VIEW_TYPE);
     const [dateType, _setDateType] = useState(DEFAULT_DATE_TYPE);
     const [dataType, _setDataType] = useState(DEFAULT_DATA_TYPE);
@@ -652,7 +653,10 @@ export function Graphs() {
 
     useEffect(() => {
         get<JBalance[]>(server, url(dateType))
-            .then(balances => setBalances(balances))
+            .then(balances => {
+                setBalances(balances);
+                setSankeyDate(balances[balances.length - 1].date);
+            })
             .catch(error => err(error));
     }, [dateType]);
 
@@ -663,9 +667,9 @@ export function Graphs() {
     useEffect(() => {
         const data = balances.map(balance => calculateData(viewType, dataType, hiddenItems, balance));
         setData(data);
-        const sankeyData = calculateSankey(viewType, dataType, accounts, balances[balances.length - 2]);
+        const sankeyData = calculateSankey(viewType, dataType, accounts, balances.find((value) => value.date === sankeyDate)!);
         setSankey(sankeyData);
-    }, [balances, dataType, viewType, hiddenItems]);
+    }, [balances, dataType, viewType, hiddenItems, sankeyDate]);
 
     return (
         <Container>
@@ -679,6 +683,18 @@ export function Graphs() {
                     </Form.Group>
                 </Col>
             </Row>
+            {
+                graphType !== GraphType.SANKEY ? <></> : <Row xs={1} md={1} xl={1}>
+                    <Col>
+                        <Form.Group>
+                            <Form.Label>Date</Form.Label>
+                            <Form.Select value={sankeyDate} onChange={e => setSankeyDate(e.target.value)}>
+                                {balances.map(balance => <option key={balance.date} value={balance.date}>{balance.date}</option>)}
+                            </Form.Select>
+                        </Form.Group>
+                    </Col>
+                </Row>
+            }
             <Row xs={1} md={2} xl={3}>
                 <Col>
                     <Form.Group>
