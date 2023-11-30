@@ -106,6 +106,17 @@ export function accountTitle(accountId: string, accounts: IndexedAccounts) {
     return account.name + " (" + titleCase(account.type) + ")";
 }
 
+export function formattedUnknownAmount(amount: any) {
+    if (typeof amount === "number") {
+        return formattedAmount(amount);
+    }
+    return amount;
+}
+
+export function formattedAmount(amount: number) {
+    return amount.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
 export function generateColorPalette(numColors: number): string[] {
     
     // Helper function to convert HSL color to hex color code

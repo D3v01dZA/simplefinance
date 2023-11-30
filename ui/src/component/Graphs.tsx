@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAppSelector } from "../app/hooks";
 import { selectServer } from "../app/serverSlice";
-import { accountTitle, err, generateColorPalette, get, titleCase } from "../util/util";
+import { accountTitle, err, formattedAmount, formattedUnknownAmount, generateColorPalette, get, titleCase } from "../util/util";
 import { Col, Container, Form, Row } from "react-bootstrap";
 import { CartesianGrid, Layer, Legend, Line, LineChart, Rectangle, Sankey, Tooltip, XAxis, YAxis } from "recharts";
 import React from "react";
@@ -315,6 +315,7 @@ function calculateSankey(viewType: ViewType, dataType: DataType, accounts: Index
         nodes.push({ name: "Total " + decideLiability(), color: totalColorPalette[nodes.length] })
         nodes.push({ name: decideAsset(), color: totalColorPalette[nodes.length] })
         nodes.push({ name: decideLiability(), color: totalColorPalette[nodes.length] })
+
         Object.values(TotalType).forEach((totalType) => {
             nodes.push({ name: titleCase(totalType), color: totalColorPalette[nodes.length] });
             nodeNameToIndex[totalType] = nodes.length - 1;
@@ -482,7 +483,7 @@ function calculateSankey(viewType: ViewType, dataType: DataType, accounts: Index
 }
 
 function SankeyNode({ x, y, width, height, index, payload, containerWidth, }: any) {
-    const isOut = x + width + 6 > containerWidth;
+    const isOut = payload.value !== 0 || x + width + 6 > containerWidth;
     return (
         (
             <Layer key={`CustomNode${index}`}>
@@ -502,7 +503,7 @@ function SankeyNode({ x, y, width, height, index, payload, containerWidth, }: an
                     fontSize="14"
                     stroke="#333"
                 >
-                    {payload.name}
+                    {payload.name} - {formattedAmount(payload.value)}
                 </text>
                 <text
                     textAnchor={isOut ? "end" : "start"}
@@ -512,7 +513,7 @@ function SankeyNode({ x, y, width, height, index, payload, containerWidth, }: an
                     stroke="#333"
                     strokeOpacity="0.5"
                 >
-                    {payload.value + "k"}
+                    {}
                 </text>
             </Layer>
         )
@@ -724,11 +725,11 @@ export function Graphs() {
             <Row ref={widthRef} xl={1} className="justify-content-center">
                 <Col>
                     {
-                        graphType === GraphType.LINE ? <LineChart width={(widthRef.current?.offsetWidth ?? 0) * 0.95} height={vh * 0.7} data={data}>
+                        graphType === GraphType.LINE ? <LineChart width={(widthRef.current?.offsetWidth ?? 0) * 0.95} height={vh * 0.7} margin={{ top: 40, left: 65, right: 5, bottom: 5 }} data={data}>
                             {lines(viewType, hiddenItems, accounts)}
                             <CartesianGrid stroke="#ccc" />
-                            <XAxis dataKey="date" />
-                            <YAxis />
+                            <XAxis dataKey="date" />~
+                            <YAxis tickFormatter={(value: any) => formattedUnknownAmount(value)} />
                             <Legend onClick={e => {
                                 if (e.dataKey) {
                                     if (hiddenItems.has(e.dataKey)) {
@@ -742,9 +743,9 @@ export function Graphs() {
                                     }
                                 }
                             }} />
-                            <Tooltip />
+                            <Tooltip formatter={(value: any) => formattedAmount(value)} />
                         </LineChart> : <Sankey width={(widthRef.current?.offsetWidth ?? 0) * 0.95} height={vh * 0.7} data={sankey} node={<SankeyNode />} link={<SankeyLink />}>
-                            <Tooltip />
+                            <Tooltip formatter={(value: any) => formattedAmount(value)}/>
                         </Sankey>
                     }
                 </Col>

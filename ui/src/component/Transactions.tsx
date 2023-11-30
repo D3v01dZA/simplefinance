@@ -4,7 +4,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { IndexedAccounts, selectAccounts } from "../app/accountSlice";
 import { useAppSelector } from "../app/hooks";
 import { selectServer } from "../app/serverSlice";
-import { constrainedPage, defaultAccountId, del, err, get, post, titleCase, today } from "../util/util";
+import { constrainedPage, defaultAccountId, del, err, formattedAmount, get, post, titleCase, today } from "../util/util";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPenToSquare, faTrash, faPlus, faCartPlus, faFilter, faBalanceScale } from '@fortawesome/free-solid-svg-icons';
 import { DEFAULT_PAGE_SIZE, Pagination } from "./Pagination";
@@ -97,7 +97,7 @@ function Transaction({ transaction, accounts, edit, del }: { transaction: JTrans
             <td>{titleCase(transaction.type)}</td>
             <td>{description(transaction)}</td>
             <td>{transaction.date}</td>
-            <td>{transaction.value}</td>
+            <td className="text-end">{formattedAmount(transaction.value)}</td>
             <td><AccountName accountId={transaction.accountId} accounts={accounts} /></td>
             <td><AccountName accountId={transaction.fromAccountId} accounts={accounts} /></td>
             <td>
@@ -360,7 +360,7 @@ function BalanceTransactionModal({
         if (!transaction || transaction.date === date) {
             return undefined;
         }
-        return transaction.value + "";
+        return formattedAmount(transaction.value) + "";
     }
 
     function value(accountId: string): string {
