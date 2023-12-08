@@ -62,6 +62,7 @@ enum FlowGroupingType {
 }
 
 enum DateType {
+    YEARLY = "YEARLY",
     MONTHLY = "MONTHLY",
     WEEKLY = "WEEKLY",
 }
@@ -89,6 +90,8 @@ function url(dateType: DateType) {
             return "/api/monthly/";
         case DateType.WEEKLY:
             return "/api/weekly/";
+        case DateType.YEARLY: 
+            return "/api/yearly/";
     }
 }
 
@@ -264,7 +267,7 @@ function calculateBalances(viewType: ViewType, hiddenItems: Set<string>, balance
 }
 
 function calculateData(viewType: ViewType, dataType: DataType, hiddenItems: Set<string>, balance: JBalance): any {
-    const date = balance.date.substring(5, balance.date.length);
+    const date = balance.date.substring(2, balance.date.length);
     let calculated: any;
     if (dataType === DataType.NET) {
         calculated = calculateBalances(viewType, hiddenItems, balance);

@@ -44,6 +44,23 @@ public class AccountController {
     }
 
     @Transactional
+    @GetMapping("/api/yearly/")
+    public List<JBalance> yearly() {
+        List<Account> accounts = accountService.list().stream()
+                .map(DAccount::account)
+                .toList();
+        LocalDate now = LocalDate.now().withDayOfMonth(1);
+        LocalDate year = now.minus(12, ChronoUnit.YEARS);
+        List<LocalDate> dates = new ArrayList<>();
+        while (!year.isAfter(now)) {
+            dates.add(year);
+            year = year.plus(1, ChronoUnit.YEARS).withDayOfMonth(1);
+        }
+        dates.add(year);
+        return new Calculator(accounts).calculate(dates);
+    }
+
+    @Transactional
     @GetMapping("/api/monthly/")
     public List<JBalance> monthly() {
         List<Account> accounts = accountService.list().stream()
