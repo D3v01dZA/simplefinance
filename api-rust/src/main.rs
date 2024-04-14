@@ -27,6 +27,10 @@ macro_rules! app (
         .service(setting::api::get_setting)
         .service(setting::api::list_settings)
 
+        .service(account::api::create_account)
+        .service(account::api::update_account)
+        .service(account::api::delete_account)
+        .service(account::api::get_account)
         .service(account::api::list_accounts)
 
         .service(transaction::api::list_transactions)
@@ -67,9 +71,13 @@ mod tests {
     use log::info;
     use r2d2_sqlite::SqliteConnectionManager;
     use crate::api;
+    use crate::setting;
+    use crate::account;
+    use crate::account::schema::{Account, AccountType, NewAccount};
+    use crate::transaction;
     use crate::db::Pool;
     use crate::run_migrations;
-    use crate::schema::*;
+    use crate::setting::schema::{NewSetting, Setting, SettingKey};
 
     #[actix_web::test]
     async fn test_api() {
@@ -82,16 +90,236 @@ mod tests {
         info!("Starting test service");
         let app = test::init_service(app!(pool)).await;
 
+        // ------------------------------------------------------------------------------------------------------------------------------------------------
+
+        // Create account
+        let req = test::TestRequest::post()
+            .uri("/api/account/")
+            .set_json(NewAccount {
+                name: "Savings".to_string(),
+                account_type: AccountType::Savings,
+            })
+            .to_request();
+        let resp: Account = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(Account{
+            id: resp.id.clone(),
+            name: "Savings".to_string(),
+            account_type: AccountType::Savings,
+        }, resp);
+
+        // Update account
+        let req = test::TestRequest::post()
+            .uri(format!("/api/account/{}/", resp.id.clone()).as_str())
+            .set_json(Account {
+                id: resp.id.clone(),
+                name: "Savings 2".to_string(),
+                account_type: AccountType::Savings,
+            })
+            .to_request();
+        let resp: Account = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(Account{
+            id: resp.id.clone(),
+            name: "Savings 2".to_string(),
+            account_type: AccountType::Savings,
+        }, resp);
+
+        // Delete account
+        let req = test::TestRequest::delete()
+            .uri(format!("/api/account/{}/", resp.id.clone()).as_str())
+            .to_request();
+        let resp: Account = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(Account{
+            id: resp.id.clone(),
+            name: "Savings 2".to_string(),
+            account_type: AccountType::Savings,
+        }, resp);
+
+        // List no accounts
+        let req = test::TestRequest::get()
+            .uri("/api/account/")
+            .to_request();
+        let resp: Vec<Account> = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(resp.len(), 0);
+
+        // Create account
+        let req = test::TestRequest::post()
+            .uri("/api/account/")
+            .set_json(NewAccount {
+                name: "Savings".to_string(),
+                account_type: AccountType::Savings,
+            })
+            .to_request();
+        let resp: Account = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(Account{
+            id: resp.id.clone(),
+            name: "Savings".to_string(),
+            account_type: AccountType::Savings,
+        }, resp);
+
+        // Get account
+        let req = test::TestRequest::get()
+            .uri(format!("/api/account/{}/", resp.id.clone()).as_str())
+            .to_request();
+        let resp: Account = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(Account{
+            id: resp.id.clone(),
+            name: "Savings".to_string(),
+            account_type: AccountType::Savings,
+        }, resp);
+
+        // ------------------------------------------------------------------------------------------------------------------------------------------------
+
+        // // Create transaction
+        // let req = test::TestRequest::post()
+        //     .uri("/api/transaction/")
+        //     .set_json(NewTransaction {
+        //         name: "Savings".to_string(),
+        //         transaction_type: TransactionType::Savings,
+        //     })
+        //     .to_request();
+        // let resp: Transaction = test::call_and_read_body_json(&app, req).await;
+        // assert_eq!(Transaction{
+        //     id: resp.id.clone(),
+        //     name: "Savings".to_string(),
+        //     transaction_type: TransactionType::Savings,
+        // }, resp);
+        //
+        // // Update transaction
+        // let req = test::TestRequest::post()
+        //     .uri(format!("/api/transaction/{}/", resp.id.clone()).as_str())
+        //     .set_json(Transaction {
+        //         id: resp.id.clone(),
+        //         name: "Savings 2".to_string(),
+        //         transaction_type: TransactionType::Savings,
+        //     })
+        //     .to_request();
+        // let resp: Transaction = test::call_and_read_body_json(&app, req).await;
+        // assert_eq!(Transaction{
+        //     id: resp.id.clone(),
+        //     name: "Savings 2".to_string(),
+        //     transaction_type: TransactionType::Savings,
+        // }, resp);
+        //
+        // // Delete transaction
+        // let req = test::TestRequest::delete()
+        //     .uri(format!("/api/transaction/{}/", resp.id.clone()).as_str())
+        //     .to_request();
+        // let resp: Transaction = test::call_and_read_body_json(&app, req).await;
+        // assert_eq!(Transaction{
+        //     id: resp.id.clone(),
+        //     name: "Savings 2".to_string(),
+        //     transaction_type: TransactionType::Savings,
+        // }, resp);
+        //
+        // // List no transactions
+        // let req = test::TestRequest::get()
+        //     .uri("/api/transaction/")
+        //     .to_request();
+        // let resp: Vec<Transaction> = test::call_and_read_body_json(&app, req).await;
+        // assert_eq!(resp.len(), 0);
+        //
+        // // Create transaction
+        // let req = test::TestRequest::post()
+        //     .uri("/api/transaction/")
+        //     .set_json(NewTransaction {
+        //         name: "Savings".to_string(),
+        //         transaction_type: TransactionType::Savings,
+        //     })
+        //     .to_request();
+        // let resp: Transaction = test::call_and_read_body_json(&app, req).await;
+        // assert_eq!(Transaction{
+        //     id: resp.id.clone(),
+        //     name: "Savings".to_string(),
+        //     transaction_type: TransactionType::Savings,
+        // }, resp);
+        //
+        // // Get transaction
+        // let req = test::TestRequest::get()
+        //     .uri(format!("/api/transaction/{}/", resp.id.clone()).as_str())
+        //     .to_request();
+        // let resp: Transaction = test::call_and_read_body_json(&app, req).await;
+        // assert_eq!(Transaction{
+        //     id: resp.id.clone(),
+        //     name: "Savings".to_string(),
+        //     transaction_type: TransactionType::Savings,
+        // }, resp);
+
+        // ------------------------------------------------------------------------------------------------------------------------------------------------
+
+        // Create setting
         let req = test::TestRequest::post()
             .uri("/api/setting/")
             .set_json(NewSetting {
-                key: SettingKey::TransferWithoutBalanceIgnoredAccounts,
-                value: "10".to_string()
+                key: SettingKey::DefaultTransactionFromAccountId,
+                value: "Test".to_string(),
             })
             .to_request();
         let resp: Setting = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(Setting{
+            id: resp.id.clone(),
+            key: SettingKey::DefaultTransactionFromAccountId,
+            value: "Test".to_string(),
+        }, resp);
 
-        // assert_eq!(resp.len(), 0);
+        // Update setting
+        let req = test::TestRequest::post()
+            .uri(format!("/api/setting/{}/", resp.id.clone()).as_str())
+            .set_json(Setting {
+                id: resp.id.clone(),
+                key: SettingKey::DefaultTransactionFromAccountId,
+                value: "Test 2".to_string(),
+            })
+            .to_request();
+        let resp: Setting = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(Setting{
+            id: resp.id.clone(),
+            key: SettingKey::DefaultTransactionFromAccountId,
+            value: "Test 2".to_string(),
+        }, resp);
+
+        // Delete setting
+        let req = test::TestRequest::delete()
+            .uri(format!("/api/setting/{}/", resp.id.clone()).as_str())
+            .to_request();
+        let resp: Setting = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(Setting{
+            id: resp.id.clone(),
+            key: SettingKey::DefaultTransactionFromAccountId,
+            value: "Test 2".to_string(),
+        }, resp);
+
+        // List no settings
+        let req = test::TestRequest::get()
+            .uri("/api/setting/")
+            .to_request();
+        let resp: Vec<Setting> = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(resp.len(), 0);
+
+        // Create setting
+        let req = test::TestRequest::post()
+            .uri("/api/setting/")
+            .set_json(NewSetting {
+                key: SettingKey::DefaultTransactionFromAccountId,
+                value: "Test".to_string(),
+            })
+            .to_request();
+        let resp: Setting = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(Setting{
+            id: resp.id.clone(),
+            key: SettingKey::DefaultTransactionFromAccountId,
+            value: "Test".to_string(),
+        }, resp);
+
+        // Get setting
+        let req = test::TestRequest::get()
+            .uri(format!("/api/setting/{}/", resp.id.clone()).as_str())
+            .to_request();
+        let resp: Setting = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(Setting{
+            id: resp.id.clone(),
+            key: SettingKey::DefaultTransactionFromAccountId,
+            value: "Test".to_string(),
+        }, resp);
     }
 
 }

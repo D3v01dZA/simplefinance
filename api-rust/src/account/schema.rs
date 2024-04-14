@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 use crate::db::FromRow;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Account {
     pub id: String,
     pub name: String,
@@ -15,7 +15,14 @@ pub struct Account {
     pub account_type: AccountType,
 }
 
-#[derive(Debug, Clone, Display, EnumString, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct NewAccount {
+    pub name: String,
+    #[serde(rename = "type")]
+    pub account_type: AccountType,
+}
+
+#[derive(Debug, Clone, Display, EnumString, Serialize, Deserialize, PartialEq, Eq)]
 pub enum AccountType {
     #[serde(rename = "SAVINGS" )]
     #[strum(serialize="SAVINGS", to_string="SAVINGS")]

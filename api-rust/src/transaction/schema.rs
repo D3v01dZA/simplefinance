@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 use crate::db::FromRow;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Transaction {
     pub id: String,
     pub description: Option<String>,
@@ -23,7 +23,7 @@ pub struct Transaction {
     pub from_account_id: Option<String>,
 }
 
-#[derive(Debug, Clone, Display, EnumString, Serialize, Deserialize)]
+#[derive(Debug, Clone, Display, EnumString, Serialize, Deserialize, PartialEq, Eq)]
 pub enum TransactionType {
     #[serde(rename = "BALANCE" )]
     #[strum(serialize="BALANCE", to_string="BALANCE")]

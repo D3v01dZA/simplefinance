@@ -1,3 +1,3 @@
 pub mod api;
 mod db;
-mod schema;
+pub mod schema;

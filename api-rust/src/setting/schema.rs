@@ -7,20 +7,20 @@ use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 use crate::db::FromRow;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Setting {
     pub id: String,
     pub key: SettingKey,
     pub value: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct NewSetting {
     pub key: SettingKey,
     pub value: String,
 }
 
-#[derive(Debug, Clone, Display, EnumString, Serialize, Deserialize)]
+#[derive(Debug, Clone, Display, EnumString, Serialize, Deserialize, PartialEq, Eq)]
 pub enum SettingKey {
     #[serde(rename = "DEFAULT_TRANSACTION_FROM_ACCOUNT_ID" )]
     #[strum(serialize="DEFAULT_TRANSACTION_FROM_ACCOUNT_ID", to_string="DEFAULT_TRANSACTION_FROM_ACCOUNT_ID")]
