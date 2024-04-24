@@ -70,7 +70,6 @@ mod tests {
     use actix_cors::Cors;
     use log::info;
     use r2d2_sqlite::SqliteConnectionManager;
-    use crate::api;
     use crate::setting;
     use crate::account;
     use crate::account::schema::{Account, AccountType, NewAccount};
@@ -141,7 +140,7 @@ mod tests {
         let resp: Vec<Account> = test::call_and_read_body_json(&app, req).await;
         assert_eq!(resp.len(), 0);
 
-        // Create account
+        // Create accounts
         let req = test::TestRequest::post()
             .uri("/api/account/")
             .set_json(NewAccount {
@@ -155,10 +154,11 @@ mod tests {
             name: "Savings".to_string(),
             account_type: AccountType::Savings,
         }, resp);
+        let savings_account = resp.clone();
 
         // Get account
         let req = test::TestRequest::get()
-            .uri(format!("/api/account/{}/", resp.id.clone()).as_str())
+            .uri(format!("/api/account/{}/", resp.id).as_str())
             .to_request();
         let resp: Account = test::call_and_read_body_json(&app, req).await;
         assert_eq!(Account{
@@ -166,6 +166,29 @@ mod tests {
             name: "Savings".to_string(),
             account_type: AccountType::Savings,
         }, resp);
+
+        // Create second account
+        let req = test::TestRequest::post()
+            .uri("/api/account/")
+            .set_json(NewAccount {
+                name: "Loan".to_string(),
+                account_type: AccountType::Loan,
+            })
+            .to_request();
+        let resp: Account = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(Account{
+            id: resp.id.clone(),
+            name: "Loan".to_string(),
+            account_type: AccountType::Loan,
+        }, resp);
+        let loan_account = resp.clone();
+
+        // List no accounts
+        let req = test::TestRequest::get()
+            .uri("/api/account/")
+            .to_request();
+        let resp: Vec<Account> = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(resp.len(), 2);
 
         // ------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -251,14 +274,14 @@ mod tests {
             .uri("/api/setting/")
             .set_json(NewSetting {
                 key: SettingKey::DefaultTransactionFromAccountId,
-                value: "Test".to_string(),
+                value: savings_account.id.clone(),
             })
             .to_request();
         let resp: Setting = test::call_and_read_body_json(&app, req).await;
         assert_eq!(Setting{
             id: resp.id.clone(),
             key: SettingKey::DefaultTransactionFromAccountId,
-            value: "Test".to_string(),
+            value: savings_account.id.clone(),
         }, resp);
 
         // Update setting
@@ -267,14 +290,14 @@ mod tests {
             .set_json(Setting {
                 id: resp.id.clone(),
                 key: SettingKey::DefaultTransactionFromAccountId,
-                value: "Test 2".to_string(),
+                value: loan_account.id.clone(),
             })
             .to_request();
         let resp: Setting = test::call_and_read_body_json(&app, req).await;
         assert_eq!(Setting{
             id: resp.id.clone(),
             key: SettingKey::DefaultTransactionFromAccountId,
-            value: "Test 2".to_string(),
+            value: loan_account.id.clone(),
         }, resp);
 
         // Delete setting
@@ -285,7 +308,7 @@ mod tests {
         assert_eq!(Setting{
             id: resp.id.clone(),
             key: SettingKey::DefaultTransactionFromAccountId,
-            value: "Test 2".to_string(),
+            value: loan_account.id.clone(),
         }, resp);
 
         // List no settings
@@ -300,14 +323,14 @@ mod tests {
             .uri("/api/setting/")
             .set_json(NewSetting {
                 key: SettingKey::DefaultTransactionFromAccountId,
-                value: "Test".to_string(),
+                value: loan_account.id.clone(),
             })
             .to_request();
         let resp: Setting = test::call_and_read_body_json(&app, req).await;
         assert_eq!(Setting{
             id: resp.id.clone(),
             key: SettingKey::DefaultTransactionFromAccountId,
-            value: "Test".to_string(),
+            value: loan_account.id.clone(),
         }, resp);
 
         // Get setting
@@ -318,7 +341,22 @@ mod tests {
         assert_eq!(Setting{
             id: resp.id.clone(),
             key: SettingKey::DefaultTransactionFromAccountId,
-            value: "Test".to_string(),
+            value: loan_account.id.clone(),
+        }, resp);
+
+        // Create setting
+        let req = test::TestRequest::post()
+            .uri("/api/setting/")
+            .set_json(NewSetting {
+                key: SettingKey::TransferWithoutBalanceIgnoredAccounts,
+                value: format!("{},{}", loan_account.id.clone(), savings_account.id.clone()),
+            })
+            .to_request();
+        let resp: Setting = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(Setting{
+            id: resp.id.clone(),
+            key: SettingKey::TransferWithoutBalanceIgnoredAccounts,
+            value: format!("{},{}", loan_account.id.clone(), savings_account.id.clone()),
         }, resp);
     }
 
