@@ -1,7 +1,2 @@
-- Mutation
-- Gets
-- Transactions
-- Validations
-  - Setting add/delete accoutn ids
 - Issues
 - Graphs

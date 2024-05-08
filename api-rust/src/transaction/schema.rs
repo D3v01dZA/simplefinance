@@ -1,6 +1,7 @@
 #![allow(unreachable_patterns)]
 
 use std::str::FromStr;
+use chrono::NaiveDate;
 use rusqlite::Row;
 use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ValueRef};
 use rust_decimal::Decimal;
@@ -11,8 +12,22 @@ use crate::db::FromRow;
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Transaction {
     pub id: String,
-    pub description: Option<String>,
-    pub date: String,
+    pub description: String,
+    pub date: NaiveDate,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub value: Decimal,
+    #[serde(rename = "type")]
+    pub transaction_type: TransactionType,
+    #[serde(rename = "accountId")]
+    pub account_id: String,
+    #[serde(rename = "fromAccountId")]
+    pub from_account_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct NewTransaction {
+    pub description: String,
+    pub date: NaiveDate,
     #[serde(with = "rust_decimal::serde::float")]
     pub value: Decimal,
     #[serde(rename = "type")]
@@ -38,7 +53,7 @@ impl FromRow for Transaction {
         Ok(Transaction {
             id: row.get("id")?,
             description: row.get("description")?,
-            date: row.get("date")?,
+            date: crate::db::get_naive_date(row, "date")?,
             value: crate::db::get_decimal(row, "value")?,
             transaction_type: row.get("type")?,
             account_id: row.get("account_id")?,

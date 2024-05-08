@@ -1,4 +1,4 @@
-use actix_web::{HttpResponse, Error, error};
+use actix_web::{HttpResponse, error};
 use serde::Serialize;
 
 pub fn handle_option<T: Serialize>(option: Option<T>) -> HttpResponse {
@@ -8,7 +8,7 @@ pub fn handle_option<T: Serialize>(option: Option<T>) -> HttpResponse {
     }
 }
 
-pub fn compare_ids(id1: &String, id2: &String) -> Option<Error> {
+pub fn compare_ids(id1: &String, id2: &String) -> Option<actix_web::Error> {
     if id1 != id2 {
         return Some(error::ErrorBadRequest("Mismatched entity id and request id"))
     }

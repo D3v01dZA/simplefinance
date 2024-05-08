@@ -1,5 +1,5 @@
 use actix_web::{delete, Error, error, get, HttpResponse, post, web};
-use log::info;
+use log::{error, info};
 use crate::db::{do_in_transaction, Pool};
 use crate::setting::db;
 use crate::setting::schema::{NewSetting, Setting};
@@ -11,7 +11,10 @@ pub async fn create_setting(db: web::Data<Pool>, new_setting: web::Json<NewSetti
     do_in_transaction(&db, |transaction| db::create_setting(transaction, new_setting))
         .await
         .map(crate::api::handle_option)
-        .map_err(error::ErrorInternalServerError)
+        .map_err(|err| {
+            error!("HTTP create_setting: [{err}]");
+            return error::ErrorInternalServerError(err)
+        })
 }
 
 #[post("/api/setting/{id}/")]
@@ -26,7 +29,10 @@ pub async fn update_setting(db: web::Data<Pool>, path: web::Path<String>, update
     do_in_transaction(&db, |transaction| db::update_setting(transaction, updated_setting))
         .await
         .map(crate::api::handle_option)
-        .map_err(error::ErrorInternalServerError)
+        .map_err(|err| {
+            error!("HTTP update_setting: [{err}]");
+            return error::ErrorInternalServerError(err)
+        })
 }
 
 #[delete("/api/setting/{id}/")]
@@ -36,7 +42,10 @@ pub async fn delete_setting(db: web::Data<Pool>, path: web::Path<String>) -> Res
     do_in_transaction(&db, |transaction| db::delete_setting(transaction, id))
         .await
         .map(crate::api::handle_option)
-        .map_err(error::ErrorInternalServerError)
+        .map_err(|err| {
+            error!("HTTP delete_setting: [{err}]");
+            return error::ErrorInternalServerError(err)
+        })
 }
 
 #[get("/api/setting/{id}/")]
@@ -46,7 +55,10 @@ pub async fn get_setting(db: web::Data<Pool>, path: web::Path<String>) -> Result
     do_in_transaction(&db, |transaction| db::get_setting(transaction, id))
         .await
         .map(crate::api::handle_option)
-        .map_err(error::ErrorInternalServerError)
+        .map_err(|err| {
+            error!("HTTP get_setting: [{err}]");
+            return error::ErrorInternalServerError(err)
+        })
 }
 
 #[get("/api/setting/")]
@@ -55,5 +67,8 @@ pub async fn list_settings(db: web::Data<Pool>) -> Result<HttpResponse, Error> {
     do_in_transaction(&db, |transaction| db::list_settings(transaction))
         .await
         .map(|value| HttpResponse::Ok().json(value))
-        .map_err(error::ErrorInternalServerError)
+        .map_err(|err| {
+            error!("HTTP list_settings: [{err}]");
+            return error::ErrorInternalServerError(err)
+        })
 }

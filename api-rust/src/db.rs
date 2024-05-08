@@ -2,6 +2,7 @@ use std::fmt::Debug;
 use std::str::FromStr;
 use actix_web::{web};
 use anyhow::{anyhow};
+use chrono::NaiveDate;
 use rusqlite::{Params, Row, Transaction};
 use log::{*};
 use rusqlite::types::{Type};
@@ -24,7 +25,7 @@ pub async fn do_in_transaction<R: Send + 'static, F: Send + 'static + FnOnce(&Tr
         .await?;
 }
 
-pub fn single<T: FromRow + 'static + Clone + Debug, P: Params + Send + 'static>(transaction: &Transaction, sql: &'static str, params: P) -> anyhow::Result<Option<T>> {
+pub fn single<T: FromRow + Clone + Debug, P: Params>(transaction: &Transaction, sql: &str, params: P) -> anyhow::Result<Option<T>> {
     let mut list: Vec<T> = list(transaction, sql, params)?;
     return if list.len() == 1 {
         Ok(Some(list.remove(0)))
@@ -35,7 +36,7 @@ pub fn single<T: FromRow + 'static + Clone + Debug, P: Params + Send + 'static>(
     };
 }
 
-pub fn list<T: FromRow + 'static, P: Params + Send + 'static>(transaction: &Transaction, sql: &'static str, params: P) -> anyhow::Result<Vec<T>> {
+pub fn list<T: FromRow, P: Params>(transaction: &Transaction, sql: &str, params: P) -> anyhow::Result<Vec<T>> {
     debug!("Running [{}]", sql);
     return transaction.prepare(sql)?
         .query_map(params, |row| FromRow::from_row(row))
@@ -52,6 +53,12 @@ pub fn get_decimal(row: &Row, value: &str) -> rusqlite::Result<Decimal> {
             return scaled;
         })
         .map_err(|err| rusqlite::Error::FromSqlConversionFailure(0, Type::Real, Box::from(err)));
+}
+
+pub fn get_naive_date(row: &Row, value: &str) -> rusqlite::Result<NaiveDate> {
+    let string: String = row.get(value)?;
+    return NaiveDate::from_str(string.as_str())
+        .map_err(|err| rusqlite::Error::FromSqlConversionFailure(0, Type::Real, Box::from(err)))
 }
 
 pub trait FromRow: Sized + Send {
