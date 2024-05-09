@@ -16,9 +16,8 @@ enum IssueType {
 
 interface JIssue {
 
-    issueType: IssueType,
+    type: IssueType,
     accountId: string,
-    transactionId: string,
     date: string,
 
 }
@@ -37,7 +36,7 @@ export function Issues() {
     function refreshIssues() {
         function sortIssues(issues: JIssue[]) {
             return issues.sort((left, right) => {
-                let issueType = right.issueType.localeCompare(left.issueType);
+                let issueType = right.type.localeCompare(left.type);
                 if (issueType != 0) {
                     return issueType;
                 }
@@ -45,11 +44,7 @@ export function Issues() {
                 if (date != 0) {
                     return date;
                 }
-                let accountId = right.accountId.localeCompare(left.accountId);
-                if (accountId != 0) {
-                    return accountId;
-                }
-                return right.transactionId.localeCompare(left.transactionId);
+                return right.accountId.localeCompare(left.accountId);
             });
         }
 
@@ -120,7 +115,7 @@ export function Issues() {
                         <tbody>
                             {issuesToDisplay().map(issue => (
                                 <tr>
-                                    <td>{titleCase(issue.issueType)}</td>
+                                    <td>{titleCase(issue.type)}</td>
                                     <td>{issue.date}</td>
                                     <td><AccountName accounts={accounts} accountId={issue.accountId} /></td>
                                 </tr>

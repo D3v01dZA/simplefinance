@@ -732,7 +732,7 @@ export function Transactions() {
                                 setShowEditing(true);
                             }} del={() => {
                                 if (confirm(`Are you sure you want to delete ${transaction.id}?`)) {
-                                    del(server, `/api/account/${transaction.accountId}/transaction/${transaction.id}/`)
+                                    del(server, `/api/transaction/${transaction.id}/`)
                                         .then(() => refreshTransactions())
                                         .catch(error => err(error));
                                 }
@@ -775,7 +775,7 @@ export function Transactions() {
             <Pagination itemCount={filteredTransactions.length} page={page} setPage={setPage} pageSize={pageSize} setPageSize={setPageSize} />
             <TransactionModal accounts={accounts} settings={settings} singleAccount={accountId !== undefined} show={showAdding} setShow={setShowAdding} transaction={addingTransaction} setTransaction={setAddingTransaction} saving={adding} save={() => {
                 setAdding(true);
-                post(server, `/api/account/${addingTransaction.accountId}/transaction/`, addingTransaction)
+                post(server, `/api/transaction/`, addingTransaction)
                     .then(() => refreshTransactions())
                     .catch(error => err(error))
                     .finally(() => {
@@ -785,7 +785,7 @@ export function Transactions() {
             }} />
             <TransactionModal accounts={accounts} settings={settings} singleAccount={accountId !== undefined} show={showEditing} setShow={setShowEditing} transaction={editingTransaction} setTransaction={setEditingTransaction} saving={editing} save={() => {
                 setEditing(true);
-                post(server, `/api/account/${editingTransaction.accountId}/transaction/${editingTransaction.id}/`, editingTransaction)
+                post(server, `/api/transaction/${editingTransaction.id}/`, editingTransaction)
                     .then(() => refreshTransactions())
                     .catch(error => err(error))
                     .finally(() => {
@@ -795,7 +795,7 @@ export function Transactions() {
             }} />
             <BulkTransactionModal accounts={accounts} settings={settings} show={showBulkAdding} setShow={setShowBulkAdding} transactions={bulkAddingTransactions} setTransactions={setBulkAddingTransactions} saving={bulkAdding} save={() => {
                 setBulkAdding(true);
-                Promise.all(bulkAddingTransactions.transactions.map(transaction => post(server, `/api/account/${transaction.accountId}/transaction/`, {
+                Promise.all(bulkAddingTransactions.transactions.map(transaction => post(server, `/api/transaction/`, {
                     ...bulkAddingTransactions,
                     ...transaction
                 }))).then(() => refreshTransactions())
@@ -814,7 +814,7 @@ export function Transactions() {
                         value: value,
                         type: TransactionType.BALANCE,
                     }
-                    return post(server, `/api/account/${id}/transaction/`, transaction);
+                    return post(server, `/api/transaction/`, transaction);
                 })).then(() => refreshTransactions())
                     .catch(error => err(error))
                     .finally(() => {

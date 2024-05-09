@@ -8,7 +8,7 @@ use crate::db::{list, single};
 const ACCOUNT_COLUMNS: &str = "id, name, type";
 const ACCOUNT_SELECT: &str = formatcp!("SELECT {ACCOUNT_COLUMNS} FROM account");
 const ACCOUNT_RETURNING: &str = formatcp!("RETURNING {ACCOUNT_COLUMNS}");
-const ACCOUNT_ORDERING: &str = "ORDER BY name ASC";
+const ACCOUNT_ORDERING: &str = "ORDER BY type, name ASC";
 
 pub fn create_account(transaction: &Transaction, new_account: NewAccount) -> anyhow::Result<Option<Account>> {
     return single(

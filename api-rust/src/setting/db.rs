@@ -1,7 +1,7 @@
 use anyhow::anyhow;
 use const_format::formatcp;
 use log::info;
-use rusqlite::Transaction;
+use rusqlite::{Transaction};
 use uuid::Uuid;
 use crate::account::db::{verify_account_exists};
 use crate::db::{list, single};
@@ -53,6 +53,14 @@ pub fn list_settings(transaction: &Transaction) -> anyhow::Result<Vec<Setting>> 
         formatcp!("{SETTING_SELECT} {SETTING_ORDERING}"),
         [],
     );
+}
+
+pub fn get_setting_by_key(transaction: &Transaction, setting_key: SettingKey) -> anyhow::Result<Option<Setting>> {
+    return single(
+        transaction,
+        formatcp!("{SETTING_SELECT} WHERE key = ?1"),
+        [setting_key.to_string()]
+    )
 }
 
 pub fn cascade_delete_account(transaction: &Transaction, account_id: String) -> anyhow::Result<()> {

@@ -22,7 +22,7 @@ pub struct NewAccount {
     pub account_type: AccountType,
 }
 
-#[derive(Debug, Clone, Display, EnumString, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Display, EnumString, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub enum AccountType {
     #[serde(rename = "SAVINGS" )]
     #[strum(serialize="SAVINGS", to_string="SAVINGS")]

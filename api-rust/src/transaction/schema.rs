@@ -38,7 +38,7 @@ pub struct NewTransaction {
     pub from_account_id: Option<String>,
 }
 
-#[derive(Debug, Clone, Display, EnumString, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Display, EnumString, Serialize, Deserialize, PartialEq, Eq, Ord, PartialOrd)]
 pub enum TransactionType {
     #[serde(rename = "BALANCE" )]
     #[strum(serialize="BALANCE", to_string="BALANCE")]

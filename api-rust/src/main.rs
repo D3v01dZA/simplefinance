@@ -11,6 +11,7 @@ mod util;
 mod account;
 mod transaction;
 mod setting;
+mod issue;
 
 use db::{Pool};
 
@@ -40,6 +41,8 @@ macro_rules! app (
         .service(transaction::api::delete_transaction)
         .service(transaction::api::get_transaction)
         .service(transaction::api::list_transactions)
+
+        .service(issue::api::list_issues)
     });
 );
 
@@ -83,12 +86,14 @@ mod tests {
     use crate::account::schema::{Account, AccountType, NewAccount};
     use crate::transaction;
     use crate::transaction::schema::{Transaction, TransactionType, NewTransaction};
+    use crate::issue;
+    use crate::issue::schema::{Issue, IssueType};
     use crate::db::Pool;
     use crate::run_migrations;
     use crate::setting::schema::{NewSetting, Setting, SettingKey};
 
     #[actix_web::test]
-    async fn test_api() {
+    async fn test_crud() {
         env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
         let manager = SqliteConnectionManager::memory();
@@ -307,7 +312,7 @@ mod tests {
             .uri("/api/transaction/")
             .set_json(NewTransaction {
                 description: "".to_string(),
-                date: NaiveDate::from_ymd_opt(2024, 1, 10).expect("NaiveDate"),
+                date: NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
                 value: Decimal::new(10, 2),
                 transaction_type: TransactionType::Balance,
                 account_id: loan_account.id.clone(),
@@ -318,7 +323,7 @@ mod tests {
         assert_eq!(Transaction {
             id: resp.id.clone(),
             description: "".to_string(),
-            date: NaiveDate::from_ymd_opt(2024, 1, 10).expect("NaiveDate"),
+            date: NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
             value: Decimal::new(10, 2),
             transaction_type: TransactionType::Balance,
             account_id: loan_account.id.clone(),
@@ -331,7 +336,7 @@ mod tests {
             .set_json(Transaction {
                 id: resp.id.clone(),
                 description: "Testing".to_string(),
-                date: NaiveDate::from_ymd_opt(2024, 1, 10).expect("NaiveDate"),
+                date: NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
                 value: Decimal::new(15, 2),
                 transaction_type: TransactionType::Balance,
                 account_id: loan_account.id.clone(),
@@ -342,7 +347,7 @@ mod tests {
         assert_eq!(Transaction {
             id: resp.id.clone(),
             description: "Testing".to_string(),
-            date: NaiveDate::from_ymd_opt(2024, 1, 10).expect("NaiveDate"),
+            date: NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
             value: Decimal::new(15, 2),
             transaction_type: TransactionType::Balance,
             account_id: loan_account.id.clone(),
@@ -357,7 +362,7 @@ mod tests {
         assert_eq!(Transaction {
             id: resp.id.clone(),
             description: "Testing".to_string(),
-            date: NaiveDate::from_ymd_opt(2024, 1, 10).expect("NaiveDate"),
+            date: NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
             value: Decimal::new(15, 2),
             transaction_type: TransactionType::Balance,
             account_id: loan_account.id.clone(),
@@ -376,7 +381,7 @@ mod tests {
             .uri("/api/transaction/")
             .set_json(NewTransaction {
                 description: "That".to_string(),
-                date: NaiveDate::from_ymd_opt(2024, 1, 10).expect("NaiveDate"),
+                date: NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
                 value: Decimal::new(12, 2),
                 transaction_type: TransactionType::Transfer,
                 account_id: loan_account.id.clone(),
@@ -387,7 +392,7 @@ mod tests {
         assert_eq!(Transaction{
             id: resp.id.clone(),
             description: "That".to_string(),
-            date: NaiveDate::from_ymd_opt(2024, 1, 10).expect("NaiveDate"),
+            date: NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
             value: Decimal::new(12, 2),
             transaction_type: TransactionType::Transfer,
             account_id: loan_account.id.clone(),
@@ -399,7 +404,7 @@ mod tests {
             .uri("/api/transaction/")
             .set_json(NewTransaction {
                 description: "That".to_string(),
-                date: NaiveDate::from_ymd_opt(2024, 1, 10).expect("NaiveDate"),
+                date: NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
                 value: Decimal::new(10, 2),
                 transaction_type: TransactionType::Balance,
                 account_id: loan_account.id.clone(),
@@ -410,7 +415,7 @@ mod tests {
         assert_eq!(Transaction{
             id: resp.id.clone(),
             description: "That".to_string(),
-            date: NaiveDate::from_ymd_opt(2024, 1, 10).expect("NaiveDate"),
+            date: NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
             value: Decimal::new(10, 2),
             transaction_type: TransactionType::Balance,
             account_id: loan_account.id.clone(),
@@ -425,7 +430,7 @@ mod tests {
         assert_eq!(Transaction{
             id: resp.id.clone(),
             description: "That".to_string(),
-            date: NaiveDate::from_ymd_opt(2024, 1, 10).expect("NaiveDate"),
+            date: NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
             value: Decimal::new(10, 2),
             transaction_type: TransactionType::Balance,
             account_id: loan_account.id.clone(),
@@ -452,7 +457,7 @@ mod tests {
             .uri("/api/transaction/")
             .set_json(NewTransaction {
                 description: "That".to_string(),
-                date: NaiveDate::from_ymd_opt(2024, 1, 10).expect("NaiveDate"),
+                date: NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
                 value: Decimal::new(10, 2),
                 transaction_type: TransactionType::Balance,
                 account_id: "What".to_string(),
@@ -471,7 +476,7 @@ mod tests {
             .uri("/api/transaction/")
             .set_json(NewTransaction {
                 description: "That".to_string(),
-                date: NaiveDate::from_ymd_opt(2024, 1, 5).expect("NaiveDate"),
+                date: NaiveDate::from_ymd_opt(2024, 1, 5).unwrap(),
                 value: Decimal::new(10, 2),
                 transaction_type: TransactionType::Balance,
                 account_id: loan_account.id.clone(),
@@ -490,7 +495,7 @@ mod tests {
             .uri("/api/transaction/")
             .set_json(NewTransaction {
                 description: "That".to_string(),
-                date: NaiveDate::from_ymd_opt(2024, 1, 10).expect("NaiveDate"),
+                date: NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
                 value: Decimal::new(10, 2),
                 transaction_type: TransactionType::Balance,
                 account_id: loan_account.id.clone(),
@@ -509,7 +514,7 @@ mod tests {
             .uri("/api/transaction/")
             .set_json(NewTransaction {
                 description: "That".to_string(),
-                date: NaiveDate::from_ymd_opt(2024, 1, 11).expect("NaiveDate"),
+                date: NaiveDate::from_ymd_opt(2024, 1, 11).unwrap(),
                 value: Decimal::new(10, 2),
                 transaction_type: TransactionType::Balance,
                 account_id: loan_account.id.clone(),
@@ -528,7 +533,7 @@ mod tests {
             .uri("/api/transaction/")
             .set_json(NewTransaction {
                 description: "That".to_string(),
-                date: NaiveDate::from_ymd_opt(2024, 1, 10).expect("NaiveDate"),
+                date: NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
                 value: Decimal::new(10, 2),
                 transaction_type: TransactionType::Transfer,
                 account_id: loan_account.id.clone(),
@@ -547,7 +552,7 @@ mod tests {
             .uri("/api/transaction/")
             .set_json(NewTransaction {
                 description: "That".to_string(),
-                date: NaiveDate::from_ymd_opt(2024, 1, 10).expect("NaiveDate"),
+                date: NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
                 value: Decimal::new(10, 2),
                 transaction_type: TransactionType::Transfer,
                 account_id: loan_account.id.clone(),
@@ -638,5 +643,209 @@ mod tests {
         let text = String::from_utf8(vec).unwrap();
         assert_eq!(http::StatusCode::INTERNAL_SERVER_ERROR, code);
         assert_eq!("Setting key TRANSFER_WITHOUT_BALANCE_IGNORED_ACCOUNTS already exists", text);
+    }
+
+    #[actix_web::test]
+    async fn test_issues() {
+        // Create app
+        env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+
+        let manager = SqliteConnectionManager::memory();
+        run_migrations(&manager);
+        let pool = Pool::new(manager).unwrap();
+
+        info!("Starting test service");
+        let app = test::init_service(app!(pool)).await;
+
+        // Create External
+        let req = test::TestRequest::post()
+            .uri("/api/account/")
+            .set_json(NewAccount {
+                name: "External".to_string(),
+                account_type: AccountType::External,
+            })
+            .to_request();
+        let external: Account = test::call_and_read_body_json(&app, req).await;
+
+        // Create Savings
+        let req = test::TestRequest::post()
+            .uri("/api/account/")
+            .set_json(NewAccount {
+                name: "Savings".to_string(),
+                account_type: AccountType::Savings,
+            })
+            .to_request();
+        let savings: Account = test::call_and_read_body_json(&app, req).await;
+
+        // Create Loan
+        let req = test::TestRequest::post()
+            .uri("/api/account/")
+            .set_json(NewAccount {
+                name: "Loan".to_string(),
+                account_type: AccountType::Savings,
+            })
+            .to_request();
+        let loan: Account = test::call_and_read_body_json(&app, req).await;
+        
+        // Assign External to not show up in issues
+        let req = test::TestRequest::post()
+            .uri("/api/setting/")
+            .set_json(NewSetting {
+                key: SettingKey::TransferWithoutBalanceIgnoredAccounts,
+                value: external.id.clone(),
+            })
+            .to_request();
+        let _: Setting = test::call_and_read_body_json(&app, req).await;
+
+        // Check there are 0 issues
+        let req = test::TestRequest::get()
+            .uri("/api/issue/")
+            .to_request();
+        let issues: Vec<Issue> = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(issues, vec![]);
+
+        // Create a transfer from external to savings
+        let req = test::TestRequest::post()
+            .uri("/api/transaction/")
+            .set_json(NewTransaction {
+                description: "".to_string(),
+                date: NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
+                value: Decimal::new(10, 2),
+                transaction_type: TransactionType::Transfer,
+                account_id: savings.id.clone(),
+                from_account_id: Some(external.id.clone()),
+            })
+            .to_request();
+        let _: Transaction = test::call_and_read_body_json(&app, req).await;
+
+        // Check there is 1 issue
+        let req = test::TestRequest::get()
+            .uri("/api/issue/")
+            .to_request();
+        let issues: Vec<Issue> = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(issues, vec![
+            Issue {
+                issue_type: IssueType::TransferWithoutBalance,
+                account_id: Some(savings.id.clone()),
+                date: Some(NaiveDate::from_ymd_opt(2024, 1, 10).unwrap())
+            }
+        ]);
+
+        // Create a transfer from savings to loan on a different date
+        let req = test::TestRequest::post()
+            .uri("/api/transaction/")
+            .set_json(NewTransaction {
+                description: "".to_string(),
+                date: NaiveDate::from_ymd_opt(2024, 1, 11).unwrap(),
+                value: Decimal::new(12, 2),
+                transaction_type: TransactionType::Transfer,
+                account_id: savings.id.clone(),
+                from_account_id: Some(loan.id.clone()),
+            })
+            .to_request();
+        let _: Transaction = test::call_and_read_body_json(&app, req).await;
+
+        // Check there are 3 issue
+        let req = test::TestRequest::get()
+            .uri("/api/issue/")
+            .to_request();
+        let issues: Vec<Issue> = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(issues, vec![
+            Issue {
+                issue_type: IssueType::TransferWithoutBalance,
+                account_id: Some(savings.id.clone()),
+                date: Some(NaiveDate::from_ymd_opt(2024, 1, 10).unwrap())
+            },
+            Issue {
+                issue_type: IssueType::TransferWithoutBalance,
+                account_id: Some(loan.id.clone()),
+                date: Some(NaiveDate::from_ymd_opt(2024, 1, 11).unwrap())
+            },
+            Issue {
+                issue_type: IssueType::TransferWithoutBalance,
+                account_id: Some(savings.id.clone()),
+                date: Some(NaiveDate::from_ymd_opt(2024, 1, 11).unwrap())
+            }
+        ]);
+
+        // Create a balance for savings on the 10th
+        let req = test::TestRequest::post()
+            .uri("/api/transaction/")
+            .set_json(NewTransaction {
+                description: "".to_string(),
+                date: NaiveDate::from_ymd_opt(2024, 1, 11).unwrap(),
+                value: Decimal::new(12, 2),
+                transaction_type: TransactionType::Balance,
+                account_id: savings.id.clone(),
+                from_account_id: None,
+            })
+            .to_request();
+        let _: Transaction = test::call_and_read_body_json(&app, req).await;
+
+        // Check there are 2 issue
+        let req = test::TestRequest::get()
+            .uri("/api/issue/")
+            .to_request();
+        let issues: Vec<Issue> = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(issues, vec![
+            Issue {
+                issue_type: IssueType::TransferWithoutBalance,
+                account_id: Some(savings.id.clone()),
+                date: Some(NaiveDate::from_ymd_opt(2024, 1, 10).unwrap())
+            },
+            Issue {
+                issue_type: IssueType::TransferWithoutBalance,
+                account_id: Some(loan.id.clone()),
+                date: Some(NaiveDate::from_ymd_opt(2024, 1, 11).unwrap())
+            }
+        ]);
+
+        // Create a balance for loan on the 10th
+        let req = test::TestRequest::post()
+            .uri("/api/transaction/")
+            .set_json(NewTransaction {
+                description: "".to_string(),
+                date: NaiveDate::from_ymd_opt(2024, 1, 11).unwrap(),
+                value: Decimal::new(12, 2),
+                transaction_type: TransactionType::Balance,
+                account_id: loan.id.clone(),
+                from_account_id: None,
+            })
+            .to_request();
+        let _: Transaction = test::call_and_read_body_json(&app, req).await;
+
+        // Check there is 1 issue
+        let req = test::TestRequest::get()
+            .uri("/api/issue/")
+            .to_request();
+        let issues: Vec<Issue> = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(issues, vec![
+            Issue {
+                issue_type: IssueType::TransferWithoutBalance,
+                account_id: Some(savings.id.clone()),
+                date: Some(NaiveDate::from_ymd_opt(2024, 1, 10).unwrap())
+            }
+        ]);
+
+        // Create a balance for savings on the 10th
+        let req = test::TestRequest::post()
+            .uri("/api/transaction/")
+            .set_json(NewTransaction {
+                description: "".to_string(),
+                date: NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
+                value: Decimal::new(12, 2),
+                transaction_type: TransactionType::Balance,
+                account_id: savings.id.clone(),
+                from_account_id: None,
+            })
+            .to_request();
+        let _: Transaction = test::call_and_read_body_json(&app, req).await;
+
+        // Check there are no issues
+        let req = test::TestRequest::get()
+            .uri("/api/issue/")
+            .to_request();
+        let issues: Vec<Issue> = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(issues, vec![]);
     }
 }
