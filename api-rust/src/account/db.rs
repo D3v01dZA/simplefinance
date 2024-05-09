@@ -8,6 +8,7 @@ use crate::db::{list, single};
 const ACCOUNT_COLUMNS: &str = "id, name, type";
 const ACCOUNT_SELECT: &str = formatcp!("SELECT {ACCOUNT_COLUMNS} FROM account");
 const ACCOUNT_RETURNING: &str = formatcp!("RETURNING {ACCOUNT_COLUMNS}");
+const ACCOUNT_ORDERING: &str = "ORDER BY name ASC";
 
 pub fn create_account(transaction: &Transaction, new_account: NewAccount) -> anyhow::Result<Option<Account>> {
     return single(
@@ -45,7 +46,7 @@ pub fn get_account(transaction: &Transaction, id: String) -> anyhow::Result<Opti
 pub fn list_accounts(transaction: &Transaction) -> anyhow::Result<Vec<Account>> {
     return list(
         transaction,
-        ACCOUNT_SELECT,
+        formatcp!("{ACCOUNT_SELECT} {ACCOUNT_ORDERING}"),
         []
     );
 }

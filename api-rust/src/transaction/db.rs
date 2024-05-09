@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use chrono::NaiveDate;
 use const_format::formatcp;
 use rusqlite::{params};
 use rust_decimal::Decimal;
@@ -10,8 +11,10 @@ use crate::transaction::schema::{NewTransaction, Transaction, TransactionType};
 const TRANSACTION_COLUMNS: &str = "id, description, date, value, type, account_id, from_account_id";
 const TRANSACTION_SELECT: &str = formatcp!("SELECT {TRANSACTION_COLUMNS} FROM account_transaction");
 const TRANSACTION_RETURNING: &str = formatcp!("RETURNING {TRANSACTION_COLUMNS}");
+const TRANSACTION_ORDERING: &str = "ORDER BY date, type, account_id";
 
 pub fn create_transaction(transaction: &rusqlite::Transaction, new_transaction: NewTransaction) -> anyhow::Result<Option<Transaction>> {
+    verify_new(transaction, new_transaction.transaction_type.clone(), new_transaction.account_id.clone(), new_transaction.date.clone())?;
     verify(transaction, new_transaction.transaction_type.clone(), new_transaction.account_id.clone(), new_transaction.from_account_id.clone())?;
     return single(
         transaction,
@@ -48,7 +51,7 @@ pub fn get_transaction(transaction: &rusqlite::Transaction, id: String) -> anyho
 pub fn list_account_transactions(transaction: &rusqlite::Transaction, account_id: String) -> anyhow::Result<Vec<Transaction>> {
     return list(
         transaction,
-        formatcp!("{TRANSACTION_SELECT} WHERE account_id = ?1 OR from_account_id = ?1"),
+        formatcp!("{TRANSACTION_SELECT} WHERE account_id = ?1 OR from_account_id = ?1 {TRANSACTION_ORDERING}"),
         [account_id]
     );
 }
@@ -56,7 +59,7 @@ pub fn list_account_transactions(transaction: &rusqlite::Transaction, account_id
 pub fn list_transactions(transaction: &rusqlite::Transaction) -> anyhow::Result<Vec<Transaction>> {
     return list(
         transaction,
-        TRANSACTION_SELECT,
+        formatcp!("{TRANSACTION_SELECT} {TRANSACTION_ORDERING}"),
         [],
     );
 }
@@ -80,13 +83,32 @@ fn delete_transaction_by_account(transaction: &rusqlite::Transaction, account_id
     );
 }
 
+fn verify_new(transaction: &rusqlite::Transaction, transaction_type: TransactionType, account_id: String, date: NaiveDate) -> anyhow::Result<()> {
+    return match transaction_type {
+        TransactionType::Balance => {
+            let current: Vec<Transaction> = list(
+                transaction,
+                formatcp!("{TRANSACTION_SELECT} WHERE account_id = ?1 and date = ?2 and type = ?3"),
+                [account_id, date.to_string(), transaction_type.to_string()]
+            )?;
+            if !current.is_empty() {
+                return Err(anyhow!("Conflicting transaction found on same date"));
+            }
+            Ok(())
+        },
+        TransactionType::Transfer => {
+            Ok(())
+        }
+    }
+}
+
 fn verify(transaction: &rusqlite::Transaction, transaction_type: TransactionType, account_id: String, from_account_id: Option<String>) -> anyhow::Result<()> {
-    verify_account_ids(transaction, account_id, from_account_id.clone())?;
-    verify_transaction_type(transaction_type, from_account_id.clone())?;
+    verify_account_ids(transaction, account_id.clone(), from_account_id.clone())?;
+    verify_from_account_id(transaction_type.clone(), from_account_id.clone())?;
     Ok(())
 }
 
-fn verify_transaction_type(transaction_type: TransactionType, from_account_id: Option<String>) -> anyhow::Result<()> {
+fn verify_from_account_id(transaction_type: TransactionType, from_account_id: Option<String>) -> anyhow::Result<()> {
     return match transaction_type {
         TransactionType::Balance => {
             if from_account_id.is_none() {

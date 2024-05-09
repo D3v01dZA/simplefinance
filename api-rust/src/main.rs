@@ -466,12 +466,12 @@ mod tests {
         assert_eq!(http::StatusCode::INTERNAL_SERVER_ERROR, code);
         assert_eq!("Account What does not exist", text);
 
-        // Create transaction with from account when transaction
+        // Create transaction with from account when balance
         let req = test::TestRequest::post()
             .uri("/api/transaction/")
             .set_json(NewTransaction {
                 description: "That".to_string(),
-                date: NaiveDate::from_ymd_opt(2024, 1, 10).expect("NaiveDate"),
+                date: NaiveDate::from_ymd_opt(2024, 1, 5).expect("NaiveDate"),
                 value: Decimal::new(10, 2),
                 transaction_type: TransactionType::Balance,
                 account_id: loan_account.id.clone(),
@@ -484,6 +484,63 @@ mod tests {
         let text = String::from_utf8(vec).unwrap();
         assert_eq!(http::StatusCode::INTERNAL_SERVER_ERROR, code);
         assert_eq!("Balance cannot have a from_account_id", text);
+
+        // Create transaction with the same date as a balance
+        let req = test::TestRequest::post()
+            .uri("/api/transaction/")
+            .set_json(NewTransaction {
+                description: "That".to_string(),
+                date: NaiveDate::from_ymd_opt(2024, 1, 10).expect("NaiveDate"),
+                value: Decimal::new(10, 2),
+                transaction_type: TransactionType::Balance,
+                account_id: loan_account.id.clone(),
+                from_account_id: None,
+            })
+            .to_request();
+        let response = test::call_service(&app, req).await;
+        let code = response.response().status();
+        let vec = body::to_bytes(response.into_body()).await.unwrap().into();
+        let text = String::from_utf8(vec).unwrap();
+        assert_eq!(http::StatusCode::INTERNAL_SERVER_ERROR, code);
+        assert_eq!("Conflicting transaction found on same date", text);
+
+        // Create transaction with a from account
+        let req = test::TestRequest::post()
+            .uri("/api/transaction/")
+            .set_json(NewTransaction {
+                description: "That".to_string(),
+                date: NaiveDate::from_ymd_opt(2024, 1, 11).expect("NaiveDate"),
+                value: Decimal::new(10, 2),
+                transaction_type: TransactionType::Balance,
+                account_id: loan_account.id.clone(),
+                from_account_id: Some(savings_account.id.clone()),
+            })
+            .to_request();
+        let response = test::call_service(&app, req).await;
+        let code = response.response().status();
+        let vec = body::to_bytes(response.into_body()).await.unwrap().into();
+        let text = String::from_utf8(vec).unwrap();
+        assert_eq!(http::StatusCode::INTERNAL_SERVER_ERROR, code);
+        assert_eq!("Balance cannot have a from_account_id", text);
+
+        // Create transaction without from account when transaction
+        let req = test::TestRequest::post()
+            .uri("/api/transaction/")
+            .set_json(NewTransaction {
+                description: "That".to_string(),
+                date: NaiveDate::from_ymd_opt(2024, 1, 10).expect("NaiveDate"),
+                value: Decimal::new(10, 2),
+                transaction_type: TransactionType::Transfer,
+                account_id: loan_account.id.clone(),
+                from_account_id: None,
+            })
+            .to_request();
+        let response = test::call_service(&app, req).await;
+        let code = response.response().status();
+        let vec = body::to_bytes(response.into_body()).await.unwrap().into();
+        let text = String::from_utf8(vec).unwrap();
+        assert_eq!(http::StatusCode::INTERNAL_SERVER_ERROR, code);
+        assert_eq!("Transfer must have a from_account_id", text);
 
         // Create transaction with from account that doesn't exist
         let req = test::TestRequest::post()

@@ -10,10 +10,11 @@ use crate::setting::schema::{NewSetting, Setting, SettingKey};
 const SETTING_COLUMNS: &str = "id, key, value";
 const SETTING_SELECT: &str = formatcp!("SELECT {SETTING_COLUMNS} FROM setting");
 const SETTING_RETURNING: &str = formatcp!("RETURNING {SETTING_COLUMNS}");
+const SETTING_ORDERING: &str = "ORDER BY key ASC";
 
 pub fn create_setting(transaction: &Transaction, new_setting: NewSetting) -> anyhow::Result<Option<Setting>> {
     verify_new(transaction, new_setting.key.clone())?;
-    verify_update(transaction, new_setting.key.clone(), new_setting.value.clone())?;
+    verify(transaction, new_setting.key.clone(), new_setting.value.clone())?;
     return single(
         transaction,
         formatcp!("INSERT INTO setting ({SETTING_COLUMNS}) VALUES (?1, ?2, ?3) {SETTING_RETURNING}"),
@@ -22,7 +23,7 @@ pub fn create_setting(transaction: &Transaction, new_setting: NewSetting) -> any
 }
 
 pub fn update_setting(transaction: &Transaction, updated_setting: Setting) -> anyhow::Result<Option<Setting>> {
-    verify_update(transaction, updated_setting.key.clone(), updated_setting.value.clone())?;
+    verify(transaction, updated_setting.key.clone(), updated_setting.value.clone())?;
     return single(
         transaction,
         formatcp!("UPDATE setting SET key = ?1, value = ?2 WHERE id = ?3 {SETTING_RETURNING}"),
@@ -49,7 +50,7 @@ pub fn get_setting(transaction: &Transaction, id: String) -> anyhow::Result<Opti
 pub fn list_settings(transaction: &Transaction) -> anyhow::Result<Vec<Setting>> {
     return list(
         transaction,
-        SETTING_SELECT,
+        formatcp!("{SETTING_SELECT} {SETTING_ORDERING}"),
         [],
     );
 }
@@ -96,7 +97,7 @@ fn verify_new(transaction: &Transaction, setting_key: SettingKey) -> anyhow::Res
     }
 }
 
-fn verify_update(transaction: &Transaction, setting_key: SettingKey, value: String) -> anyhow::Result<()> {
+fn verify(transaction: &Transaction, setting_key: SettingKey, value: String) -> anyhow::Result<()> {
     match setting_key {
         SettingKey::DefaultTransactionFromAccountId => verify_account_exists(transaction, value),
         SettingKey::TransferWithoutBalanceIgnoredAccounts => {
