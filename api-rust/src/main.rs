@@ -6,7 +6,6 @@ use r2d2_sqlite::SqliteConnectionManager;
 
 mod db;
 mod api;
-mod schema;
 mod util;
 mod account;
 mod transaction;
@@ -52,7 +51,10 @@ async fn main() -> std::io::Result<()> {
 
     let manager = SqliteConnectionManager::file("database.db");
     run_migrations(&manager);
-    let pool = Pool::new(manager).unwrap();
+    let pool = Pool::builder()
+        .max_size(1)
+        .build(manager)
+        .unwrap();
 
     info!("Starting HTTP server at http://localhost:8080");
     HttpServer::new(move || { app!(pool) })

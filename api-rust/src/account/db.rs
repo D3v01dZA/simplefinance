@@ -14,7 +14,7 @@ pub fn create_account(transaction: &Transaction, new_account: NewAccount) -> any
     return single(
         transaction,
         formatcp!("INSERT INTO account ({ACCOUNT_COLUMNS}) VALUES (?1, ?2, ?3) {ACCOUNT_RETURNING}"),
-        [Uuid::new_v4().to_string(), new_account.name, new_account.account_type.to_string()]
+        [Uuid::new_v4().to_string(), new_account.name.clone(), new_account.account_type.to_string()]
     );
 }
 

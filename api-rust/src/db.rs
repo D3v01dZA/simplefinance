@@ -10,7 +10,7 @@ use rust_decimal::Decimal;
 
 pub type Pool = r2d2::Pool<r2d2_sqlite::SqliteConnectionManager>;
 
-pub async fn do_in_transaction<R: Send + 'static, F: Send + 'static + FnOnce(&Transaction) -> anyhow::Result<R>>(pool: & Pool, function: F) -> anyhow::Result<R> {
+pub async fn do_in_transaction<R: Send + 'static, F: Send + 'static + FnOnce(&Transaction) -> anyhow::Result<R>>(pool:& Pool, function: F) -> anyhow::Result<R> {
     let pool = pool.clone();
     return web::block(move || {
         let mut connection = pool.get()?;
