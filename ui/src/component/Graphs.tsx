@@ -7,42 +7,24 @@ import { CartesianGrid, Layer, Legend, Line, LineChart, Rectangle, Sankey, Toolt
 import React from "react";
 import { IndexedAccounts, selectAccounts } from "../app/accountSlice";
 import { useSearchParams } from "react-router-dom";
+import { current } from "@reduxjs/toolkit";
 
-interface JRawAccountBalance {
-    accountId: string,
-    balance: number,
-    transfer: number,
-}
-
-interface JRawTotalBalance {
-    type: TotalType,
-    balance: number,
-    transfer: number,
-    flow: number,
-}
-
-interface JRawFlowGrouping {
-    type: string,
+interface JValue {
+    name: string,
     value: number,
+    value_difference: number,
 }
 
-interface JRawBalances {
+interface JStatistic {
     date: string,
-    net: number,
-    totalBalances: JRawTotalBalance[],
-    accountBalances: JRawAccountBalance[],
-    flowGroupings: JRawFlowGrouping[],
-}
-
-interface JBalance extends JRawBalances {
-    difference: JRawBalances,
+    values: Array<JValue>
 }
 
 enum ViewType {
-    TOTALS = "TOTALS",
-    TOTALS_TRANSFERS = "TOTALS_TRANSFERS",
-    ACCOUNTS = "ACCOUNTS",
-    ACCOUNTS_TRANSFERS = "ACCOUNTS_TRANSFERS",
+    TOTAL_BALANCE = "TOTAL_BALANCE",
+    TOTAL_TRANSFER = "TOTAL_TRANSFER",
+    ACCOUNT_BALANCE = "ACCOUNT_BALANCE",
+    ACCOUNT_TRANSFER = "ACCOUNT_TRANSFER",
     FLOW = "FLOW",
     FLOW_GROUPING = "FLOW_GROUPING",
 }
@@ -73,25 +55,47 @@ enum DataType {
 }
 
 enum TotalType {
+    NET = "NET",
     CASH = "CASH",
     EXTERNAL = "EXTERNAL",
     SHORT_TERM_ASSET = "SHORT_TERM_ASSET",
     LONG_TERM_ASSET = "LONG_TERM_ASSET",
     PHYSICAL_ASSET = "PHYSICAL_ASSET",
     RETIREMENT_ASSET = "RETIREMENT_ASSET",
-    CASH_LIABILITY = "CASH_LIABILITY",
     SHORT_TERM_LIABILITY = "SHORT_TERM_LIABILITY",
     LONG_TERM_LIABILITY = "LONG_TERM_LIABILITY",
 }
 
-function url(dateType: DateType) {
+function url(dateType: DateType, viewType: ViewType) {
+    let subpath = ""
+    console.log(viewType)
+    switch (viewType) {
+        case ViewType.TOTAL_BALANCE:
+            subpath = "/total_balance/"
+            break;
+        case ViewType.TOTAL_TRANSFER:
+            subpath = "/total_transfer/"
+            break;
+        case ViewType.ACCOUNT_BALANCE:
+            subpath = "/account_balance/"
+            break;
+        case ViewType.ACCOUNT_TRANSFER:
+            subpath = "/account_transfer/"
+            break;
+        case ViewType.FLOW:
+            subpath = "/flow/"
+            break;
+        case ViewType.FLOW_GROUPING:
+            subpath = "/flow_grouping/"
+            break;
+    }
     switch (dateType) {
         case DateType.MONTHLY:
-            return "/api/monthly/";
+            return "/api/statistics/monthly" + subpath;
         case DateType.WEEKLY:
-            return "/api/weekly/";
+            return "/api/statistics/weekly" + subpath;
         case DateType.YEARLY: 
-            return "/api/yearly/";
+            return "/api/statistics/yearly" + subpath;
     }
 }
 
@@ -123,16 +127,10 @@ const EMPTY_SANKEY = { "nodes": [{ "name": "EMPTY", "color": "" }, { "name": "EM
 
 function lines(viewType: ViewType, hiddenItems: Set<string>, accounts: IndexedAccounts) {
     switch (viewType) {
-        case ViewType.TOTALS:
+        case ViewType.TOTAL_BALANCE:
             const totalColorPalette = generateColorPalette(1 + Object.values(TotalType).length);
             return (
                 <React.Fragment>
-                    <Line
-                        type="monotone"
-                        dataKey="net"
-                        stroke={dull("net", hiddenItems, totalColorPalette[0])}
-                        name="Net"
-                    />
                     {Object.values(TotalType).map((totalType, index) => <Line
                         key={totalType}
                         type="monotone"
@@ -142,7 +140,7 @@ function lines(viewType: ViewType, hiddenItems: Set<string>, accounts: IndexedAc
                     />)}
                 </React.Fragment>
             );
-        case ViewType.TOTALS_TRANSFERS:
+        case ViewType.TOTAL_TRANSFER:
             const totalsTransferColorPalette = generateColorPalette(1 + Object.values(TotalType).length);
             return (
                 <React.Fragment>
@@ -155,7 +153,7 @@ function lines(viewType: ViewType, hiddenItems: Set<string>, accounts: IndexedAc
                     />)}
                 </React.Fragment>
             );
-        case ViewType.ACCOUNTS:
+        case ViewType.ACCOUNT_BALANCE:
             const accountColorPalette = generateColorPalette(Object.values(accounts).length);
             return (
                 <React.Fragment>
@@ -168,7 +166,7 @@ function lines(viewType: ViewType, hiddenItems: Set<string>, accounts: IndexedAc
                     />)}
                 </React.Fragment>
             );
-        case ViewType.ACCOUNTS_TRANSFERS:
+        case ViewType.ACCOUNT_TRANSFER:
             const accountTransfersColorPalette = generateColorPalette(Object.values(accounts).length);
             return (
                 <React.Fragment>
@@ -210,77 +208,32 @@ function lines(viewType: ViewType, hiddenItems: Set<string>, accounts: IndexedAc
     }
 }
 
-function calculateBalances(viewType: ViewType, hiddenItems: Set<string>, balances?: JRawBalances) {
-    switch (viewType) {
-        case ViewType.TOTALS:
-            const main = (balances?.totalBalances ?? []).reduce<any>((acc, current) => {
-                if (!hiddenItems.has(current.type)) {
-                    acc[current.type] = current.balance;
-                }
-                return acc;
-            }, {});
-            if (hiddenItems.has("net")) {
-                return {
-                    ...main
-                }
+function calculateBalances(hiddenItems: Set<string>, balances: JStatistic, dataType: DataType) {
+    const main = balances.values.reduce<any>((acc, current) => {
+        if (!hiddenItems.has(current.name)) {
+            if (dataType === DataType.NET) {
+                acc[current.name] = current.value;
+            } else {
+                acc[current.name] = current.value_difference;
             }
-            return {
-                ...main,
-                net: balances?.net ?? 0
-            }
-        case ViewType.TOTALS_TRANSFERS:
-            return (balances?.totalBalances ?? []).reduce<any>((acc, current) => {
-                if (!hiddenItems.has(current.type)) {
-                    acc[current.type] = current.transfer;
-                }
-                return acc;
-            }, {});
-        case ViewType.ACCOUNTS:
-            return (balances?.accountBalances ?? []).reduce<any>((acc, current) => {
-                if (!hiddenItems.has(current.accountId)) {
-                    acc[current.accountId] = current.balance;
-                }
-                return acc;
-            }, {});
-        case ViewType.ACCOUNTS_TRANSFERS:
-            return (balances?.accountBalances ?? []).reduce<any>((acc, current) => {
-                if (!hiddenItems.has(current.accountId)) {
-                    acc[current.accountId] = current.transfer;
-                }
-                return acc;
-            }, {});
-        case ViewType.FLOW:
-            return (balances?.totalBalances ?? []).reduce<any>((acc, current) => {
-                if (!hiddenItems.has(current.type)) {
-                    acc[current.type] = current.flow;
-                }
-                return acc;
-            }, {});
-        case ViewType.FLOW_GROUPING:
-            return (balances?.flowGroupings ?? []).reduce<any>((acc, current) => {
-                if (!hiddenItems.has(current.type)) {
-                    acc[current.type] = current.value;
-                }
-                return acc;
-            }, {});
+        }
+        return acc;
+    }, {});
+    return {
+        ...main
     }
 }
 
-function calculateData(viewType: ViewType, dataType: DataType, hiddenItems: Set<string>, balance: JBalance): any {
-    const date = balance.date.substring(2, balance.date.length);
-    let calculated: any;
-    if (dataType === DataType.NET) {
-        calculated = calculateBalances(viewType, hiddenItems, balance);
-    } else {
-        calculated = calculateBalances(viewType, hiddenItems, balance.difference);
-    }
+function calculateData(dataType: DataType, hiddenItems: Set<string>, statistic: JStatistic): any {
+    const date = statistic.date.substring(2, statistic.date.length);
+    let calculated: any = calculateBalances(hiddenItems, statistic, dataType);
     return {
         ...calculated,
         date
     }
 }
 
-function calculateSankey(viewType: ViewType, dataType: DataType, accounts: IndexedAccounts, raw: JBalance): SankeyData {
+function calculateSankey(viewType: ViewType, dataType: DataType, accounts: IndexedAccounts, raw: JStatistic): SankeyData {
     const net = dataType === DataType.NET;
     if (raw === undefined) {
         return EMPTY_SANKEY;
@@ -289,7 +242,7 @@ function calculateSankey(viewType: ViewType, dataType: DataType, accounts: Index
     if (net) {
         balance = raw;
     } else {
-        balance = raw.difference;
+        balance = raw;
     }
     if (balance === undefined) {
         return EMPTY_SANKEY
@@ -297,16 +250,16 @@ function calculateSankey(viewType: ViewType, dataType: DataType, accounts: Index
 
     const nodes: Node[] = [];
     const links: LinkDataItem[] = [];
-    if (viewType === ViewType.TOTALS || viewType == ViewType.TOTALS_TRANSFERS || viewType == ViewType.FLOW) {
+    if (viewType === ViewType.TOTAL_BALANCE || viewType == ViewType.TOTAL_TRANSFER || viewType == ViewType.FLOW) {
         function decideAsset() {
-            if (viewType == ViewType.TOTALS) {
+            if (viewType == ViewType.TOTAL_BALANCE) {
                 return net ? "Assets" : "Increase"
             }
             return "Income"
         }
 
         function decideLiability() {
-            if (viewType == ViewType.TOTALS) {
+            if (viewType == ViewType.TOTAL_BALANCE) {
                 return net ? "Liabilities" : "Decrease"
             }
             return "Expense"
@@ -327,32 +280,31 @@ function calculateSankey(viewType: ViewType, dataType: DataType, accounts: Index
         let assets = 0;
         let liabilities = 0;
 
-
-        balance.totalBalances.forEach((total) => {
-            let value;
-            if (viewType === ViewType.TOTALS) {
-                value = total.balance;
-            } else if (viewType === ViewType.TOTALS_TRANSFERS) {
-                value = total.transfer;
-            } else {
-                value = total.flow;
-            }
-            if (value > 0) {
-                assets += value;
-                links.push({
-                    source: 2,
-                    target: nodeNameToIndex[total.type],
-                    value: value,
-                    color: totalColorPalette[nodeNameToIndex[total.type]]
-                })
-            } else if (value < 0) {
-                liabilities -= value;
-                links.push({
-                    source: 3,
-                    target: nodeNameToIndex[total.type],
-                    value: -value,
-                    color: totalColorPalette[nodeNameToIndex[total.type]]
-                })
+        raw.values.forEach((total) => {
+            if (total.name !== TotalType.NET) {
+                let value;
+                if (dataType == DataType.NET) {
+                    value = total.value;
+                } else {
+                    value = total.value_difference;
+                }
+                if (value > 0) {
+                    assets += value;
+                    links.push({
+                        source: 2,
+                        target: nodeNameToIndex[total.name],
+                        value: value,
+                        color: totalColorPalette[nodeNameToIndex[total.name]]
+                    })
+                } else if (value < 0) {
+                    liabilities -= value;
+                    links.push({
+                        source: 3,
+                        target: nodeNameToIndex[total.name],
+                        value: -value,
+                        color: totalColorPalette[nodeNameToIndex[total.name]]
+                    })
+                }
             }
         })
 
@@ -370,22 +322,22 @@ function calculateSankey(viewType: ViewType, dataType: DataType, accounts: Index
         })
 
         return { nodes, links }
-    } else if (viewType === ViewType.ACCOUNTS || viewType == ViewType.ACCOUNTS_TRANSFERS) {
+    } else if (viewType === ViewType.ACCOUNT_BALANCE || viewType == ViewType.ACCOUNT_TRANSFER) {
         function decideAsset() {
-            if (viewType == ViewType.ACCOUNTS) {
+            if (viewType == ViewType.ACCOUNT_BALANCE) {
                 return net ? "Assets" : "Increase"
             }
             return "Income"
         }
 
         function decideLiability() {
-            if (viewType == ViewType.ACCOUNTS) {
+            if (viewType == ViewType.ACCOUNT_BALANCE) {
                 return net ? "Liabilities" : "Decrease"
             }
             return "Expense"
         }
 
-        const totalColorPalette = generateColorPalette(3 + balance.accountBalances.length);
+        const totalColorPalette = generateColorPalette(3 + balance.values.length);
         nodes.push({ name: "Total " + decideAsset(), color: totalColorPalette[nodes.length] })
         nodes.push({ name: "Total " + decideLiability(), color: totalColorPalette[nodes.length] })
         nodes.push({ name: decideAsset(), color: totalColorPalette[nodes.length] })
@@ -394,14 +346,9 @@ function calculateSankey(viewType: ViewType, dataType: DataType, accounts: Index
         let assets = 0;
         let liabilities = 0;
 
-        balance.accountBalances.forEach((account) => {
-            nodes.push({ name: accountTitle(account.accountId, accounts), color: totalColorPalette[nodes.length] });
-            let value;
-            if (viewType === ViewType.ACCOUNTS) {
-                value = account.balance;
-            } else {
-                value = account.transfer;
-            }
+        balance.values.forEach((account) => {
+            nodes.push({ name: accountTitle(account.name, accounts), color: totalColorPalette[nodes.length] });
+            let value = account.value;
             if (value > 0) {
                 assets += value;
                 links.push({
@@ -436,7 +383,7 @@ function calculateSankey(viewType: ViewType, dataType: DataType, accounts: Index
 
         return { nodes, links }
     } else if (viewType == ViewType.FLOW_GROUPING) {
-        const totalColorPalette = generateColorPalette(4 + balance.flowGroupings.length);
+        const totalColorPalette = generateColorPalette(4 + balance.values.length);
         nodes.push({ name: "Total Income", color: totalColorPalette[nodes.length] })
         nodes.push({ name: "Total Expense", color: totalColorPalette[nodes.length] })
         nodes.push({ name: "Income", color: totalColorPalette[nodes.length] })
@@ -445,8 +392,8 @@ function calculateSankey(viewType: ViewType, dataType: DataType, accounts: Index
         let assets = 0;
         let liabilities = 0;
 
-        balance.flowGroupings.forEach((flow) => {
-            nodes.push({ name: titleCase(flow.type), color: totalColorPalette[nodes.length] });
+        balance.values.forEach((flow) => {
+            nodes.push({ name: titleCase(flow.name), color: totalColorPalette[nodes.length] });
             let value = flow.value;
             if (value > 0) {
                 assets += value;
@@ -568,7 +515,7 @@ export function Graphs() {
 
     const [data, setData] = useState<any[]>([]);
     const [sankey, setSankey] = useState<SankeyData>(EMPTY_SANKEY)
-    const [balances, setBalances] = useState<JBalance[]>([]);
+    const [statistics, setStatistics] = useState<JStatistic[]>([]);
 
     function setSearchParams(key: string, value: string | number | undefined | string[]) {
         if (Array.isArray(value)) {
@@ -656,24 +603,24 @@ export function Graphs() {
     }, [searchParams]);
 
     useEffect(() => {
-        get<JBalance[]>(server, url(dateType))
+        get<JStatistic[]>(server, url(dateType, viewType))
             .then(balances => {
-                setBalances(balances);
+                setStatistics(balances);
                 setSankeyDate(balances[balances.length - 1].date);
             })
             .catch(error => err(error));
-    }, [dateType]);
+    }, [dateType, viewType]);
 
     useEffect(() => {
         setHiddenItems(new Set());
     }, [viewType]);
 
     useEffect(() => {
-        const data = balances.map(balance => calculateData(viewType, dataType, hiddenItems, balance));
+        const data = statistics.map(statistic => calculateData(dataType, hiddenItems, statistic));
         setData(data);
-        const sankeyData = calculateSankey(viewType, dataType, accounts, balances.find((value) => value.date === sankeyDate)!);
+        const sankeyData = calculateSankey(viewType, dataType, accounts, statistics.find((value) => value.date === sankeyDate)!);
         setSankey(sankeyData);
-    }, [balances, dataType, viewType, hiddenItems, sankeyDate]);
+    }, [statistics, dataType, viewType, hiddenItems, sankeyDate]);
 
     return (
         <Container>
@@ -693,7 +640,7 @@ export function Graphs() {
                         <Form.Group>
                             <Form.Label>Date</Form.Label>
                             <Form.Select value={sankeyDate} onChange={e => setSankeyDate(e.target.value)}>
-                                {balances.map(balance => <option key={balance.date} value={balance.date}>{balance.date}</option>)}
+                                {statistics.map(balance => <option key={balance.date} value={balance.date}>{balance.date}</option>)}
                             </Form.Select>
                         </Form.Group>
                     </Col>

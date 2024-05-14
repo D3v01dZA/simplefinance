@@ -3,3 +3,4 @@ database.db
 old_database.db
 new_database.db
 tables.dump
+schema.dump

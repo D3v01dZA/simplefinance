@@ -11,6 +11,7 @@ mod account;
 mod transaction;
 mod setting;
 mod issue;
+mod statistics;
 
 use db::{Pool};
 
@@ -42,6 +43,8 @@ macro_rules! app (
         .service(transaction::api::list_transactions)
 
         .service(issue::api::list_issues)
+
+        .service(statistics::api::calculate_statistics)
     });
 );
 
@@ -89,6 +92,7 @@ mod tests {
     use crate::transaction;
     use crate::transaction::schema::{Transaction, TransactionType, NewTransaction};
     use crate::issue;
+    use crate::statistics;
     use crate::issue::schema::{Issue, IssueType};
     use crate::db::Pool;
     use crate::run_migrations;
