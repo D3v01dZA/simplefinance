@@ -39,8 +39,6 @@ enum Category {
 enum TotalType {
     #[strum(serialize = "NET", to_string = "NET")]
     Net,
-    #[strum(serialize = "EXTERNAL", to_string = "EXTERNAL")]
-    External,
     #[strum(serialize = "CASH", to_string = "CASH")]
     Cash,
     #[strum(serialize = "SHORT_TERM_ASSET", to_string = "SHORT_TERM_ASSET")]
@@ -55,6 +53,20 @@ enum TotalType {
     ShortTermLiability,
     #[strum(serialize = "LONG_TERM_LIABILITY", to_string = "LONG_TERM_LIABILITY")]
     LongTermLiability,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Display, EnumIter, Hash)]
+enum FlowGroup {
+    #[strum(serialize = "CASH", to_string = "CASH")]
+    CASH,
+    #[strum(serialize = "GAIN", to_string = "GAIN")]
+    GAIN,
+    #[strum(serialize = "RETIREMENT", to_string = "RETIREMENT")]
+    RETIREMENT,
+    #[strum(serialize = "APPRECIATION", to_string = "APPRECIATION")]
+    APPRECIATION,
+    #[strum(serialize = "INTEREST", to_string = "INTEREST")]
+    INTEREST,
 }
 
 #[get("/api/statistics/{period}/{category}/")]
@@ -80,10 +92,7 @@ pub async fn calculate_statistics(db: web::Data<Pool>, path: web::Path<(String, 
                 Category::TotalBalances => calculate_total_balances(transactions, accounts, dates),
                 Category::TotalTransfers => calculate_total_transfers(transactions, accounts, dates),
                 Category::Flow => calculate_flow(transactions, accounts, dates),
-                _ => vec![Statistic {
-                    date: Default::default(),
-                    values: vec![],
-                }]
+                Category::FlowGrouping => calculate_flow_grouping(transactions, accounts, dates)
             }
         })
         .map(|statistics| HttpResponse::Ok().json(statistics))
@@ -94,28 +103,30 @@ pub async fn calculate_statistics(db: web::Data<Pool>, path: web::Path<(String, 
 }
 
 fn calculate_account_balances(transactions: Vec<Transaction>, accounts: Vec<Account>, dates: Vec<NaiveDate>) -> Vec<Statistic> {
-    return calculate(transactions, accounts, dates, |transaction| transaction.transaction_type == Balance, add_balance, |map, _| map.clone());
+    return calculate_internal(transactions, accounts, dates, |transaction| transaction.transaction_type == Balance, add_balance, |map, _| map.clone());
 }
 
 fn calculate_account_transfers(transactions: Vec<Transaction>, accounts: Vec<Account>, dates: Vec<NaiveDate>) -> Vec<Statistic> {
-    return calculate(transactions, accounts, dates, |transaction| transaction.transaction_type == Transfer, add_transfer, |map, _| map.clone());
+    return calculate_internal(transactions, accounts, dates, |transaction| transaction.transaction_type == Transfer, add_transfer, |map, _| map.clone());
 }
 
 fn calculate_total_balances(transactions: Vec<Transaction>, accounts: Vec<Account>, dates: Vec<NaiveDate>) -> Vec<Statistic> {
-    return calculate(transactions, accounts, dates, |transaction| transaction.transaction_type == Balance, add_balance, accumulate_totals);
+    return calculate_internal(transactions, accounts, dates, |transaction| transaction.transaction_type == Balance, add_balance, accumulate_totals);
 }
 
 fn calculate_total_transfers(transactions: Vec<Transaction>, accounts: Vec<Account>, dates: Vec<NaiveDate>) -> Vec<Statistic> {
-    return calculate(transactions, accounts, dates, |transaction| transaction.transaction_type == Transfer, add_transfer, accumulate_totals);
+    return calculate_internal(transactions, accounts, dates, |transaction| transaction.transaction_type == Transfer, add_transfer, accumulate_totals);
 }
 
-fn calculate_flow(mut transactions: Vec<Transaction>, accounts: Vec<Account>, dates: Vec<NaiveDate>) -> Vec<Statistic> {
-    let mut statistics: Vec<Statistic> = vec![];
-
-    return statistics;
+fn calculate_flow(transactions: Vec<Transaction>, accounts: Vec<Account>, dates: Vec<NaiveDate>) -> Vec<Statistic> {
+    return calculate_flow_internal(transactions, accounts, dates, calculate_flow_total);
 }
 
-fn calculate<
+fn calculate_flow_grouping(transactions: Vec<Transaction>, accounts: Vec<Account>, dates: Vec<NaiveDate>) -> Vec<Statistic> {
+    return calculate_flow_internal(transactions, accounts, dates, calculate_flow_grouping_total);
+}
+
+fn calculate_internal<
     Filter: FnMut(&Transaction) -> bool,
     Mapper: FnMut(HashMap<String, Decimal>, &Transaction) -> HashMap<String, Decimal>,
     AccumulatorKey: Hash + PartialEq + Eq + Display + Clone,
@@ -126,7 +137,7 @@ fn calculate<
     dates: Vec<NaiveDate>,
     filter: Filter,
     mut mapper: Mapper,
-    mut accumulator: Accumulator
+    mut accumulator: Accumulator,
 ) -> Vec<Statistic> {
     let mut statistics: Vec<Statistic> = vec![];
     transactions.retain(filter);
@@ -164,6 +175,60 @@ fn calculate<
     return statistics;
 }
 
+fn calculate_flow_internal<
+    AccumulatorKey: Hash + PartialEq + Eq + Display + Clone,
+    Accumulator: FnMut(&HashMap<TotalType, Decimal>, &HashMap<TotalType, Decimal>) -> HashMap<AccumulatorKey, Decimal>
+>(
+    transactions: Vec<Transaction>,
+    accounts: Vec<Account>,
+    dates: Vec<NaiveDate>,
+    mut accumulator: Accumulator,
+) -> Vec<Statistic> {
+    let mut statistics: Vec<Statistic> = vec![];
+
+    let account_by_account_id: HashMap<String, Account> = accounts.iter()
+        .map(|account| (account.id.clone(), account.clone()))
+        .collect();
+
+    let mut current_balances_by_account_id: HashMap<String, Decimal> = accounts.iter()
+        .map(|account| (account.id.clone(), Decimal::ZERO))
+        .collect();
+
+    let mut current_transfers_by_account_id: HashMap<String, Decimal> = accounts.iter()
+        .map(|account| (account.id.clone(), Decimal::ZERO))
+        .collect();
+
+    let mut previous_flow: HashMap<AccumulatorKey, Decimal> = HashMap::new();
+
+    let mut transaction_iterator = transactions.iter();
+    let mut first_transaction_encountered = false;
+    let mut current_transaction = transaction_iterator.next();
+
+    for date in dates {
+        while current_transaction.is_some() && current_transaction.unwrap().date <= date {
+            let transaction = current_transaction.unwrap();
+            match transaction.transaction_type {
+                Balance => current_balances_by_account_id = add_balance(current_balances_by_account_id, transaction),
+                Transfer => current_transfers_by_account_id = add_transfer(current_transfers_by_account_id, transaction)
+            }
+            current_transaction = transaction_iterator.next();
+            first_transaction_encountered = true;
+        }
+
+        let accumulated_balances = accumulate_totals(&current_balances_by_account_id, &account_by_account_id);
+        let accumulated_transfers = accumulate_totals(&current_transfers_by_account_id, &account_by_account_id);
+
+        let current_flow = accumulator(&accumulated_balances, &accumulated_transfers);
+
+        if first_transaction_encountered {
+            statistics.push(create_statistic_by_key(date, &current_flow, &previous_flow));
+            previous_flow = current_flow.clone();
+        }
+    }
+
+    return statistics;
+}
+
 fn accumulate_totals(map: &HashMap<String, Decimal>, account_by_account_id: &HashMap<String, Account>) -> HashMap<TotalType, Decimal> {
     let mut value_by_total: HashMap<TotalType, Decimal> = TotalType::iter()
         .map(|transfer| (transfer, Decimal::ZERO))
@@ -172,12 +237,15 @@ fn accumulate_totals(map: &HashMap<String, Decimal>, account_by_account_id: &Has
     let mut net = value_by_total.remove(&TotalType::Net).unwrap();
     for (account_id, value) in map.iter() {
         let total_type = total_type_from_account_type(&account_by_account_id.get(account_id).unwrap().account_type);
-        let transfer_value = value_by_total.remove(&total_type).unwrap();
-        value_by_total.insert(total_type.clone(), value + transfer_value);
-        net = net + value;
+        if total_type.is_some() {
+            let total_type = total_type.unwrap();
+            let transfer_value = value_by_total.remove(&total_type).unwrap();
+            value_by_total.insert(total_type.clone(), value + transfer_value);
+            net = net + value;
+        }
     }
     value_by_total.insert(TotalType::Net, net);
-    return value_by_total
+    return value_by_total;
 }
 
 fn add_transfer(mut map: HashMap<String, Decimal>, transaction: &Transaction) -> HashMap<String, Decimal> {
@@ -192,6 +260,52 @@ fn add_transfer(mut map: HashMap<String, Decimal>, transaction: &Transaction) ->
 fn add_balance(mut map: HashMap<String, Decimal>, transaction: &Transaction) -> HashMap<String, Decimal> {
     map.insert(transaction.account_id.clone(), transaction.value.clone());
     return map;
+}
+
+fn calculate_flow_total(balances: &HashMap<TotalType, Decimal>, transfers: &HashMap<TotalType, Decimal>) -> HashMap<TotalType, Decimal> {
+    let mut flow_total: HashMap<TotalType, Decimal> = HashMap::new();
+    for total_type in TotalType::iter() {
+        match total_type {
+            TotalType::Net => {}
+            _ => {
+                let balance = balances.get(&total_type).unwrap();
+                let transfer = transfers.get(&total_type).unwrap();
+                flow_total.insert(total_type, balance - transfer);
+            }
+        }
+    }
+    return flow_total;
+}
+
+fn calculate_flow_grouping_total(balances: &HashMap<TotalType, Decimal>, transfers: &HashMap<TotalType, Decimal>) -> HashMap<FlowGroup, Decimal> {
+    let mut flow_grouping_total: HashMap<FlowGroup, Decimal> = FlowGroup::iter()
+        .map(|flow_group| (flow_group, Decimal::ZERO))
+        .collect();
+    for total_type in TotalType::iter() {
+        match total_type {
+            TotalType::Net => {}
+            _ => {
+                let balance = balances.get(&total_type).unwrap();
+                let transfer = transfers.get(&total_type).unwrap();
+                let flow_grouping = match total_type {
+                    TotalType::Net => None,
+                    TotalType::Cash => Some(FlowGroup::CASH),
+                    TotalType::ShortTermAsset => Some(FlowGroup::GAIN),
+                    TotalType::LongTermAsset => Some(FlowGroup::GAIN),
+                    TotalType::PhysicalAsset => Some(FlowGroup::APPRECIATION),
+                    TotalType::Retirement => Some(FlowGroup::RETIREMENT),
+                    TotalType::ShortTermLiability => Some(FlowGroup::INTEREST),
+                    TotalType::LongTermLiability => Some(FlowGroup::INTEREST)
+                };
+                if flow_grouping.is_some() {
+                    let flow_grouping = flow_grouping.unwrap();
+                    let value = flow_grouping_total.remove(&flow_grouping).unwrap();
+                    flow_grouping_total.insert(flow_grouping, value + (balance - transfer));
+                }
+            }
+        }
+    }
+    return flow_grouping_total;
 }
 
 fn create_statistic_by_key<T: ToString + PartialEq + Eq + Hash>(date: NaiveDate, current_values_by_key: &HashMap<T, Decimal>, previous_values_by_key: &HashMap<T, Decimal>) -> Statistic {
@@ -238,16 +352,16 @@ fn extract_params(path: (String, String)) -> anyhow::Result<(Period, Category)> 
     return Ok((period, category));
 }
 
-fn total_type_from_account_type(account_type: &AccountType) -> TotalType {
+fn total_type_from_account_type(account_type: &AccountType) -> Option<TotalType> {
     match account_type {
-        AccountType::Savings => TotalType::ShortTermAsset,
-        AccountType::Checking => TotalType::Cash,
-        AccountType::Loan => TotalType::LongTermLiability,
-        AccountType::CreditCard => TotalType::ShortTermLiability,
-        AccountType::Investment => TotalType::LongTermAsset,
-        AccountType::Retirement => TotalType::Retirement,
-        AccountType::PhysicalAsset => TotalType::PhysicalAsset,
-        AccountType::External => TotalType::External,
+        AccountType::Savings => Some(TotalType::ShortTermAsset),
+        AccountType::Checking => Some(TotalType::Cash),
+        AccountType::Loan => Some(TotalType::LongTermLiability),
+        AccountType::CreditCard => Some(TotalType::ShortTermLiability),
+        AccountType::Investment => Some(TotalType::LongTermAsset),
+        AccountType::Retirement => Some(TotalType::Retirement),
+        AccountType::PhysicalAsset => Some(TotalType::PhysicalAsset),
+        AccountType::External => None,
     }
 }
 

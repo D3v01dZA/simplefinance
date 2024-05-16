@@ -57,7 +57,6 @@ enum DataType {
 enum TotalType {
     NET = "NET",
     CASH = "CASH",
-    EXTERNAL = "EXTERNAL",
     SHORT_TERM_ASSET = "SHORT_TERM_ASSET",
     LONG_TERM_ASSET = "LONG_TERM_ASSET",
     PHYSICAL_ASSET = "PHYSICAL_ASSET",
