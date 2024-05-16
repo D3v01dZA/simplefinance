@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::hash::Hash;
 use actix_web::{Error, error, get, HttpResponse, web};
 use anyhow::anyhow;
@@ -93,19 +94,19 @@ pub async fn calculate_statistics(db: web::Data<Pool>, path: web::Path<(String, 
 }
 
 fn calculate_account_balances(transactions: Vec<Transaction>, accounts: Vec<Account>, dates: Vec<NaiveDate>) -> Vec<Statistic> {
-    return calculate_account_based(transactions, accounts, dates, |transaction| transaction.transaction_type == Balance, add_balance);
+    return calculate(transactions, accounts, dates, |transaction| transaction.transaction_type == Balance, add_balance, |map, _| map.clone());
 }
 
 fn calculate_account_transfers(transactions: Vec<Transaction>, accounts: Vec<Account>, dates: Vec<NaiveDate>) -> Vec<Statistic> {
-    return calculate_account_based(transactions, accounts, dates, |transaction| transaction.transaction_type == Transfer, add_transfer);
+    return calculate(transactions, accounts, dates, |transaction| transaction.transaction_type == Transfer, add_transfer, |map, _| map.clone());
 }
 
 fn calculate_total_balances(transactions: Vec<Transaction>, accounts: Vec<Account>, dates: Vec<NaiveDate>) -> Vec<Statistic> {
-    return calculate_total_based(transactions, accounts, dates, |transaction| transaction.transaction_type == Balance, add_balance);
+    return calculate(transactions, accounts, dates, |transaction| transaction.transaction_type == Balance, add_balance, accumulate_totals);
 }
 
 fn calculate_total_transfers(transactions: Vec<Transaction>, accounts: Vec<Account>, dates: Vec<NaiveDate>) -> Vec<Statistic> {
-    return calculate_total_based(transactions, accounts, dates, |transaction| transaction.transaction_type == Transfer, add_transfer);
+    return calculate(transactions, accounts, dates, |transaction| transaction.transaction_type == Transfer, add_transfer, accumulate_totals);
 }
 
 fn calculate_flow(mut transactions: Vec<Transaction>, accounts: Vec<Account>, dates: Vec<NaiveDate>) -> Vec<Statistic> {
@@ -114,21 +115,31 @@ fn calculate_flow(mut transactions: Vec<Transaction>, accounts: Vec<Account>, da
     return statistics;
 }
 
-fn calculate_account_based<F: FnMut(&Transaction) -> bool, T: FnMut(HashMap<String, Decimal>, &Transaction) -> HashMap<String, Decimal>>(
+fn calculate<
+    Filter: FnMut(&Transaction) -> bool,
+    Mapper: FnMut(HashMap<String, Decimal>, &Transaction) -> HashMap<String, Decimal>,
+    AccumulatorKey: Hash + PartialEq + Eq + Display + Clone,
+    Accumulator: FnMut(&HashMap<String, Decimal>, &HashMap<String, Account>) -> HashMap<AccumulatorKey, Decimal>
+>(
     mut transactions: Vec<Transaction>,
     accounts: Vec<Account>,
     dates: Vec<NaiveDate>,
-    filter: F,
-    mut mapper: T,
+    filter: Filter,
+    mut mapper: Mapper,
+    mut accumulator: Accumulator
 ) -> Vec<Statistic> {
     let mut statistics: Vec<Statistic> = vec![];
     transactions.retain(filter);
+
+    let account_by_account_id: HashMap<String, Account> = accounts.iter()
+        .map(|account| (account.id.clone(), account.clone()))
+        .collect();
 
     let mut current_by_account_id: HashMap<String, Decimal> = accounts.iter()
         .map(|account| (account.id.clone(), Decimal::ZERO))
         .collect();
 
-    let mut previous_by_account_id: HashMap<String, Decimal> = HashMap::new();
+    let mut previous_value_by_accumulator_key: HashMap<AccumulatorKey, Decimal> = HashMap::new();
 
     let mut transaction_iterator = transactions.iter();
     let mut first_transaction_encountered = false;
@@ -141,66 +152,32 @@ fn calculate_account_based<F: FnMut(&Transaction) -> bool, T: FnMut(HashMap<Stri
             current_transaction = transaction_iterator.next();
             first_transaction_encountered = true;
         }
+
+        let current_by_accumulator_key = accumulator(&current_by_account_id, &account_by_account_id);
+
         if first_transaction_encountered {
-            statistics.push(create_statistic_by_key(date, &current_by_account_id, &previous_by_account_id));
-            previous_by_account_id = current_by_account_id.clone();
+            statistics.push(create_statistic_by_key(date, &current_by_accumulator_key, &previous_value_by_accumulator_key));
+            previous_value_by_accumulator_key = current_by_accumulator_key.clone();
         }
     }
+
     return statistics;
 }
 
-fn calculate_total_based<F: FnMut(&Transaction) -> bool, T: FnMut(HashMap<String, Decimal>, &Transaction) -> HashMap<String, Decimal>>(
-    mut transactions: Vec<Transaction>,
-    accounts: Vec<Account>,
-    dates: Vec<NaiveDate>,
-    filter: F,
-    mut mapper: T,
-) -> Vec<Statistic> {
-    let mut statistics: Vec<Statistic> = vec![];
-    transactions.retain(filter);
-
-    let account_type_by_account_id: HashMap<String, TotalType> = accounts.iter()
-        .map(|account| (account.id.clone(), total_type_from_account_type(account.account_type.clone())))
+fn accumulate_totals(map: &HashMap<String, Decimal>, account_by_account_id: &HashMap<String, Account>) -> HashMap<TotalType, Decimal> {
+    let mut value_by_total: HashMap<TotalType, Decimal> = TotalType::iter()
+        .map(|transfer| (transfer, Decimal::ZERO))
         .collect();
 
-    let mut current_by_account_id: HashMap<String, Decimal> = accounts.iter()
-        .map(|account| (account.id.clone(), Decimal::ZERO))
-        .collect();
-
-    let mut previous_value_by_total: HashMap<TotalType, Decimal> = HashMap::new();
-
-    let mut transaction_iterator = transactions.iter();
-    let mut first_transaction_encountered = false;
-    let mut current_transaction = transaction_iterator.next();
-
-    for date in dates {
-        while current_transaction.is_some() && current_transaction.unwrap().date <= date {
-            let transaction = current_transaction.unwrap();
-            current_by_account_id = mapper(current_by_account_id, transaction);
-            current_transaction = transaction_iterator.next();
-            first_transaction_encountered = true;
-        }
-
-        let mut value_by_total: HashMap<TotalType, Decimal> = TotalType::iter()
-            .map(|transfer| (transfer, Decimal::ZERO))
-            .collect();
-
-        let mut net = value_by_total.remove(&TotalType::Net).unwrap();
-        for (account_id, value) in current_by_account_id.iter() {
-            let total_type = account_type_by_account_id.get(account_id).unwrap();
-            let transfer_value = value_by_total.remove(total_type).unwrap();
-            value_by_total.insert(total_type.clone(), value + transfer_value);
-            net = net + value;
-        }
-        value_by_total.insert(TotalType::Net, net);
-
-        if first_transaction_encountered {
-            statistics.push(create_statistic_by_key(date, &value_by_total, &previous_value_by_total));
-            previous_value_by_total = value_by_total.clone();
-        }
+    let mut net = value_by_total.remove(&TotalType::Net).unwrap();
+    for (account_id, value) in map.iter() {
+        let total_type = total_type_from_account_type(&account_by_account_id.get(account_id).unwrap().account_type);
+        let transfer_value = value_by_total.remove(&total_type).unwrap();
+        value_by_total.insert(total_type.clone(), value + transfer_value);
+        net = net + value;
     }
-
-    return statistics;
+    value_by_total.insert(TotalType::Net, net);
+    return value_by_total
 }
 
 fn add_transfer(mut map: HashMap<String, Decimal>, transaction: &Transaction) -> HashMap<String, Decimal> {
@@ -261,7 +238,7 @@ fn extract_params(path: (String, String)) -> anyhow::Result<(Period, Category)> 
     return Ok((period, category));
 }
 
-fn total_type_from_account_type(account_type: AccountType) -> TotalType {
+fn total_type_from_account_type(account_type: &AccountType) -> TotalType {
     match account_type {
         AccountType::Savings => TotalType::ShortTermAsset,
         AccountType::Checking => TotalType::Cash,
