@@ -26,8 +26,6 @@ macro_rules! app (
         .wrap(middleware::Logger::default())
         .wrap(Cors::permissive())
 
-        .service(ResourceFiles::new("/", generate()))
-
         .service(setting::api::create_setting)
         .service(setting::api::update_setting)
         .service(setting::api::delete_setting)
@@ -50,6 +48,8 @@ macro_rules! app (
         .service(issue::api::list_issues)
 
         .service(statistics::api::calculate_statistics)
+
+        .service(ResourceFiles::new("/", generate()))
     });
 );
 

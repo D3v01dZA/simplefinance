@@ -12,4 +12,6 @@ echo "UPDATE account_transaction SET value = '0' WHERE value = '-0' AND id IN (S
 echo "SELECT account_transaction.id, account_transaction.value FROM account_transaction INNER JOIN account ON account_transaction.account_id = account.id WHERE account.type IN ('LOAN', 'CREDIT_CARD') AND account_transaction.type = 'BALANCE';" | sqlite3 database.db
 echo "UPDATE setting SET key = 'TRANSFER_WITHOUT_BALANCE_IGNORED_ACCOUNTS' WHERE key = '1';" | sqlite3 database.db
 echo "SELECT * FROM setting;" | sqlite3 database.db
+rm schema.dump
+rm old_database.db
 ```
