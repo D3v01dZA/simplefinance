@@ -3,6 +3,7 @@ use actix_web::{web, App, HttpServer, middleware};
 use log::{*};
 use r2d2::ManageConnection;
 use r2d2_sqlite::SqliteConnectionManager;
+use actix_web_static_files::ResourceFiles;
 
 mod db;
 mod api;
@@ -15,6 +16,8 @@ mod statistics;
 
 use db::{Pool};
 
+include!(concat!(env!("OUT_DIR"), "/generated.rs"));
+
 #[macro_export]
 macro_rules! app (
     ($pool: expr) => ({
@@ -22,6 +25,8 @@ macro_rules! app (
         .app_data(web::Data::new($pool.clone()))
         .wrap(middleware::Logger::default())
         .wrap(Cors::permissive())
+
+        .service(ResourceFiles::new("/", generate()))
 
         .service(setting::api::create_setting)
         .service(setting::api::update_setting)

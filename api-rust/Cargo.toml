@@ -22,3 +22,8 @@ uuid = { version = "1.7.0", features = ["v4"] }
 const_format = "0.2"
 anyhow = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
+actix-web-static-files = "4.0"
+static-files = "0.2"
+
+[build-dependencies]
+static-files = "0.2"
