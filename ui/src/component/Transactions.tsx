@@ -810,6 +810,7 @@ export function Transactions() {
                 Promise.all(Object.entries(balanceAddingTransactions).map(([id, value]) => {
                     let transaction = {
                         description: "",
+                        accountId: id,
                         date: balanceAddingDate,
                         value: value,
                         type: TransactionType.BALANCE,
