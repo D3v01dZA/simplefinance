@@ -155,7 +155,7 @@ export function Settings() {
                         </ButtonGroup>
                     </Form.Group>
                     <Form.Group>
-                        <Form.Label>Transfer Without Balance Ignored Accounts: {hideFromModalAccountIdsElement}</Form.Label>
+                        <Form.Label>Hide From Bulk Modal Accounts: {hideFromModalAccountIdsElement}</Form.Label>
                         <Form.Select value={selectedHideFromBulkModalAccounts} onChange={e => setSelectedHideFromBulkModalAccounts(e.target.value)}>
                             {Object.values(accounts).map(account => <option key={account.id} value={account.id}><AccountName accountId={account.id} accounts={accounts} /></option>)}
                         </Form.Select>
