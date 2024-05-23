@@ -16,11 +16,15 @@ export function Settings() {
     const dispatch = useAppDispatch();
 
     const [updatedDefaultTransactionFromAccountId, setUpdatedDefaultTransactionFromAccountId] = useState("");
-    const [updatedTransferWithoutBalanceIgnoredAccounts, setUpdatedTransferWithoutBalanceIgnoredAccounts] = useState<string[] | undefined>(undefined);
-    const [selectedUpdatedDefaultTransactionFromAccountId, setSelectedUpdatedDefaultTransactionFromAccountId] = useState("");
-    
     const [savingUpdatedDefaultTransactionFromAccountId, setSavingUpdatedDefaultTransactionFromAccountId] = useState(false);
+
+    const [selectedTransferWithoutBalanceIgnoredAccounts, setSelectedTransferWithoutBalanceIgnoredAccounts] = useState("");
+    const [updatedTransferWithoutBalanceIgnoredAccounts, setUpdatedTransferWithoutBalanceIgnoredAccounts] = useState<string[] | undefined>(undefined);
     const [savingTransferWithoutBalanceIgnoredAccounts, setSavingTransferWithoutBalanceIgnoredAccounts] = useState(false);
+
+    const [selectedHideFromBulkModalAccounts, setSelectedHideFromBulkModalAccounts] = useState("");
+    const [updatedHideFromBulkModalAccounts, setUpdatedHideFromBulkModalAccounts] = useState<string[] | undefined>(undefined);
+    const [savingHideFromBulkModalAccounts, setSavingHideFromBulkModalAccounts] = useState(false);
 
     function refreshSettings() {
         get<JSetting[]>(server, "/api/setting/")
@@ -28,12 +32,41 @@ export function Settings() {
             .catch(error => err(error));
     }
 
+    function saveMultipleAccountBasedValue(settingKey: SettingKey, accounts: string[], setSaving: (value: boolean) => void) {
+        setSaving(true);
+        let toSave: JSetting | undefined = settings[settingKey];
+        if (toSave) {
+            if (accounts === undefined || accounts.length === 0) {
+                del(server, `/api/setting/${toSave.id}/`)
+                    .then(() => refreshSettings())
+                    .catch(error => err(error))
+                    .finally(() => {
+                        setSaving(false);
+                    });
+            } else {
+                post(server, `/api/setting/${toSave.id}/`, { ...toSave, value: accounts.join(",") })
+                    .then(() => refreshSettings())
+                    .catch(error => err(error))
+                    .finally(() => {
+                        setSaving(false);
+                    });
+            }
+        } else {
+            post(server, `/api/setting/`, { key: settingKey, value: accounts.join(",") })
+                .then(() => refreshSettings())
+                .catch(error => err(error))
+                .finally(() => {
+                    setSaving(false);
+                });
+        }
+    }
+
     function save() {
         if (updatedDefaultTransactionFromAccountId !== "") {
             setSavingUpdatedDefaultTransactionFromAccountId(true);
             let toSave: JSetting | undefined = settings[SettingKey.DEFAULT_TRANSACTION_FROM_ACCOUNT_ID];
             if (toSave) {
-                post(server, `/api/setting/${toSave.id}/`, {...toSave, value: updatedDefaultTransactionFromAccountId})
+                post(server, `/api/setting/${toSave.id}/`, { ...toSave, value: updatedDefaultTransactionFromAccountId })
                     .then(() => refreshSettings())
                     .catch(error => err(error))
                     .finally(() => {
@@ -41,7 +74,7 @@ export function Settings() {
                         setSavingUpdatedDefaultTransactionFromAccountId(false);
                     });
             } else {
-                post(server, `/api/setting/`, {key: SettingKey.DEFAULT_TRANSACTION_FROM_ACCOUNT_ID, value: updatedDefaultTransactionFromAccountId})
+                post(server, `/api/setting/`, { key: SettingKey.DEFAULT_TRANSACTION_FROM_ACCOUNT_ID, value: updatedDefaultTransactionFromAccountId })
                     .then(() => refreshSettings())
                     .catch(error => err(error))
                     .finally(() => {
@@ -51,43 +84,28 @@ export function Settings() {
             }
         }
         if (updatedTransferWithoutBalanceIgnoredAccounts !== undefined) {
-            setSavingTransferWithoutBalanceIgnoredAccounts(true);
-            let toSave: JSetting | undefined = settings[SettingKey.TRANSFER_WITHOUT_BALANCE_IGNORED_ACCOUNTS];
-            if (toSave) {
-                if (updatedTransferWithoutBalanceIgnoredAccounts.length === 0) {
-                    del(server, `/api/setting/${toSave.id}/`)
-                        .then(() => refreshSettings())
-                        .catch(error => err(error))
-                        .finally(() => {
-                            setUpdatedTransferWithoutBalanceIgnoredAccounts(undefined);
-                            setSavingTransferWithoutBalanceIgnoredAccounts(false);
-                        });
-                } else {
-                    post(server, `/api/setting/${toSave.id}/`, {...toSave, value: updatedTransferWithoutBalanceIgnoredAccounts.join(",")})
-                        .then(() => refreshSettings())
-                        .catch(error => err(error))
-                        .finally(() => {
-                            setUpdatedTransferWithoutBalanceIgnoredAccounts(undefined);
-                            setSavingTransferWithoutBalanceIgnoredAccounts(false);
-                        });
+            saveMultipleAccountBasedValue(SettingKey.TRANSFER_WITHOUT_BALANCE_IGNORED_ACCOUNTS, updatedTransferWithoutBalanceIgnoredAccounts, (saving) => {
+                setSavingTransferWithoutBalanceIgnoredAccounts(saving);
+                if (!saving) {
+                    setUpdatedTransferWithoutBalanceIgnoredAccounts(undefined);
                 }
-            } else {
-                post(server, `/api/setting/`, {key: SettingKey.TRANSFER_WITHOUT_BALANCE_IGNORED_ACCOUNTS, value: updatedTransferWithoutBalanceIgnoredAccounts.join(",")})
-                    .then(() => refreshSettings())
-                    .catch(error => err(error))
-                    .finally(() => {
-                        setUpdatedTransferWithoutBalanceIgnoredAccounts(undefined);
-                        setSavingTransferWithoutBalanceIgnoredAccounts(false);
-                    });
-            }
+            });
+        }
+        if (updatedHideFromBulkModalAccounts !== undefined) {
+            saveMultipleAccountBasedValue(SettingKey.HIDE_FROM_BULK_MODAL_ACCOUNTS, updatedHideFromBulkModalAccounts, (saving) => {
+                setSavingHideFromBulkModalAccounts(saving);
+                if (!saving) {
+                    setUpdatedHideFromBulkModalAccounts(undefined);
+                }
+            });
         }
     }
 
-    function calculateIgnoredAccountIds() {
-        if (updatedTransferWithoutBalanceIgnoredAccounts !== undefined) {
-            return updatedTransferWithoutBalanceIgnoredAccounts;
+    function calculateAcountIds(settingKey: SettingKey, accounts: string[] | undefined) {
+        if (accounts !== undefined) {
+            return accounts;
         }
-        let joinedAccounts = settings[SettingKey.TRANSFER_WITHOUT_BALANCE_IGNORED_ACCOUNTS];
+        let joinedAccounts = settings[settingKey];
         if (joinedAccounts === undefined) {
             return [];
         }
@@ -95,11 +113,18 @@ export function Settings() {
     }
 
     useEffect(() => {
-        setSelectedUpdatedDefaultTransactionFromAccountId(defaultAccountId(settings, accounts));
+        setSelectedTransferWithoutBalanceIgnoredAccounts(defaultAccountId(settings, accounts));
     }, [accounts, settings])
 
-    const ignoredAccountIds = calculateIgnoredAccountIds();
-    const ignoredAccountIdsElement = ignoredAccountIds.length === 0 ? <>NONE</> : ignoredAccountIds.map(accountId => <AccountName key={accountId} accounts={accounts} accountId={accountId}/>);
+    useEffect(() => {
+        setSelectedHideFromBulkModalAccounts(defaultAccountId(settings, accounts));
+    }, [accounts, settings])
+
+    const transferWithoutBalanceIgnoredIds = calculateAcountIds(SettingKey.TRANSFER_WITHOUT_BALANCE_IGNORED_ACCOUNTS, updatedTransferWithoutBalanceIgnoredAccounts);
+    const transferWithoutBalanceIgnoredIdsElement = transferWithoutBalanceIgnoredIds.length === 0 ? <>NONE</> : transferWithoutBalanceIgnoredIds.map(accountId => <AccountName key={accountId} accounts={accounts} accountId={accountId} />);
+
+    const hideFromModalAccountIds = calculateAcountIds(SettingKey.HIDE_FROM_BULK_MODAL_ACCOUNTS, updatedHideFromBulkModalAccounts);
+    const hideFromModalAccountIdsElement = hideFromModalAccountIds.length === 0 ? <>NONE</> : hideFromModalAccountIds.map(accountId => <AccountName key={accountId} accounts={accounts} accountId={accountId} />);
 
     return (
         <Container>
@@ -108,23 +133,41 @@ export function Settings() {
                     <Form.Group>
                         <Form.Label>Default Transaction From Account</Form.Label>
                         <Form.Select value={updatedDefaultTransactionFromAccountId === "" ? defaultAccountId(settings, accounts) : updatedDefaultTransactionFromAccountId} onChange={e => setUpdatedDefaultTransactionFromAccountId(e.target.value)}>
-                            {Object.values(accounts).map(account => <option key={account.id} value={account.id}><AccountName accountId={account.id} accounts={accounts}/></option>)}
+                            {Object.values(accounts).map(account => <option key={account.id} value={account.id}><AccountName accountId={account.id} accounts={accounts} /></option>)}
                         </Form.Select>
                     </Form.Group>
                     <Form.Group>
-                        <Form.Label>Transfer Without Balance Ignored Accounts: {ignoredAccountIdsElement}</Form.Label>
-                        <Form.Select value={selectedUpdatedDefaultTransactionFromAccountId} onChange={e => setSelectedUpdatedDefaultTransactionFromAccountId(e.target.value)}>
-                            {Object.values(accounts).map(account => <option key={account.id} value={account.id}><AccountName accountId={account.id} accounts={accounts}/></option>)}
+                        <Form.Label>Transfer Without Balance Ignored Accounts: {transferWithoutBalanceIgnoredIdsElement}</Form.Label>
+                        <Form.Select value={selectedTransferWithoutBalanceIgnoredAccounts} onChange={e => setSelectedTransferWithoutBalanceIgnoredAccounts(e.target.value)}>
+                            {Object.values(accounts).map(account => <option key={account.id} value={account.id}><AccountName accountId={account.id} accounts={accounts} /></option>)}
                         </Form.Select>
                         <ButtonGroup>
                             <Button onClick={_ => {
-                                if (!ignoredAccountIds.includes(selectedUpdatedDefaultTransactionFromAccountId)) {
-                                    setUpdatedTransferWithoutBalanceIgnoredAccounts(ignoredAccountIds.concat(selectedUpdatedDefaultTransactionFromAccountId));
+                                if (!transferWithoutBalanceIgnoredIds.includes(selectedTransferWithoutBalanceIgnoredAccounts)) {
+                                    setUpdatedTransferWithoutBalanceIgnoredAccounts(transferWithoutBalanceIgnoredIds.concat(selectedTransferWithoutBalanceIgnoredAccounts));
                                 }
                             }}>Add</Button>
                             <Button variant="danger" onClick={_ => {
-                                if (ignoredAccountIds.includes(selectedUpdatedDefaultTransactionFromAccountId)) {
-                                    setUpdatedTransferWithoutBalanceIgnoredAccounts(ignoredAccountIds.filter(value => value !== selectedUpdatedDefaultTransactionFromAccountId));
+                                if (transferWithoutBalanceIgnoredIds.includes(selectedTransferWithoutBalanceIgnoredAccounts)) {
+                                    setUpdatedTransferWithoutBalanceIgnoredAccounts(transferWithoutBalanceIgnoredIds.filter(value => value !== selectedTransferWithoutBalanceIgnoredAccounts));
+                                }
+                            }}>Remove</Button>
+                        </ButtonGroup>
+                    </Form.Group>
+                    <Form.Group>
+                        <Form.Label>Transfer Without Balance Ignored Accounts: {hideFromModalAccountIdsElement}</Form.Label>
+                        <Form.Select value={selectedHideFromBulkModalAccounts} onChange={e => setSelectedHideFromBulkModalAccounts(e.target.value)}>
+                            {Object.values(accounts).map(account => <option key={account.id} value={account.id}><AccountName accountId={account.id} accounts={accounts} /></option>)}
+                        </Form.Select>
+                        <ButtonGroup>
+                            <Button onClick={_ => {
+                                if (!hideFromModalAccountIds.includes(selectedHideFromBulkModalAccounts)) {
+                                    setUpdatedHideFromBulkModalAccounts(hideFromModalAccountIds.concat(selectedHideFromBulkModalAccounts));
+                                }
+                            }}>Add</Button>
+                            <Button variant="danger" onClick={_ => {
+                                if (hideFromModalAccountIds.includes(selectedHideFromBulkModalAccounts)) {
+                                    setUpdatedHideFromBulkModalAccounts(hideFromModalAccountIds.filter(value => value !== selectedHideFromBulkModalAccounts));
                                 }
                             }}>Remove</Button>
                         </ButtonGroup>
@@ -134,7 +177,7 @@ export function Settings() {
             <Row xs={1} md={1} xl={1}>
                 <Col>
                     <ButtonGroup className="float-end">
-                        <Button variant="primary" disabled={(savingUpdatedDefaultTransactionFromAccountId || updatedDefaultTransactionFromAccountId === "") && (savingTransferWithoutBalanceIgnoredAccounts || updatedTransferWithoutBalanceIgnoredAccounts === undefined)} onClick={() => save()}>
+                        <Button variant="primary" disabled={(savingUpdatedDefaultTransactionFromAccountId || updatedDefaultTransactionFromAccountId === "") && (savingTransferWithoutBalanceIgnoredAccounts || updatedTransferWithoutBalanceIgnoredAccounts === undefined) && (savingHideFromBulkModalAccounts || updatedHideFromBulkModalAccounts === undefined)} onClick={() => save()}>
                             Save
                         </Button>
                     </ButtonGroup>

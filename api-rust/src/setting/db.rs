@@ -73,25 +73,30 @@ pub fn cascade_delete_account(transaction: &Transaction, account_id: String) -> 
                     delete_setting(transaction, setting.id)
                         .map(|_| ())?
                 }
-                SettingKey::TransferWithoutBalanceIgnoredAccounts => {
-                    let filter: Vec<&str> = setting.value.split(",")
-                        .filter(|part| part == &account_id.as_str())
-                        .collect();
-                    if filter.len() == 0 {
-                        info!("Deleting setting [{}] [{}] because account [{}] was deleted", setting.id, setting.key, account_id);
-                        delete_setting(transaction, setting.id)
-                            .map(|_| ())?
-                    } else {
-                        info!("Updating setting [{}] [{}] because account [{}] was deleted", setting.id, setting.key, account_id);
-                        update_setting(transaction, Setting {
-                            id: setting.id,
-                            key: setting.key,
-                            value:  filter.join(",")
-                        }).map(|_| ())?
-                    }
+                SettingKey::TransferWithoutBalanceIgnoredAccounts | SettingKey::HideFromBulkModalAccounts => {
+                    delete_account_ids(transaction, &account_id, setting)?;
                 }
             }
         }
+    }
+    Ok(())
+}
+
+fn delete_account_ids(transaction: &Transaction, account_id: &String, setting: Setting) -> anyhow::Result<()> {
+    let filter: Vec<&str> = setting.value.split(",")
+        .filter(|part| part == &account_id.as_str())
+        .collect();
+    if filter.len() == 0 {
+        info!("Deleting setting [{}] [{}] because account [{}] was deleted", setting.id, setting.key, account_id);
+        delete_setting(transaction, setting.id)
+            .map(|_| ())?
+    } else {
+        info!("Updating setting [{}] [{}] because account [{}] was deleted", setting.id, setting.key, account_id);
+        update_setting(transaction, Setting {
+            id: setting.id,
+            key: setting.key,
+            value: filter.join(",")
+        }).map(|_| ())?
     }
     Ok(())
 }
@@ -108,11 +113,13 @@ fn verify_new(transaction: &Transaction, setting_key: SettingKey) -> anyhow::Res
 fn verify(transaction: &Transaction, setting_key: SettingKey, value: String) -> anyhow::Result<()> {
     match setting_key {
         SettingKey::DefaultTransactionFromAccountId => verify_account_exists(transaction, value),
-        SettingKey::TransferWithoutBalanceIgnoredAccounts => {
-            return value.split(",")
-                .map(|id| verify_account_exists(transaction, id.to_string()))
-                .filter(|result| result.is_err())
-                .collect();
-        }
+        SettingKey::TransferWithoutBalanceIgnoredAccounts | SettingKey::HideFromBulkModalAccounts => verify_accounts_exist(transaction, value)
     }
+}
+
+fn verify_accounts_exist(transaction: &Transaction, value: String) -> anyhow::Result<()> {
+    return value.split(",")
+        .map(|id| verify_account_exists(transaction, id.to_string()))
+        .filter(|result| result.is_err())
+        .collect();
 }

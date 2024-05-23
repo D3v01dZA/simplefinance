@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Button, ButtonGroup, Col, Container, Form, Modal, OverlayTrigger, Popover, Row, Table } from "react-bootstrap";
 import { useParams, useSearchParams } from "react-router-dom";
-import { IndexedAccounts, selectAccounts } from "../app/accountSlice";
+import { AccountType, IndexedAccounts, selectAccounts } from "../app/accountSlice";
 import { useAppSelector } from "../app/hooks";
 import { selectServer } from "../app/serverSlice";
 import { constrainedPage, defaultAccountId, del, err, formattedAmount, get, post, titleCase, today } from "../util/util";
@@ -253,7 +253,11 @@ function BulkTransactionModal({
                     <Form.Group hidden={transactions.type !== TransactionType.TRANSFER}>
                         <Form.Label>From Account</Form.Label>
                         <Form.Select disabled={transactions.type !== TransactionType.TRANSFER} value={transactions.fromAccountId} onChange={e => setTransactions({ ...transactions, fromAccountId: e.target.value })}>
-                            {Object.values(accounts).map(account => <option key={account.id} value={account.id}>{account.name} ({titleCase(account.type)})</option>)}
+                            {
+                                Object.values(accounts)
+                                    .filter(account => !(settings.HIDE_FROM_BULK_MODAL_ACCOUNTS?.value ?? "").includes(account.id))
+                                    .map(account => <option key={account.id} value={account.id}>{account.name} ({titleCase(account.type)})</option>)
+                            }
                         </Form.Select>
                     </Form.Group>
                     {(transactions.transactions).map((transaction, index) => {
@@ -266,7 +270,11 @@ function BulkTransactionModal({
                                 <Form.Group>
                                     <Form.Label>Account</Form.Label>
                                     <Form.Select value={transaction?.accountId} onChange={e => editTransaction(index, { accountId: e.target.value })}>
-                                        {Object.values(accounts).map(account => <option key={account.id} value={account.id}>{account.name} ({titleCase(account.type)})</option>)}
+                                        {
+                                            Object.values(accounts)
+                                                .filter(account => !(settings.HIDE_FROM_BULK_MODAL_ACCOUNTS?.value ?? "").includes(account.id))
+                                                .map(account => <option key={account.id} value={account.id}>{account.name} ({titleCase(account.type)})</option>)
+                                        }
                                     </Form.Select>
                                 </Form.Group>
                                 <br />
@@ -315,6 +323,7 @@ function BulkTransactionModal({
 
 function BalanceTransactionModal({
     accounts,
+    settings,
     show,
     setShow,
     date,
@@ -326,6 +335,7 @@ function BalanceTransactionModal({
     save
 }: {
     accounts: IndexedAccounts,
+    settings: IndexedSettings,
     show: boolean,
     setShow: (value: boolean) => void,
     date: string,
@@ -337,14 +347,14 @@ function BalanceTransactionModal({
     save: () => void
 }) {
     let actualDate = new Date(date);
-    const mappedTransactions = filterTransactions(transactions, TransactionType.BALANCE, transaction => new Date(transaction.date) <= actualDate).reduce<{[accountId: string] : JTranscation}>((acc, current) => {
+    const mappedTransactions = filterTransactions(transactions, TransactionType.BALANCE, transaction => new Date(transaction.date) <= actualDate).reduce<{ [accountId: string]: JTranscation }>((acc, current) => {
         acc[current.accountId] = current;
         return acc;
     }, {});
 
     function editTransaction(accountId: string, value: string) {
         if (value === undefined || value === "") {
-            const copy = {...balanceAddingTransactions}
+            const copy = { ...balanceAddingTransactions }
             delete copy[accountId];
             setBalanceAddingTransactions(copy);
         } else {
@@ -390,14 +400,18 @@ function BalanceTransactionModal({
                     <Form.Control type="date" value={date} onChange={e => setDate(e.target.value)}></Form.Control>
                 </Form.Group>
                 {
-                    Object.keys(accounts).map(id => {
-                        return (
-                            <Form.Group key={id}>
-                                <Form.Label><AccountName accountId={id} accounts={accounts}/></Form.Label>
-                                <Form.Control type="text" className="colored-placeholder" value={value(id)} placeholder={placeholder(id)} disabled={disabled(id)} isInvalid={value(id) !== "" && !isValueValid(value(id))} onChange={e => editTransaction(id, e.target.value)}></Form.Control>
-                            </Form.Group>
-                        )
-                    })
+                    Object.values(accounts)
+                        .filter(account => account.type !== AccountType.EXTERNAL)
+                        .filter(account => !(settings.HIDE_FROM_BULK_MODAL_ACCOUNTS?.value ?? "").includes(account.id))
+                        .map(account => account.id)
+                        .map(id => {
+                            return (
+                                <Form.Group key={id}>
+                                    <Form.Label><AccountName accountId={id} accounts={accounts} /></Form.Label>
+                                    <Form.Control type="text" className="colored-placeholder" value={value(id)} placeholder={placeholder(id)} disabled={disabled(id)} isInvalid={value(id) !== "" && !isValueValid(value(id))} onChange={e => editTransaction(id, e.target.value)}></Form.Control>
+                                </Form.Group>
+                            )
+                        })
                 }
             </Modal.Body>
             <Modal.Footer>
@@ -805,7 +819,7 @@ export function Transactions() {
                         setShowBulkAdding(false);
                     });
             }} />
-            <BalanceTransactionModal accounts={accounts} show={showBalanceAdding} setShow={setShowBalanceAdding} date={balanceAddingDate} setDate={setBalanceAddingDate} transactions={transactions} balanceAddingTransactions={balanceAddingTransactions} setBalanceAddingTransactions={setBalanceAddingTransactions} saving={balanceAdding} save={() => {
+            <BalanceTransactionModal accounts={accounts} settings={settings} show={showBalanceAdding} setShow={setShowBalanceAdding} date={balanceAddingDate} setDate={setBalanceAddingDate} transactions={transactions} balanceAddingTransactions={balanceAddingTransactions} setBalanceAddingTransactions={setBalanceAddingTransactions} saving={balanceAdding} save={() => {
                 setBalanceAdding(true);
                 Promise.all(Object.entries(balanceAddingTransactions).map(([id, value]) => {
                     let transaction = {
