@@ -232,17 +232,8 @@ function calculateData(dataType: DataType, hiddenItems: Set<string>, statistic: 
     }
 }
 
-function calculateSankey(viewType: ViewType, dataType: DataType, accounts: IndexedAccounts, raw: JStatistic): SankeyData {
+function calculateSankey(viewType: ViewType, dataType: DataType, accounts: IndexedAccounts, balance: JStatistic): SankeyData {
     const net = dataType === DataType.NET;
-    if (raw === undefined) {
-        return EMPTY_SANKEY;
-    }
-    let balance;
-    if (net) {
-        balance = raw;
-    } else {
-        balance = raw;
-    }
     if (balance === undefined) {
         return EMPTY_SANKEY
     }
@@ -279,10 +270,10 @@ function calculateSankey(viewType: ViewType, dataType: DataType, accounts: Index
         let assets = 0;
         let liabilities = 0;
 
-        raw.values.forEach((total) => {
+        balance.values.forEach((total) => {
             if (total.name !== TotalType.NET) {
                 let value;
-                if (dataType == DataType.NET) {
+                if (net) {
                     value = total.value;
                 } else {
                     value = total.value_difference;
@@ -347,7 +338,12 @@ function calculateSankey(viewType: ViewType, dataType: DataType, accounts: Index
 
         balance.values.forEach((account) => {
             nodes.push({ name: accountTitle(account.name, accounts), color: totalColorPalette[nodes.length] });
-            let value = account.value;
+            let value;
+            if (net) {
+                value = account.value;
+            } else {
+                value = account.value_difference;
+            }
             if (value > 0) {
                 assets += value;
                 links.push({
@@ -393,7 +389,12 @@ function calculateSankey(viewType: ViewType, dataType: DataType, accounts: Index
 
         balance.values.forEach((flow) => {
             nodes.push({ name: titleCase(flow.name), color: totalColorPalette[nodes.length] });
-            let value = flow.value;
+            let value;
+            if (net) {
+                value = flow.value;
+            } else {
+                value = flow.value_difference;
+            }
             if (value > 0) {
                 assets += value;
                 links.push({
