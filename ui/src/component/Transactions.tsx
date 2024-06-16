@@ -4,14 +4,15 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { AccountType, IndexedAccounts, selectAccounts } from "../app/accountSlice";
 import { useAppSelector } from "../app/hooks";
 import { selectServer } from "../app/serverSlice";
-import { constrainedPage, defaultAccountId, del, err, formattedAmount, get, post, titleCase, today } from "../util/util";
+import { constrainedPage, defaultAccountId, del, err, formattedAmount, get, isValueValid, post, titleCase, today } from "../util/util";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPenToSquare, faTrash, faPlus, faCartPlus, faFilter, faBalanceScale } from '@fortawesome/free-solid-svg-icons';
 import { DEFAULT_PAGE_SIZE, Pagination } from "./Pagination";
 import { AccountName } from "../util/common";
 import { IndexedSettings, selectSettings } from "../app/settingSlice";
+import { TransactionModal, WorkingTransaction } from "./sub-component/TransactionModal";
 
-enum TransactionType {
+export enum TransactionType {
     BALANCE = "BALANCE",
     TRANSFER = "TRANSFER",
 }
@@ -27,16 +28,6 @@ interface JTranscation {
     description: string,
     date: string,
     value: number,
-    type: TransactionType,
-    accountId: string,
-    fromAccountId: string,
-}
-
-interface WorkingTransaction {
-    id: string,
-    description: string,
-    date: string,
-    value: string,
     type: TransactionType,
     accountId: string,
     fromAccountId: string,
@@ -61,17 +52,6 @@ interface BulkWorkingTransactions {
 
 function description(transaction: JTranscation) {
     return transaction.description === "" ? titleCase(transaction.type) : transaction.description;
-}
-
-function isValueValid(value: string | undefined) {
-    if (value === undefined || value === "") {
-        return false;
-    }
-    const float = parseFloat(value);
-    if (Number.isNaN(float)) {
-        return false;
-    }
-    return true;
 }
 
 function filterTransactions(transactions: JTranscation[], transactionType: TransactionType, predicate?: (transaction: JTranscation) => boolean) {
@@ -111,83 +91,6 @@ function Transaction({ transaction, accounts, edit, del }: { transaction: JTrans
                 </ButtonGroup>
             </td>
         </tr>
-    );
-}
-
-function TransactionModal({
-    accounts,
-    settings,
-    singleAccount,
-    show,
-    setShow,
-    transaction,
-    setTransaction,
-    saving,
-    save
-}: {
-    accounts: IndexedAccounts,
-    settings: IndexedSettings,
-    singleAccount: boolean,
-    show: boolean,
-    setShow: (value: boolean) => void,
-    transaction: Partial<WorkingTransaction>,
-    setTransaction: (transaction: Partial<WorkingTransaction>) => void,
-    saving: boolean,
-    save: () => void
-}) {
-    const isAdd = transaction.id === undefined;
-    return (
-        <Modal show={show} onHide={() => setShow(false)} >
-            <Modal.Header closeButton>
-                <Modal.Title>{isAdd ? "Add" : "Edit"} Transaction</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-                <Form>
-                    <Form.Group>
-                        <Form.Label>Description</Form.Label>
-                        <Form.Control type="text" value={transaction?.description} onChange={e => setTransaction({ ...transaction, description: e.target.value })}></Form.Control>
-                    </Form.Group>
-                    <Form.Group>
-                        <Form.Label>Date</Form.Label>
-                        <Form.Control type="date" value={transaction?.date} onChange={e => setTransaction({ ...transaction, date: e.target.value })}></Form.Control>
-                    </Form.Group>
-                    <Form.Group>
-                        <Form.Label>Value</Form.Label>
-                        <Form.Control type="text" isInvalid={!isValueValid(transaction?.value)} value={transaction?.value} onChange={e => setTransaction({ ...transaction, value: e.target.value })}></Form.Control>
-                    </Form.Group>
-                    <Form.Group>
-                        <Form.Label>Type</Form.Label>
-                        <Form.Select disabled={!isAdd} value={transaction.type} onChange={e => {
-                            const type = e.target.value as TransactionType;
-                            const fromAccountId = type === TransactionType.TRANSFER ? defaultAccountId(settings, accounts) : undefined;
-                            setTransaction({ ...transaction, fromAccountId, type });
-                        }}>
-                            {Object.keys(TransactionType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
-                        </Form.Select>
-                    </Form.Group>
-                    <Form.Group>
-                        <Form.Label>Account</Form.Label>
-                        <Form.Select disabled={!isAdd || singleAccount} value={transaction?.accountId} onChange={e => setTransaction({ ...transaction, accountId: e.target.value })}>
-                            {Object.values(accounts).map(account => <option key={account.id} value={account.id}>{account.name} ({titleCase(account.type)})</option>)}
-                        </Form.Select>
-                    </Form.Group>
-                    <Form.Group hidden={transaction.type !== TransactionType.TRANSFER}>
-                        <Form.Label>From Account</Form.Label>
-                        <Form.Select disabled={!isAdd || transaction.type !== TransactionType.TRANSFER} value={transaction?.fromAccountId} onChange={e => setTransaction({ ...transaction, fromAccountId: e.target.value })}>
-                            {Object.values(accounts).map(account => <option key={account.id} value={account.id}>{account.name} ({titleCase(account.type)})</option>)}
-                        </Form.Select>
-                    </Form.Group>
-                </Form>
-            </Modal.Body>
-            <Modal.Footer>
-                <Button disabled={saving} variant="secondary" onClick={() => setShow(false)}>
-                    Cancel
-                </Button>
-                <Button disabled={saving} variant="primary" onClick={() => save()}>
-                    Save
-                </Button>
-            </Modal.Footer>
-        </Modal>
     );
 }
 
@@ -787,7 +690,7 @@ export function Transactions() {
                 </Col>
             </Row>
             <Pagination itemCount={filteredTransactions.length} page={page} setPage={setPage} pageSize={pageSize} setPageSize={setPageSize} />
-            <TransactionModal accounts={accounts} settings={settings} singleAccount={accountId !== undefined} show={showAdding} setShow={setShowAdding} transaction={addingTransaction} setTransaction={setAddingTransaction} saving={adding} save={() => {
+            <TransactionModal accounts={accounts} settings={settings} singleAccount={accountId !== undefined} singleType={false} singleDate={false} show={showAdding} setShow={setShowAdding} transaction={addingTransaction} setTransaction={setAddingTransaction} saving={adding} save={() => {
                 setAdding(true);
                 post(server, `/api/transaction/`, addingTransaction)
                     .then(() => refreshTransactions())
@@ -797,7 +700,7 @@ export function Transactions() {
                         setShowAdding(false);
                     });
             }} />
-            <TransactionModal accounts={accounts} settings={settings} singleAccount={accountId !== undefined} show={showEditing} setShow={setShowEditing} transaction={editingTransaction} setTransaction={setEditingTransaction} saving={editing} save={() => {
+            <TransactionModal accounts={accounts} settings={settings} singleAccount={accountId !== undefined} singleType={false} singleDate={false} show={showEditing} setShow={setShowEditing} transaction={editingTransaction} setTransaction={setEditingTransaction} saving={editing} save={() => {
                 setEditing(true);
                 post(server, `/api/transaction/${editingTransaction.id}/`, editingTransaction)
                     .then(() => refreshTransactions())

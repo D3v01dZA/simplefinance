@@ -1,13 +1,17 @@
-import { Col, Container, Row, Table } from "react-bootstrap";
+import { Button, Col, Container, Row, Table } from "react-bootstrap";
 import { useAppSelector } from "../app/hooks";
 import { selectServer } from "../app/serverSlice";
 import { selectSettings } from "../app/settingSlice";
 import { selectAccounts } from "../app/accountSlice";
 import { useEffect, useState } from "react";
-import { constrainedPage, err, get, titleCase } from "../util/util";
+import { constrainedPage, err, get, post, titleCase } from "../util/util";
 import { DEFAULT_PAGE_SIZE, Pagination } from "./Pagination";
 import { useSearchParams } from "react-router-dom";
 import { AccountName } from "../util/common";
+import { TransactionModal, WorkingTransaction } from "./sub-component/TransactionModal";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faWrench } from "@fortawesome/free-solid-svg-icons";
+import { TransactionType } from "./Transactions";
 
 
 enum IssueType {
@@ -27,11 +31,16 @@ export function Issues() {
 
     const server = useAppSelector(selectServer);
     const accounts = useAppSelector(selectAccounts);
+    const settings = useAppSelector(selectSettings);
 
     const [issues, setIssues] = useState<JIssue[]>([]);
 
     const [pageSize, _setPageSize] = useState(DEFAULT_PAGE_SIZE);
     const [page, _setPage] = useState(0);
+
+    const [showTransactionModal, setShowTransactionModal] = useState(false);
+    const [savingTransaction, setSavingTransaction] = useState(false);
+    const [transaction, setTransaction] = useState<Partial<WorkingTransaction>>({});
 
     function refreshIssues() {
         function sortIssues(issues: JIssue[]) {
@@ -110,6 +119,7 @@ export function Issues() {
                                 <th>Type</th>
                                 <th>Date</th>
                                 <th>Account</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -118,11 +128,35 @@ export function Issues() {
                                     <td>{titleCase(issue.type)}</td>
                                     <td>{issue.date}</td>
                                     <td><AccountName accounts={accounts} accountId={issue.accountId} /></td>
+                                    <td>
+                                        <Button variant="primary" onClick={() => {
+                                            setTransaction({
+                                                date: issue.date,
+                                                description: "",
+                                                type: TransactionType.BALANCE,
+                                                accountId: issue.accountId,
+                                            });
+                                            setShowTransactionModal(true);
+                                        }}>
+                                            <FontAwesomeIcon icon={faWrench} />
+                                        </Button>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
                     </Table>
                     <Pagination itemCount={issues.length} page={page} setPage={setPage} pageSize={pageSize} setPageSize={setPageSize} />
+                    <TransactionModal accounts={accounts} settings={settings} singleAccount={true} singleType={true} singleDate={true} show={showTransactionModal} setShow={setShowTransactionModal} transaction={transaction} setTransaction={setTransaction} saving={savingTransaction} save={() => {
+                            setSavingTransaction(true);
+                            post(server, `/api/transaction/`, transaction)
+                                .then(() => refreshIssues())
+                                .catch(error => err(error))
+                                .finally(() => {
+                                    setSavingTransaction(false);
+                                    setShowTransactionModal(false);
+                                });
+                        }
+                    }/>
                 </Col>
             </Row>
         </Container>

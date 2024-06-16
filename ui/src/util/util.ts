@@ -113,6 +113,17 @@ export function formattedUnknownAmount(amount: any) {
     return amount;
 }
 
+export function isValueValid(value: string | undefined) {
+    if (value === undefined || value === "") {
+        return false;
+    }
+    const float = parseFloat(value);
+    if (Number.isNaN(float)) {
+        return false;
+    }
+    return true;
+}
+
 export function formattedAmount(amount: number) {
     return amount.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
