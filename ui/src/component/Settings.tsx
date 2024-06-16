@@ -22,9 +22,9 @@ export function Settings() {
     const [updatedTransferWithoutBalanceIgnoredAccounts, setUpdatedTransferWithoutBalanceIgnoredAccounts] = useState<string[] | undefined>(undefined);
     const [savingTransferWithoutBalanceIgnoredAccounts, setSavingTransferWithoutBalanceIgnoredAccounts] = useState(false);
 
-    const [selectedHideFromBulkModalAccounts, setSelectedHideFromBulkModalAccounts] = useState("");
-    const [updatedHideFromBulkModalAccounts, setUpdatedHideFromBulkModalAccounts] = useState<string[] | undefined>(undefined);
-    const [savingHideFromBulkModalAccounts, setSavingHideFromBulkModalAccounts] = useState(false);
+    const [selectedNoBalanceAccounts, setSelectedNoBalanceAccounts] = useState("");
+    const [updatedNoBalanceAccounts, setUpdatedNoBalanceAccounts] = useState<string[] | undefined>(undefined);
+    const [savingNoBalanceAccounts, setSavingNoBalanceAccounts] = useState(false);
 
     function refreshSettings() {
         get<JSetting[]>(server, "/api/setting/")
@@ -91,11 +91,11 @@ export function Settings() {
                 }
             });
         }
-        if (updatedHideFromBulkModalAccounts !== undefined) {
-            saveMultipleAccountBasedValue(SettingKey.HIDE_FROM_BULK_MODAL_ACCOUNTS, updatedHideFromBulkModalAccounts, (saving) => {
-                setSavingHideFromBulkModalAccounts(saving);
+        if (updatedNoBalanceAccounts !== undefined) {
+            saveMultipleAccountBasedValue(SettingKey.NO_REGULAR_BALANCE_ACCOUNTS, updatedNoBalanceAccounts, (saving) => {
+                setSavingNoBalanceAccounts(saving);
                 if (!saving) {
-                    setUpdatedHideFromBulkModalAccounts(undefined);
+                    setUpdatedNoBalanceAccounts(undefined);
                 }
             });
         }
@@ -117,14 +117,14 @@ export function Settings() {
     }, [accounts, settings])
 
     useEffect(() => {
-        setSelectedHideFromBulkModalAccounts(defaultAccountId(settings, accounts));
+        setSelectedNoBalanceAccounts(defaultAccountId(settings, accounts));
     }, [accounts, settings])
 
     const transferWithoutBalanceIgnoredIds = calculateAcountIds(SettingKey.TRANSFER_WITHOUT_BALANCE_IGNORED_ACCOUNTS, updatedTransferWithoutBalanceIgnoredAccounts);
-    const transferWithoutBalanceIgnoredIdsElement = transferWithoutBalanceIgnoredIds.length === 0 ? <>NONE</> : transferWithoutBalanceIgnoredIds.map(accountId => <AccountName key={accountId} accounts={accounts} accountId={accountId} />);
+    const transferWithoutBalanceIgnoredIdsElement = transferWithoutBalanceIgnoredIds.length === 0 ? <>NONE</> : transferWithoutBalanceIgnoredIds.map(accountId => <><br/><AccountName key={accountId} accounts={accounts} accountId={accountId} /></>);
 
-    const hideFromModalAccountIds = calculateAcountIds(SettingKey.HIDE_FROM_BULK_MODAL_ACCOUNTS, updatedHideFromBulkModalAccounts);
-    const hideFromModalAccountIdsElement = hideFromModalAccountIds.length === 0 ? <>NONE</> : hideFromModalAccountIds.map(accountId => <AccountName key={accountId} accounts={accounts} accountId={accountId} />);
+    const noBalanceAccountIds = calculateAcountIds(SettingKey.NO_REGULAR_BALANCE_ACCOUNTS, updatedNoBalanceAccounts);
+    const noBalanceAccountIdsElement = noBalanceAccountIds.length === 0 ? <>NONE</> : noBalanceAccountIds.map(accountId => <><br/><AccountName key={accountId} accounts={accounts} accountId={accountId} /></>);
 
     return (
         <Container>
@@ -155,19 +155,19 @@ export function Settings() {
                         </ButtonGroup>
                     </Form.Group>
                     <Form.Group>
-                        <Form.Label>Hide From Bulk Modal Accounts: {hideFromModalAccountIdsElement}</Form.Label>
-                        <Form.Select value={selectedHideFromBulkModalAccounts} onChange={e => setSelectedHideFromBulkModalAccounts(e.target.value)}>
+                        <Form.Label>No Regular Balance Accounts: {noBalanceAccountIdsElement}</Form.Label>
+                        <Form.Select value={selectedNoBalanceAccounts} onChange={e => setSelectedNoBalanceAccounts(e.target.value)}>
                             {Object.values(accounts).map(account => <option key={account.id} value={account.id}><AccountName accountId={account.id} accounts={accounts} /></option>)}
                         </Form.Select>
                         <ButtonGroup>
                             <Button onClick={_ => {
-                                if (!hideFromModalAccountIds.includes(selectedHideFromBulkModalAccounts)) {
-                                    setUpdatedHideFromBulkModalAccounts(hideFromModalAccountIds.concat(selectedHideFromBulkModalAccounts));
+                                if (!noBalanceAccountIds.includes(selectedNoBalanceAccounts)) {
+                                    setUpdatedNoBalanceAccounts(noBalanceAccountIds.concat(selectedNoBalanceAccounts));
                                 }
                             }}>Add</Button>
                             <Button variant="danger" onClick={_ => {
-                                if (hideFromModalAccountIds.includes(selectedHideFromBulkModalAccounts)) {
-                                    setUpdatedHideFromBulkModalAccounts(hideFromModalAccountIds.filter(value => value !== selectedHideFromBulkModalAccounts));
+                                if (noBalanceAccountIds.includes(selectedNoBalanceAccounts)) {
+                                    setUpdatedNoBalanceAccounts(noBalanceAccountIds.filter(value => value !== selectedNoBalanceAccounts));
                                 }
                             }}>Remove</Button>
                         </ButtonGroup>
@@ -177,7 +177,7 @@ export function Settings() {
             <Row xs={1} md={1} xl={1}>
                 <Col>
                     <ButtonGroup className="float-end">
-                        <Button variant="primary" disabled={(savingUpdatedDefaultTransactionFromAccountId || updatedDefaultTransactionFromAccountId === "") && (savingTransferWithoutBalanceIgnoredAccounts || updatedTransferWithoutBalanceIgnoredAccounts === undefined) && (savingHideFromBulkModalAccounts || updatedHideFromBulkModalAccounts === undefined)} onClick={() => save()}>
+                        <Button variant="primary" disabled={(savingUpdatedDefaultTransactionFromAccountId || updatedDefaultTransactionFromAccountId === "") && (savingTransferWithoutBalanceIgnoredAccounts || updatedTransferWithoutBalanceIgnoredAccounts === undefined) && (savingNoBalanceAccounts || updatedNoBalanceAccounts === undefined)} onClick={() => save()}>
                             Save
                         </Button>
                     </ButtonGroup>

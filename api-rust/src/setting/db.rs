@@ -73,7 +73,7 @@ pub fn cascade_delete_account(transaction: &Transaction, account_id: String) -> 
                     delete_setting(transaction, setting.id)
                         .map(|_| ())?
                 }
-                SettingKey::TransferWithoutBalanceIgnoredAccounts | SettingKey::HideFromBulkModalAccounts => {
+                SettingKey::TransferWithoutBalanceIgnoredAccounts | SettingKey::NoRegularBalanceAccounts => {
                     delete_account_ids(transaction, &account_id, setting)?;
                 }
             }
@@ -113,7 +113,7 @@ fn verify_new(transaction: &Transaction, setting_key: SettingKey) -> anyhow::Res
 fn verify(transaction: &Transaction, setting_key: SettingKey, value: String) -> anyhow::Result<()> {
     match setting_key {
         SettingKey::DefaultTransactionFromAccountId => verify_account_exists(transaction, value),
-        SettingKey::TransferWithoutBalanceIgnoredAccounts | SettingKey::HideFromBulkModalAccounts => verify_accounts_exist(transaction, value)
+        SettingKey::TransferWithoutBalanceIgnoredAccounts | SettingKey::NoRegularBalanceAccounts => verify_accounts_exist(transaction, value)
     }
 }
 

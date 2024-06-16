@@ -28,9 +28,9 @@ pub enum SettingKey {
     #[serde(rename = "TRANSFER_WITHOUT_BALANCE_IGNORED_ACCOUNTS" )]
     #[strum(serialize="TRANSFER_WITHOUT_BALANCE_IGNORED_ACCOUNTS", to_string="TRANSFER_WITHOUT_BALANCE_IGNORED_ACCOUNTS")]
     TransferWithoutBalanceIgnoredAccounts,
-    #[serde(rename = "HIDE_FROM_BULK_MODAL_ACCOUNTS" )]
-    #[strum(serialize="HIDE_FROM_BULK_MODAL_ACCOUNTS", to_string="HIDE_FROM_BULK_MODAL_ACCOUNTS")]
-    HideFromBulkModalAccounts,
+    #[serde(rename = "NO_REGULAR_BALANCE_ACCOUNTS" )]
+    #[strum(serialize="NO_REGULAR_BALANCE_ACCOUNTS", to_string="NO_REGULAR_BALANCE_ACCOUNTS")]
+    NoRegularBalanceAccounts,
 }
 
 impl FromRow for Setting {

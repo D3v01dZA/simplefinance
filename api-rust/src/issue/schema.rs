@@ -18,5 +18,8 @@ pub struct Issue {
 pub enum IssueType {
     #[serde(rename = "TRANSFER_WITHOUT_BALANCE" )]
     #[strum(serialize="TRANSFER_WITHOUT_BALANCE", to_string="TRANSFER_WITHOUT_BALANCE")]
-    TransferWithoutBalance
+    TransferWithoutBalance,
+    #[serde(rename = "NO_BALANCE" )]
+    #[strum(serialize="NO_BALANCE", to_string="NO_BALANCE")]
+    NoBalance
 }

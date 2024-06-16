@@ -158,7 +158,7 @@ function BulkTransactionModal({
                         <Form.Select disabled={transactions.type !== TransactionType.TRANSFER} value={transactions.fromAccountId} onChange={e => setTransactions({ ...transactions, fromAccountId: e.target.value })}>
                             {
                                 Object.values(accounts)
-                                    .filter(account => !(settings.HIDE_FROM_BULK_MODAL_ACCOUNTS?.value ?? "").includes(account.id))
+                                    .filter(account => !(settings.NO_REGULAR_BALANCE_ACCOUNTS?.value ?? "").includes(account.id))
                                     .map(account => <option key={account.id} value={account.id}>{account.name} ({titleCase(account.type)})</option>)
                             }
                         </Form.Select>
@@ -175,7 +175,7 @@ function BulkTransactionModal({
                                     <Form.Select value={transaction?.accountId} onChange={e => editTransaction(index, { accountId: e.target.value })}>
                                         {
                                             Object.values(accounts)
-                                                .filter(account => !(settings.HIDE_FROM_BULK_MODAL_ACCOUNTS?.value ?? "").includes(account.id))
+                                                .filter(account => !(settings.NO_REGULAR_BALANCE_ACCOUNTS?.value ?? "").includes(account.id))
                                                 .map(account => <option key={account.id} value={account.id}>{account.name} ({titleCase(account.type)})</option>)
                                         }
                                     </Form.Select>
@@ -305,7 +305,7 @@ function BalanceTransactionModal({
                 {
                     Object.values(accounts)
                         .filter(account => account.type !== AccountType.EXTERNAL)
-                        .filter(account => !(settings.HIDE_FROM_BULK_MODAL_ACCOUNTS?.value ?? "").includes(account.id))
+                        .filter(account => !(settings.NO_REGULAR_BALANCE_ACCOUNTS?.value ?? "").includes(account.id))
                         .map(account => account.id)
                         .map(id => {
                             return (
