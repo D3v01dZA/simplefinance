@@ -92,7 +92,6 @@ mod tests {
     use r2d2_sqlite::SqliteConnectionManager;
     use rust_decimal::Decimal;
     use actix_web_static_files::ResourceFiles;
-    use std::{thread, time};
     use crate::setting;
     use crate::account;
     use crate::account::schema::{Account, AccountType, NewAccount};
@@ -728,11 +727,6 @@ mod tests {
                 date: Some(Local::now().date_naive().with_day(1).unwrap()),
                 account_id: Some(savings.id.clone()),
             },
-            Issue {
-                issue_type: IssueType::NoBalance,
-                date: Some(Local::now().date_naive().with_day(1).unwrap()),
-                account_id: Some(external.id.clone()),
-            },
         ]);
 
         // Create a transfer from external to savings
@@ -764,11 +758,6 @@ mod tests {
                 issue_type: IssueType::NoBalance,
                 date: Some(Local::now().date_naive().with_day(1).unwrap()),
                 account_id: Some(savings.id.clone()),
-            },
-            Issue {
-                issue_type: IssueType::NoBalance,
-                date: Some(Local::now().date_naive().with_day(1).unwrap()),
-                account_id: Some(external.id.clone()),
             },
             Issue {
                 issue_type: IssueType::TransferWithoutBalance,
@@ -806,11 +795,6 @@ mod tests {
                 issue_type: IssueType::NoBalance,
                 date: Some(Local::now().date_naive().with_day(1).unwrap()),
                 account_id: Some(savings.id.clone()),
-            },
-            Issue {
-                issue_type: IssueType::NoBalance,
-                date: Some(Local::now().date_naive().with_day(1).unwrap()),
-                account_id: Some(external.id.clone()),
             },
             Issue {
                 issue_type: IssueType::TransferWithoutBalance,
@@ -860,11 +844,6 @@ mod tests {
                 account_id: Some(savings.id.clone()),
             },
             Issue {
-                issue_type: IssueType::NoBalance,
-                date: Some(Local::now().date_naive().with_day(1).unwrap()),
-                account_id: Some(external.id.clone()),
-            },
-            Issue {
                 issue_type: IssueType::TransferWithoutBalance,
                 account_id: Some(loan.id.clone()),
                 date: Some(NaiveDate::from_ymd_opt(2024, 1, 11).unwrap()),
@@ -907,11 +886,6 @@ mod tests {
                 account_id: Some(savings.id.clone()),
             },
             Issue {
-                issue_type: IssueType::NoBalance,
-                date: Some(Local::now().date_naive().with_day(1).unwrap()),
-                account_id: Some(external.id.clone()),
-            },
-            Issue {
                 issue_type: IssueType::TransferWithoutBalance,
                 account_id: Some(savings.id.clone()),
                 date: Some(NaiveDate::from_ymd_opt(2024, 1, 10).unwrap()),
@@ -948,11 +922,6 @@ mod tests {
                 date: Some(Local::now().date_naive().with_day(1).unwrap()),
                 account_id: Some(savings.id.clone()),
             },
-            Issue {
-                issue_type: IssueType::NoBalance,
-                date: Some(Local::now().date_naive().with_day(1).unwrap()),
-                account_id: Some(external.id.clone()),
-            },
         ]);
 
         // Create a balance for savings on the missing date
@@ -979,11 +948,6 @@ mod tests {
                 issue_type: IssueType::NoBalance,
                 date: Some(Local::now().date_naive().with_day(1).unwrap()),
                 account_id: Some(loan.id.clone()),
-            },
-            Issue {
-                issue_type: IssueType::NoBalance,
-                date: Some(Local::now().date_naive().with_day(1).unwrap()),
-                account_id: Some(external.id.clone()),
             },
         ]);
     }

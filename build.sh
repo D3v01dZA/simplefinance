@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -e
+set -ex
 
 echo "Testing for running docker"
 docker ps > /dev/null
