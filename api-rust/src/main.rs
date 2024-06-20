@@ -102,7 +102,7 @@ mod tests {
     use crate::issue::schema::{Issue, IssueType};
     use crate::db::Pool;
     use crate::run_migrations;
-    use crate::setting::schema::{NewSetting, Setting, SettingKey};
+    use crate::setting::schema::{DateRepeat, NewSetting, Setting, SettingKey, RepeatingTransfer};
 
     include!(concat!(env!("OUT_DIR"), "/generated.rs"));
 
@@ -211,12 +211,28 @@ mod tests {
         }, resp);
         let loan_account = resp.clone();
 
+        // Create third account - [Savings, Loan, Checking]
+        let req = test::TestRequest::post()
+            .uri("/api/account/")
+            .set_json(NewAccount {
+                name: "Checking".to_string(),
+                account_type: AccountType::Checking,
+            })
+            .to_request();
+        let resp: Account = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(Account {
+            id: resp.id.clone(),
+            name: "Checking".to_string(),
+            account_type: AccountType::Checking,
+        }, resp);
+        let checking_account = resp.clone();
+
         // List accounts - [Savings, Loan]
         let req = test::TestRequest::get()
             .uri("/api/account/")
             .to_request();
         let resp: Vec<Account> = test::call_and_read_body_json(&app, req).await;
-        assert_eq!(resp.len(), 2);
+        assert_eq!(resp.len(), 3);
 
         // ------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -312,12 +328,46 @@ mod tests {
         }, resp);
         let transfer_without_setting = resp;
 
+        // Create setting - [DefaultTransactionFromAccountId, TransferWithoutBalanceIgnoredAccounts, RepeatingTransfers]
+        let req = test::TestRequest::post()
+            .uri("/api/setting/")
+            .set_json(NewSetting {
+                key: SettingKey::RepeatingTransfers,
+                value: serde_json::to_string(&vec![
+                    RepeatingTransfer {
+                        start: NaiveDate::from_ymd_opt(2024, 1, 2).unwrap(),
+                        repeat: DateRepeat::WEEKLY,
+                        repeat_count: 2,
+                        from_account_id: loan_account.id.clone(),
+                        to_account_ids: vec![
+                            savings_account.id.clone()
+                        ]
+                    },
+                    RepeatingTransfer {
+                        start: NaiveDate::from_ymd_opt(2024, 1, 3).unwrap(),
+                        repeat: DateRepeat::MONTHLY,
+                        repeat_count: 1,
+                        from_account_id: savings_account.id.clone(),
+                        to_account_ids: vec![
+                            checking_account.id.clone()
+                        ]
+                    }
+                ]).unwrap(),
+            })
+            .to_request();
+        let repeating_transfers: Setting = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(Setting {
+            id: repeating_transfers.id.clone(),
+            key: SettingKey::RepeatingTransfers,
+            value: format!("[{{\"start\":\"2024-01-02\",\"repeat\":\"WEEKLY\",\"repeat_count\":2,\"from_account_id\":\"{}\",\"to_account_ids\":[\"{}\"]}},{{\"start\":\"2024-01-03\",\"repeat\":\"MONTHLY\",\"repeat_count\":1,\"from_account_id\":\"{}\",\"to_account_ids\":[\"{}\"]}}]", loan_account.id.clone(), savings_account.id.clone(), savings_account.id.clone(), checking_account.id.clone())
+        }, repeating_transfers);
+
         // List no settings - [DefaultTransactionFromAccountId, TransferWithoutBalanceIgnoredAccounts]
         let req = test::TestRequest::get()
             .uri("/api/setting/")
             .to_request();
         let resp: Vec<Setting> = test::call_and_read_body_json(&app, req).await;
-        assert_eq!(resp.len(), 2);
+        assert_eq!(resp.len(), 3);
 
         // ------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -582,7 +632,7 @@ mod tests {
 
         // ------------------------------------------------------------------------------------------------------------------------------------------------
 
-        // Delete loan account - [Savings]
+        // Delete loan account - [Savings, Checking]
         let req = test::TestRequest::delete()
             .uri(format!("/api/account/{}/", loan_account.id.clone()).as_str())
             .to_request();
@@ -593,12 +643,12 @@ mod tests {
             account_type: AccountType::Loan,
         }, resp);
 
-        // List no accounts - [Savings]
+        // List no accounts - [Savings, Chceking]
         let req = test::TestRequest::get()
             .uri("/api/account/")
             .to_request();
         let resp: Vec<Account> = test::call_and_read_body_json(&app, req).await;
-        assert_eq!(resp.len(), 1);
+        assert_eq!(resp.len(), 2);
 
         // Get transactions now deleted
         let req = test::TestRequest::get()
@@ -625,6 +675,35 @@ mod tests {
             key: SettingKey::TransferWithoutBalanceIgnoredAccounts,
             value: format!("{}", loan_account.id.clone()),
         }, resp);
+
+        let req = test::TestRequest::get()
+            .uri(format!("/api/setting/{}/", repeating_transfers.id.clone()).as_str())
+            .to_request();
+        let resp: Setting = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(Setting {
+            id: resp.id.clone(),
+            key: SettingKey::RepeatingTransfers,
+            value: format!("[{{\"start\":\"2024-01-03\",\"repeat\":\"MONTHLY\",\"repeat_count\":1,\"from_account_id\":\"{}\",\"to_account_ids\":[\"{}\"]}}]", savings_account.id.clone(), checking_account.id.clone())
+        }, resp);
+
+        // Delete checking account - [Savings]
+        let req = test::TestRequest::delete()
+            .uri(format!("/api/account/{}/", checking_account.id.clone()).as_str())
+            .to_request();
+        let resp: Account = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(Account {
+            id: resp.id.clone(),
+            name: "Checking".to_string(),
+            account_type: AccountType::Checking,
+        }, resp);
+
+        // Get setting now deleted - [RepeatingTransfers]
+        let req = test::TestRequest::get()
+            .uri(format!("/api/setting/{}/", repeating_transfers.id.clone()).as_str())
+            .to_request();
+        let response = test::call_service(&app, req).await;
+        let code = response.response().status();
+        assert_eq!(http::StatusCode::NOT_FOUND, code);
 
         // ------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -657,6 +736,78 @@ mod tests {
         let text = String::from_utf8(vec).unwrap();
         assert_eq!(http::StatusCode::INTERNAL_SERVER_ERROR, code);
         assert_eq!("Setting key TRANSFER_WITHOUT_BALANCE_IGNORED_ACCOUNTS already exists", text);
+
+        let req = test::TestRequest::post()
+            .uri("/api/setting/")
+            .set_json(NewSetting {
+                key: SettingKey::RepeatingTransfers,
+                value: serde_json::to_string(&vec![
+                    RepeatingTransfer {
+                        start: NaiveDate::from_ymd_opt(2024, 1, 2).unwrap(),
+                        repeat: DateRepeat::WEEKLY,
+                        repeat_count: 2,
+                        from_account_id: "test".to_string(),
+                        to_account_ids: vec![
+                            savings_account.id.clone()
+                        ]
+                    }
+                ]).unwrap(),
+            })
+            .to_request();
+        let response = test::call_service(&app, req).await;
+        let code = response.response().status();
+        let vec = body::to_bytes(response.into_body()).await.unwrap().into();
+        let text = String::from_utf8(vec).unwrap();
+        assert_eq!(http::StatusCode::INTERNAL_SERVER_ERROR, code);
+        assert_eq!("Account test does not exist", text);
+
+        let req = test::TestRequest::post()
+            .uri("/api/setting/")
+            .set_json(NewSetting {
+                key: SettingKey::RepeatingTransfers,
+                value: serde_json::to_string(&vec![
+                    RepeatingTransfer {
+                        start: NaiveDate::from_ymd_opt(2024, 1, 2).unwrap(),
+                        repeat: DateRepeat::WEEKLY,
+                        repeat_count: 2,
+                        from_account_id: savings_account.id.clone(),
+                        to_account_ids: vec![
+                            "test2".to_string()
+                        ]
+                    }
+                ]).unwrap(),
+            })
+            .to_request();
+        let response = test::call_service(&app, req).await;
+        let code = response.response().status();
+        let vec = body::to_bytes(response.into_body()).await.unwrap().into();
+        let text = String::from_utf8(vec).unwrap();
+        assert_eq!(http::StatusCode::INTERNAL_SERVER_ERROR, code);
+        assert_eq!("Account test2 does not exist", text);
+
+        let req = test::TestRequest::post()
+            .uri("/api/setting/")
+            .set_json(NewSetting {
+                key: SettingKey::RepeatingTransfers,
+                value: serde_json::to_string(&vec![
+                    RepeatingTransfer {
+                        start: NaiveDate::from_ymd_opt(2024, 1, 2).unwrap(),
+                        repeat: DateRepeat::WEEKLY,
+                        repeat_count: 2,
+                        from_account_id: savings_account.id.clone(),
+                        to_account_ids: vec![
+                            savings_account.id.clone()
+                        ]
+                    }
+                ]).unwrap(),
+            })
+            .to_request();
+        let response = test::call_service(&app, req).await;
+        let code = response.response().status();
+        let vec = body::to_bytes(response.into_body()).await.unwrap().into();
+        let text = String::from_utf8(vec).unwrap();
+        assert_eq!(http::StatusCode::INTERNAL_SERVER_ERROR, code);
+        assert_eq!("From account cannot appear in to account", text);
     }
 
     #[actix_web::test]

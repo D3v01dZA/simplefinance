@@ -1606,6 +1606,7 @@ dependencies = [
  "rusqlite",
  "rust_decimal",
  "serde",
+ "serde_json",
  "static-files",
  "strum",
  "strum_macros",

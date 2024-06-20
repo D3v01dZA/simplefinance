@@ -12,6 +12,8 @@ pub struct Issue {
     pub date: Option<NaiveDate>,
     #[serde(rename = "accountId")]
     pub account_id: Option<String>,
+    #[serde(rename = "fromAccountId")]
+    pub from_account_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Display, EnumString, Serialize, Deserialize, PartialEq, Eq, Ord, PartialOrd)]
@@ -21,5 +23,8 @@ pub enum IssueType {
     TransferWithoutBalance,
     #[serde(rename = "NO_BALANCE" )]
     #[strum(serialize="NO_BALANCE", to_string="NO_BALANCE")]
-    NoBalance
+    NoBalance,
+    #[serde(rename = "NO_TRANSFER" )]
+    #[strum(serialize="NO_TRANSFER", to_string="NO_TRANSFER")]
+    NoTransfer
 }

@@ -1,6 +1,7 @@
 #![allow(unreachable_patterns)]
 
 use std::str::FromStr;
+use chrono::NaiveDate;
 use rusqlite::Row;
 use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ValueRef};
 use serde::{Deserialize, Serialize};
@@ -31,6 +32,31 @@ pub enum SettingKey {
     #[serde(rename = "NO_REGULAR_BALANCE_ACCOUNTS" )]
     #[strum(serialize="NO_REGULAR_BALANCE_ACCOUNTS", to_string="NO_REGULAR_BALANCE_ACCOUNTS")]
     NoRegularBalanceAccounts,
+    #[serde(rename = "REPEATING_TRANSFERS" )]
+    #[strum(serialize="REPEATING_TRANSFERS", to_string="REPEATING_TRANSFERS")]
+    RepeatingTransfers,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct RepeatingTransfer {
+    pub start: NaiveDate,
+    pub repeat: DateRepeat,
+    pub repeat_count: u32,
+    pub from_account_id: String,
+    pub to_account_ids: Vec<String>
+}
+
+#[derive(Debug, Clone, Display, EnumString, Serialize, Deserialize, PartialEq, Eq)]
+pub enum DateRepeat {
+    #[serde(rename = "DAILY" )]
+    #[strum(serialize="DAILY", to_string="DAILY")]
+    DAILY,
+    #[serde(rename = "WEEKLY" )]
+    #[strum(serialize="WEEKLY", to_string="WEEKLY")]
+    WEEKLY,
+    #[serde(rename = "MONTHLY" )]
+    #[strum(serialize="MONTHLY", to_string="MONTHLY")]
+    MONTHLY,
 }
 
 impl FromRow for Setting {

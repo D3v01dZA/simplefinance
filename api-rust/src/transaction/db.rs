@@ -5,7 +5,7 @@ use const_format::formatcp;
 use rusqlite::{params};
 use rust_decimal::Decimal;
 use uuid::Uuid;
-use crate::account::db::verify_account_exists;
+use crate::account::db::verify_account_id_exists;
 use crate::db::{list, single};
 use crate::transaction::schema::{NewTransaction, Transaction, TransactionType};
 
@@ -153,9 +153,9 @@ fn verify_from_account_id(transaction_type: TransactionType, from_account_id: Op
 }
 
 fn verify_account_ids(transaction: &rusqlite::Transaction, account_id: String, from_account_id: Option<String>) -> anyhow::Result<()> {
-    verify_account_exists(transaction, account_id)?;
+    verify_account_id_exists(transaction, account_id)?;
     if from_account_id.is_some() {
-        verify_account_exists(transaction, from_account_id.unwrap())?;
+        verify_account_id_exists(transaction, from_account_id.unwrap())?;
     }
     Ok(())
 }

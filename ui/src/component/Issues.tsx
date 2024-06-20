@@ -4,20 +4,22 @@ import { selectServer } from "../app/serverSlice";
 import { selectSettings } from "../app/settingSlice";
 import { selectAccounts } from "../app/accountSlice";
 import { useEffect, useState } from "react";
-import { constrainedPage, err, get, post, sortTransactions, titleCase, today } from "../util/util";
+import { constrainedPage, defaultAccountId, err, get, post, sortTransactions, titleCase, today } from "../util/util";
 import { DEFAULT_PAGE_SIZE, Pagination } from "./Pagination";
 import { useSearchParams } from "react-router-dom";
 import { AccountName } from "../util/common";
 import { TransactionModal, WorkingTransaction } from "./sub-component/TransactionModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBalanceScale, faWrench } from "@fortawesome/free-solid-svg-icons";
+import { faBalanceScale, faCartPlus, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { JTranscation, TransactionType } from "./Transactions";
 import { BalanceAddingTranscations, BalanceTransactionModal } from "./sub-component/BalanceTransactionModal";
+import { BulkTransactionModal, BulkWorkingTransactions, BulkWorkingTransactionsTransaction } from "./sub-component/BulkTransactionModal";
 
 
 enum IssueType {
     TRANSFER_WITHOUT_BALANCE = "TRANSFER_WITHOUT_BALANCE",
     NO_BALANCE = "NO_BALANCE",
+    NO_TRANSFER = "NO_TRANSFER",
 }
 
 interface JIssue {
@@ -25,6 +27,7 @@ interface JIssue {
     type: IssueType,
     accountId: string,
     date: string,
+    fromAccountId?: string
 
 }
 
@@ -51,6 +54,24 @@ export function Issues() {
     const [balanceAddingDate, setBalanceAddingDate] = useState(today());
     const [balanceAddingTransactions, setBalanceAddingTransactions] = useState<BalanceAddingTranscations>({});
     const [specificAccounts, setSpecificAccounts] = useState<string[]>([]);
+
+    const [showBulkAdding, setShowBulkAdding] = useState(false);
+    const [bulkAdding, setBulkAdding] = useState(false);
+    const [bulkAddingTransactions, setBulkAddingTransactions] = useState<BulkWorkingTransactions>(bulkTranscationsDefault());
+
+    function bulkTranscationsDefault(transaction?: BulkWorkingTransactionsTransaction) {
+        let bulk: BulkWorkingTransactions = {
+            description: "",
+            date: today(),
+            type: TransactionType.TRANSFER,
+            fromAccountId: defaultAccountId(settings, accounts),
+            transactions: []
+        }
+        if (transaction !== undefined) {
+            bulk.transactions.push(transaction);
+        }
+        return bulk;
+    }
 
     function refresh() {
         function sortIssues(issues: JIssue[]) {
@@ -105,6 +126,10 @@ export function Issues() {
         }
     }
 
+    function isBalance(type: IssueType) {
+        return type === IssueType.NO_BALANCE || type === IssueType.TRANSFER_WITHOUT_BALANCE
+    }
+
     useEffect(() => refresh(), []);
 
     useEffect(() => {
@@ -132,32 +157,60 @@ export function Issues() {
                                 <th>Type</th>
                                 <th>Date</th>
                                 <th>Account</th>
+                                <th>From Account</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {issuesToDisplay().map(issue => (
-                                <tr>
+                            {issuesToDisplay().map((issue, index) => (
+                                <tr key={index}>
                                     <td>{titleCase(issue.type)}</td>
                                     <td>{issue.date}</td>
                                     <td><AccountName accounts={accounts} accountId={issue.accountId} /></td>
+                                    <td>{issue.fromAccountId === undefined ? null : <AccountName accounts={accounts} accountId={issue.fromAccountId} />}</td>
                                     <td>
                                         <ButtonGroup>
-                                            <Button variant="warning" onClick={() => {
-                                                setBalanceAddingTransactions({});
-                                                setBalanceAddingDate(issue.date);
-                                                let accountIds = issues.filter(potential => potential.date === issue.date).map(potential => potential.accountId);
-                                                setSpecificAccounts(accountIds);
-                                                setShowBalanceAdding(true);
-                                            }}>
-                                                <FontAwesomeIcon icon={faBalanceScale} />
-                                            </Button>
-                                            <Button variant="primary" onClick={() => {
+                                            {
+                                                isBalance(issue.type) ? <>
+                                                    <Button variant="warning" onClick={() => {
+                                                        setBalanceAddingTransactions({});
+                                                        setBalanceAddingDate(issue.date);
+                                                        let accountIds = issues.filter(potential => potential.date === issue.date).map(potential => potential.accountId);
+                                                        setSpecificAccounts(accountIds);
+                                                        setShowBalanceAdding(true);
+                                                    }}>
+                                                        <FontAwesomeIcon icon={faBalanceScale} />
+                                                    </Button>
+                                                </> : <>
+                                                    <Button variant="primary" onClick={() => {
+                                                        let bulk: BulkWorkingTransactions = {
+                                                            description: "",
+                                                            date: issue.date,
+                                                            type: TransactionType.TRANSFER,
+                                                            fromAccountId: issue.fromAccountId!,
+                                                            transactions: []
+                                                        }
+                                                        issues.forEach(other => {
+                                                            if (other.type === issue.type && other.date === issue.date && other.fromAccountId === issue.fromAccountId) {
+                                                                bulk.transactions.push({
+                                                                    accountId: other.accountId
+                                                                })
+                                                            }
+                                                        })
+                                                        setBulkAddingTransactions(bulk);
+                                                        setShowBulkAdding(true);
+                                                    }}>
+                                                        <FontAwesomeIcon icon={faCartPlus} />
+                                                    </Button>
+                                                </>
+                                            }
+                                            <Button variant="success" onClick={() => {
                                                 setTransaction({
                                                     date: issue.date,
                                                     description: "",
-                                                    type: TransactionType.BALANCE,
+                                                    type: isBalance(issue.type) ? TransactionType.BALANCE : TransactionType.TRANSFER,
                                                     accountId: issue.accountId,
+                                                    fromAccountId: issue.fromAccountId
                                                 });
                                                 setShowTransactionModal(true);
                                             }}>
@@ -181,6 +234,18 @@ export function Issues() {
                             });
                     }
                     } />
+                    <BulkTransactionModal accounts={accounts} settings={settings} specific={true} show={showBulkAdding} setShow={setShowBulkAdding} transactions={bulkAddingTransactions} setTransactions={setBulkAddingTransactions} saving={bulkAdding} save={() => {
+                        setBulkAdding(true);
+                        Promise.all(bulkAddingTransactions.transactions.map(transaction => post(server, `/api/transaction/`, {
+                            ...bulkAddingTransactions,
+                            ...transaction
+                        }))).then(() => refresh())
+                            .catch(error => err(error))
+                            .finally(() => {
+                                setBulkAdding(false);
+                                setShowBulkAdding(false);
+                            });
+                    }} />
                     <BalanceTransactionModal accounts={accounts} settings={settings} specificAccounts={specificAccounts} show={showBalanceAdding} setShow={setShowBalanceAdding} date={balanceAddingDate} setDate={setBalanceAddingDate} transactions={transactions} balanceAddingTransactions={balanceAddingTransactions} setBalanceAddingTransactions={setBalanceAddingTransactions} saving={balanceAdding} save={() => {
                         setBalanceAdding(true);
                         Promise.all(Object.entries(balanceAddingTransactions).map(([id, value]) => {

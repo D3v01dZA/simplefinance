@@ -9,9 +9,10 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPenToSquare, faTrash, faPlus, faCartPlus, faFilter, faBalanceScale } from '@fortawesome/free-solid-svg-icons';
 import { DEFAULT_PAGE_SIZE, Pagination } from "./Pagination";
 import { AccountName } from "../util/common";
-import { IndexedSettings, selectSettings } from "../app/settingSlice";
+import { selectSettings } from "../app/settingSlice";
 import { TransactionModal, WorkingTransaction } from "./sub-component/TransactionModal";
 import { BalanceAddingTranscations, BalanceTransactionModal } from "./sub-component/BalanceTransactionModal";
+import { BulkTransactionModal, BulkWorkingTransactions, BulkWorkingTransactionsTransaction } from "./sub-component/BulkTransactionModal";
 
 export enum TransactionType {
     BALANCE = "BALANCE",
@@ -32,19 +33,6 @@ enum LastSType {
     DAYS = "DAYS",
     WEEKS = "WEEKS",
     MONTHS = "MONTHS"
-}
-
-interface BulkWorkingTransactionsTransaction {
-    accountId: string,
-    value?: string,
-}
-
-interface BulkWorkingTransactions {
-    description: string,
-    date: string,
-    type: TransactionType,
-    fromAccountId?: string,
-    transactions: BulkWorkingTransactionsTransaction[]
 }
 
 function description(transaction: JTranscation) {
@@ -71,136 +59,6 @@ function Transaction({ transaction, accounts, edit, del }: { transaction: JTrans
                 </ButtonGroup>
             </td>
         </tr>
-    );
-}
-
-function BulkTransactionModal({
-    accounts,
-    settings,
-    show,
-    setShow,
-    transactions,
-    setTransactions,
-    saving,
-    save
-}: {
-    accounts: IndexedAccounts,
-    settings: IndexedSettings,
-    show: boolean,
-    setShow: (value: boolean) => void,
-    transactions: BulkWorkingTransactions,
-    setTransactions: (transactions: BulkWorkingTransactions) => void,
-    saving: boolean,
-    save: () => void
-}) {
-    function editTransaction(index: number, update: Partial<{ accountId: string, value: string }>) {
-        const updatedTransactions = [...transactions.transactions];
-        updatedTransactions[index] = {
-            ...updatedTransactions[index],
-            ...update
-        }
-        setTransactions({ ...transactions, transactions: updatedTransactions })
-    }
-
-    function deleteTransaction(index: number) {
-        const updatedTransactions = [...transactions.transactions];
-        updatedTransactions.splice(index, 1);
-        setTransactions({ ...transactions, transactions: updatedTransactions })
-    }
-
-    return (
-        <Modal show={show} onHide={() => setShow(false)} >
-            <Modal.Header closeButton>
-                <Modal.Title>Add Multiple Transactions</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-                <Form>
-                    <Form.Group>
-                        <Form.Label>Description</Form.Label>
-                        <Form.Control type="text" value={transactions?.description} onChange={e => setTransactions({ ...transactions, description: e.target.value })}></Form.Control>
-                    </Form.Group>
-                    <Form.Group>
-                        <Form.Label>Date</Form.Label>
-                        <Form.Control type="date" value={transactions?.date} onChange={e => setTransactions({ ...transactions, date: e.target.value })}></Form.Control>
-                    </Form.Group>
-                    <Form.Group>
-                        <Form.Label>Type</Form.Label>
-                        <Form.Select value={transactions.type} onChange={e => {
-                            const type = e.target.value as TransactionType;
-                            const fromAccountId = type === TransactionType.TRANSFER ? defaultAccountId(settings, accounts) : undefined;
-                            setTransactions({ ...transactions, fromAccountId, type });
-                        }}>
-                            {Object.keys(TransactionType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
-                        </Form.Select>
-                    </Form.Group>
-                    <Form.Group hidden={transactions.type !== TransactionType.TRANSFER}>
-                        <Form.Label>From Account</Form.Label>
-                        <Form.Select disabled={transactions.type !== TransactionType.TRANSFER} value={transactions.fromAccountId} onChange={e => setTransactions({ ...transactions, fromAccountId: e.target.value })}>
-                            {
-                                Object.values(accounts)
-                                    .filter(account => !(settings.NO_REGULAR_BALANCE_ACCOUNTS?.value ?? "").includes(account.id))
-                                    .map(account => <option key={account.id} value={account.id}>{account.name} ({titleCase(account.type)})</option>)
-                            }
-                        </Form.Select>
-                    </Form.Group>
-                    {(transactions.transactions).map((transaction, index) => {
-                        return (
-                            <React.Fragment key={index}>
-                                <Form.Group>
-                                    <Form.Label>Value</Form.Label>
-                                    <Form.Control type="text" isInvalid={!isValueValid(transaction.value)} value={transaction.value} onChange={e => editTransaction(index, { value: e.target.value })}></Form.Control>
-                                </Form.Group>
-                                <Form.Group>
-                                    <Form.Label>Account</Form.Label>
-                                    <Form.Select value={transaction?.accountId} onChange={e => editTransaction(index, { accountId: e.target.value })}>
-                                        {
-                                            Object.values(accounts)
-                                                .filter(account => !(settings.NO_REGULAR_BALANCE_ACCOUNTS?.value ?? "").includes(account.id))
-                                                .map(account => <option key={account.id} value={account.id}>{account.name} ({titleCase(account.type)})</option>)
-                                        }
-                                    </Form.Select>
-                                </Form.Group>
-                                <br />
-                                <Row>
-                                    <Col>
-                                        {index !== transactions.transactions.length - 1 ? (
-                                            <ButtonGroup className="float-end">
-                                                <Button variant="danger" onClick={() => deleteTransaction(index)}>
-                                                    Delete Transaction
-                                                </Button>
-                                            </ButtonGroup>
-                                        ) : (
-                                            <ButtonGroup className="float-end">
-                                                <Button onClick={() => setTransactions({ ...transactions, transactions: transactions.transactions.concat({ accountId: defaultAccountId(settings, accounts) }) })}>
-                                                    Add Transaction
-                                                </Button>
-                                                <Button variant="danger" onClick={() => deleteTransaction(index)}>
-                                                    Delete Transaction
-                                                </Button>
-                                            </ButtonGroup>
-                                        )}
-                                    </Col>
-                                </Row>
-                            </React.Fragment>
-                        );
-                    })}
-                    <br />
-                    <Row>
-                        <Col>
-
-                        </Col>
-                    </Row>
-                </Form>
-            </Modal.Body>
-            <Modal.Footer>
-                <Button disabled={saving} variant="secondary" onClick={() => setShow(false)}>
-                    Cancel
-                </Button>
-                <Button disabled={saving} variant="primary" onClick={() => save()}>
-                    Save
-                </Button>
-            </Modal.Footer>
-        </Modal>
     );
 }
 
@@ -566,7 +424,7 @@ export function Transactions() {
                         setShowEditing(false);
                     });
             }} />
-            <BulkTransactionModal accounts={accounts} settings={settings} show={showBulkAdding} setShow={setShowBulkAdding} transactions={bulkAddingTransactions} setTransactions={setBulkAddingTransactions} saving={bulkAdding} save={() => {
+            <BulkTransactionModal accounts={accounts} settings={settings} specific={false} show={showBulkAdding} setShow={setShowBulkAdding} transactions={bulkAddingTransactions} setTransactions={setBulkAddingTransactions} saving={bulkAdding} save={() => {
                 setBulkAdding(true);
                 Promise.all(bulkAddingTransactions.transactions.map(transaction => post(server, `/api/transaction/`, {
                     ...bulkAddingTransactions,

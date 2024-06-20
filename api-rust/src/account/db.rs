@@ -51,7 +51,7 @@ pub fn list_accounts(transaction: &Transaction) -> anyhow::Result<Vec<Account>> 
     );
 }
 
-pub fn verify_account_exists(transaction: &Transaction, id: String) -> anyhow::Result<()> {
+pub fn verify_account_id_exists(transaction: &Transaction, id: String) -> anyhow::Result<()> {
     let result = get_account(transaction, id.clone())?;
     if result.is_none() {
         return Err(anyhow!("Account {} does not exist", id.clone()));
