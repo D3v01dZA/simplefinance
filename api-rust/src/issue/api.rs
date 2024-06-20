@@ -107,11 +107,12 @@ pub async fn list_issues(db: web::Data<Pool>) -> Result<HttpResponse, Error> {
             }
 
             issues.sort_by(|one, two| {
-                let ordered = one.issue_type.cmp(&two.issue_type);
+                // Latest first
+                let ordered = two.date.cmp(&one.date);
                 if ordered != Equal {
                     return ordered;
                 }
-                let ordered = one.date.cmp(&two.date);
+                let ordered = one.issue_type.cmp(&two.issue_type);
                 if ordered != Equal {
                     return ordered;
                 }

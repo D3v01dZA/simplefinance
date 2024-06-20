@@ -87,10 +87,11 @@ fn run_migrations(manager: &SqliteConnectionManager) {
 mod tests {
     use actix_web::{web, App, test, middleware, http, body};
     use actix_cors::Cors;
-    use chrono::NaiveDate;
+    use chrono::{NaiveDate, Local, Datelike};
     use log::info;
     use r2d2_sqlite::SqliteConnectionManager;
     use rust_decimal::Decimal;
+    use actix_web_static_files::ResourceFiles;
     use crate::setting;
     use crate::account;
     use crate::account::schema::{Account, AccountType, NewAccount};
@@ -102,6 +103,8 @@ mod tests {
     use crate::db::Pool;
     use crate::run_migrations;
     use crate::setting::schema::{NewSetting, Setting, SettingKey};
+
+    include!(concat!(env!("OUT_DIR"), "/generated.rs"));
 
     #[actix_web::test]
     async fn test_crud() {
@@ -400,7 +403,7 @@ mod tests {
             })
             .to_request();
         let resp: Transaction = test::call_and_read_body_json(&app, req).await;
-        assert_eq!(Transaction{
+        assert_eq!(Transaction {
             id: resp.id.clone(),
             description: "That".to_string(),
             date: NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
@@ -423,7 +426,7 @@ mod tests {
             })
             .to_request();
         let resp: Transaction = test::call_and_read_body_json(&app, req).await;
-        assert_eq!(Transaction{
+        assert_eq!(Transaction {
             id: resp.id.clone(),
             description: "That".to_string(),
             date: NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
@@ -438,7 +441,7 @@ mod tests {
             .uri(format!("/api/transaction/{}/", resp.id.clone()).as_str())
             .to_request();
         let resp: Transaction = test::call_and_read_body_json(&app, req).await;
-        assert_eq!(Transaction{
+        assert_eq!(Transaction {
             id: resp.id.clone(),
             description: "That".to_string(),
             date: NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
@@ -697,7 +700,7 @@ mod tests {
             })
             .to_request();
         let loan: Account = test::call_and_read_body_json(&app, req).await;
-        
+
         // Assign External to not show up in issues
         let req = test::TestRequest::post()
             .uri("/api/setting/")
@@ -713,7 +716,23 @@ mod tests {
             .uri("/api/issue/")
             .to_request();
         let issues: Vec<Issue> = test::call_and_read_body_json(&app, req).await;
-        assert_eq!(issues, vec![]);
+        assert_eq!(issues, vec![
+            Issue {
+                issue_type: IssueType::NoBalance,
+                date: Some(Local::now().date_naive().with_day(1).unwrap()),
+                account_id: Some(loan.id.clone()),
+            },
+            Issue {
+                issue_type: IssueType::NoBalance,
+                date: Some(Local::now().date_naive().with_day(1).unwrap()),
+                account_id: Some(savings.id.clone()),
+            },
+            Issue {
+                issue_type: IssueType::NoBalance,
+                date: Some(Local::now().date_naive().with_day(1).unwrap()),
+                account_id: Some(external.id.clone()),
+            }
+        ]);
 
         // Create a transfer from external to savings
         let req = test::TestRequest::post()
@@ -736,9 +755,24 @@ mod tests {
         let issues: Vec<Issue> = test::call_and_read_body_json(&app, req).await;
         assert_eq!(issues, vec![
             Issue {
+                issue_type: IssueType::NoBalance,
+                date: Some(Local::now().date_naive().with_day(1).unwrap()),
+                account_id: Some(loan.id.clone()),
+            },
+            Issue {
+                issue_type: IssueType::NoBalance,
+                date: Some(Local::now().date_naive().with_day(1).unwrap()),
+                account_id: Some(savings.id.clone()),
+            },
+            Issue {
+                issue_type: IssueType::NoBalance,
+                date: Some(Local::now().date_naive().with_day(1).unwrap()),
+                account_id: Some(external.id.clone()),
+            },
+            Issue {
                 issue_type: IssueType::TransferWithoutBalance,
                 account_id: Some(savings.id.clone()),
-                date: Some(NaiveDate::from_ymd_opt(2024, 1, 10).unwrap())
+                date: Some(NaiveDate::from_ymd_opt(2024, 1, 10).unwrap()),
             }
         ]);
 
@@ -763,19 +797,34 @@ mod tests {
         let issues: Vec<Issue> = test::call_and_read_body_json(&app, req).await;
         assert_eq!(issues, vec![
             Issue {
-                issue_type: IssueType::TransferWithoutBalance,
+                issue_type: IssueType::NoBalance,
+                date: Some(Local::now().date_naive().with_day(1).unwrap()),
+                account_id: Some(loan.id.clone()),
+            },
+            Issue {
+                issue_type: IssueType::NoBalance,
+                date: Some(Local::now().date_naive().with_day(1).unwrap()),
                 account_id: Some(savings.id.clone()),
-                date: Some(NaiveDate::from_ymd_opt(2024, 1, 10).unwrap())
+            },
+            Issue {
+                issue_type: IssueType::NoBalance,
+                date: Some(Local::now().date_naive().with_day(1).unwrap()),
+                account_id: Some(external.id.clone()),
             },
             Issue {
                 issue_type: IssueType::TransferWithoutBalance,
                 account_id: Some(loan.id.clone()),
-                date: Some(NaiveDate::from_ymd_opt(2024, 1, 11).unwrap())
+                date: Some(NaiveDate::from_ymd_opt(2024, 1, 11).unwrap()),
             },
             Issue {
                 issue_type: IssueType::TransferWithoutBalance,
                 account_id: Some(savings.id.clone()),
-                date: Some(NaiveDate::from_ymd_opt(2024, 1, 11).unwrap())
+                date: Some(NaiveDate::from_ymd_opt(2024, 1, 11).unwrap()),
+            },
+            Issue {
+                issue_type: IssueType::TransferWithoutBalance,
+                account_id: Some(savings.id.clone()),
+                date: Some(NaiveDate::from_ymd_opt(2024, 1, 10).unwrap()),
             }
         ]);
 
@@ -800,14 +849,29 @@ mod tests {
         let issues: Vec<Issue> = test::call_and_read_body_json(&app, req).await;
         assert_eq!(issues, vec![
             Issue {
-                issue_type: IssueType::TransferWithoutBalance,
+                issue_type: IssueType::NoBalance,
+                date: Some(Local::now().date_naive().with_day(1).unwrap()),
+                account_id: Some(loan.id.clone()),
+            },
+            Issue {
+                issue_type: IssueType::NoBalance,
+                date: Some(Local::now().date_naive().with_day(1).unwrap()),
                 account_id: Some(savings.id.clone()),
-                date: Some(NaiveDate::from_ymd_opt(2024, 1, 10).unwrap())
+            },
+            Issue {
+                issue_type: IssueType::NoBalance,
+                date: Some(Local::now().date_naive().with_day(1).unwrap()),
+                account_id: Some(external.id.clone()),
             },
             Issue {
                 issue_type: IssueType::TransferWithoutBalance,
                 account_id: Some(loan.id.clone()),
-                date: Some(NaiveDate::from_ymd_opt(2024, 1, 11).unwrap())
+                date: Some(NaiveDate::from_ymd_opt(2024, 1, 11).unwrap()),
+            },
+            Issue {
+                issue_type: IssueType::TransferWithoutBalance,
+                account_id: Some(savings.id.clone()),
+                date: Some(NaiveDate::from_ymd_opt(2024, 1, 10).unwrap()),
             }
         ]);
 
@@ -832,10 +896,25 @@ mod tests {
         let issues: Vec<Issue> = test::call_and_read_body_json(&app, req).await;
         assert_eq!(issues, vec![
             Issue {
+                issue_type: IssueType::NoBalance,
+                date: Some(Local::now().date_naive().with_day(1).unwrap()),
+                account_id: Some(loan.id.clone()),
+            },
+            Issue {
+                issue_type: IssueType::NoBalance,
+                date: Some(Local::now().date_naive().with_day(1).unwrap()),
+                account_id: Some(savings.id.clone()),
+            },
+            Issue {
+                issue_type: IssueType::NoBalance,
+                date: Some(Local::now().date_naive().with_day(1).unwrap()),
+                account_id: Some(external.id.clone()),
+            },
+            Issue {
                 issue_type: IssueType::TransferWithoutBalance,
                 account_id: Some(savings.id.clone()),
-                date: Some(NaiveDate::from_ymd_opt(2024, 1, 10).unwrap())
-            }
+                date: Some(NaiveDate::from_ymd_opt(2024, 1, 10).unwrap()),
+            },
         ]);
 
         // Create a balance for savings on the 10th
@@ -857,6 +936,54 @@ mod tests {
             .uri("/api/issue/")
             .to_request();
         let issues: Vec<Issue> = test::call_and_read_body_json(&app, req).await;
-        assert_eq!(issues, vec![]);
+        assert_eq!(issues, vec![
+            Issue {
+                issue_type: IssueType::NoBalance,
+                date: Some(Local::now().date_naive().with_day(1).unwrap()),
+                account_id: Some(loan.id.clone()),
+            },
+            Issue {
+                issue_type: IssueType::NoBalance,
+                date: Some(Local::now().date_naive().with_day(1).unwrap()),
+                account_id: Some(savings.id.clone()),
+            },
+            Issue {
+                issue_type: IssueType::NoBalance,
+                date: Some(Local::now().date_naive().with_day(1).unwrap()),
+                account_id: Some(external.id.clone()),
+            }
+        ]);
+
+        // Create a balance for savings on the missing date
+        let req = test::TestRequest::post()
+            .uri("/api/transaction/")
+            .set_json(NewTransaction {
+                description: "".to_string(),
+                date: Local::now().date_naive().with_day(1).unwrap(),
+                value: Decimal::new(12, 2),
+                transaction_type: TransactionType::Balance,
+                account_id: savings.id.clone(),
+                from_account_id: None,
+            })
+            .to_request();
+        let _: Transaction = test::call_and_read_body_json(&app, req).await;
+
+        // Check the issue is gone
+        let req = test::TestRequest::get()
+            .uri("/api/issue/")
+            .to_request();
+        let issues: Vec<Issue> = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(issues, vec![
+            Issue {
+                issue_type: IssueType::NoBalance,
+                date: Some(Local::now().date_naive().with_day(1).unwrap()),
+                account_id: Some(loan.id.clone()),
+            },
+            Issue {
+                issue_type: IssueType::NoBalance,
+                date: Some(Local::now().date_naive().with_day(1).unwrap()),
+                account_id: Some(external.id.clone()),
+            }
+        ]);
     }
 }

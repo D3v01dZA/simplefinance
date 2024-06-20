@@ -1,6 +1,7 @@
 import { IndexedAccounts } from "../app/accountSlice";
 import { ServerState } from "../app/serverSlice";
 import { IndexedSettings, SettingKey } from "../app/settingSlice";
+import { JTranscation, TransactionType } from "../component/Transactions";
 
 export function titleCase(value: string) {
     const values = value.split("_");
@@ -122,6 +123,46 @@ export function isValueValid(value: string | undefined) {
         return false;
     }
     return true;
+}
+
+export function filterTransactions(transactions: JTranscation[], transactionType: TransactionType, predicate?: (transaction: JTranscation) => boolean) {
+    const encounteredAccountIds = new Set();
+    return transactions.filter(transaction => {
+        if (transaction.type !== transactionType) {
+            return false;
+        }
+        if (predicate && !predicate(transaction)) {
+            return false;
+        }
+        if (encounteredAccountIds.has(transaction.accountId)) {
+            return false;
+        }
+        encounteredAccountIds.add(transaction.accountId);
+        return true;
+    });
+}
+
+export function sortTransactions(transactions: JTranscation[]) {
+    return transactions.sort((left, right) => {
+        const date = Date.parse(right.date) - Date.parse(left.date);
+        if (date !== 0) {
+            return date;
+        }
+        if (left.type !== right.type) {
+            if (right.type === TransactionType.BALANCE) {
+                return 1;
+            } else {
+                return -1;
+            }
+        }
+        if (left.value !== right.value) {
+            return right.value - left.value;
+        }
+        if (left.description !== right.description) {
+            return left.description.localeCompare(right.description);
+        }
+        return left.accountId.localeCompare(right.accountId);
+    });
 }
 
 export function formattedAmount(amount: number) {

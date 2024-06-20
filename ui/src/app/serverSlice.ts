@@ -6,7 +6,7 @@ export interface ServerState {
 }
 
 const initialState: ServerState = {
-    url: "http://localhost:8080",
+    url: ".",
 }
 
 export const serverSlice = createSlice({

@@ -1,21 +1,23 @@
-import { Button, Col, Container, Row, Table } from "react-bootstrap";
+import { Button, ButtonGroup, Col, Container, Row, Table } from "react-bootstrap";
 import { useAppSelector } from "../app/hooks";
 import { selectServer } from "../app/serverSlice";
 import { selectSettings } from "../app/settingSlice";
 import { selectAccounts } from "../app/accountSlice";
 import { useEffect, useState } from "react";
-import { constrainedPage, err, get, post, titleCase } from "../util/util";
+import { constrainedPage, err, get, post, sortTransactions, titleCase, today } from "../util/util";
 import { DEFAULT_PAGE_SIZE, Pagination } from "./Pagination";
 import { useSearchParams } from "react-router-dom";
 import { AccountName } from "../util/common";
 import { TransactionModal, WorkingTransaction } from "./sub-component/TransactionModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faWrench } from "@fortawesome/free-solid-svg-icons";
-import { TransactionType } from "./Transactions";
+import { faBalanceScale, faWrench } from "@fortawesome/free-solid-svg-icons";
+import { JTranscation, TransactionType } from "./Transactions";
+import { BalanceAddingTranscations, BalanceTransactionModal } from "./sub-component/BalanceTransactionModal";
 
 
 enum IssueType {
     TRANSFER_WITHOUT_BALANCE = "TRANSFER_WITHOUT_BALANCE",
+    NO_BALANCE = "NO_BALANCE",
 }
 
 interface JIssue {
@@ -42,7 +44,14 @@ export function Issues() {
     const [savingTransaction, setSavingTransaction] = useState(false);
     const [transaction, setTransaction] = useState<Partial<WorkingTransaction>>({});
 
-    function refreshIssues() {
+    const [transactions, setTransactions] = useState<JTranscation[]>([]);
+
+    const [showBalanceAdding, setShowBalanceAdding] = useState(false);
+    const [balanceAdding, setBalanceAdding] = useState(false);
+    const [balanceAddingDate, setBalanceAddingDate] = useState(today());
+    const [balanceAddingTransactions, setBalanceAddingTransactions] = useState<BalanceAddingTranscations>({});
+
+    function refresh() {
         function sortIssues(issues: JIssue[]) {
             return issues.sort((left, right) => {
                 let issueType = right.type.localeCompare(left.type);
@@ -58,8 +67,11 @@ export function Issues() {
         }
 
         get<JIssue[]>(server, `/api/issue/`)
-                .then(issues => setIssues(sortIssues(issues)))
-                .catch(error => err(error));
+            .then(issues => setIssues(sortIssues(issues)))
+            .catch(error => err(error));
+        get<JTranscation[]>(server, `/api/transaction/`)
+            .then(transactions => setTransactions(sortTransactions(transactions)))
+            .catch(error => err(error));
     }
 
     function issuesToDisplay() {
@@ -92,7 +104,7 @@ export function Issues() {
         }
     }
 
-    useEffect(() => refreshIssues(), []);
+    useEffect(() => refresh(), []);
 
     useEffect(() => {
         const page = searchParams.get("page");
@@ -107,7 +119,7 @@ export function Issues() {
         } else {
             _setPageSize(DEFAULT_PAGE_SIZE);
         }
-    }, [searchParams]) 
+    }, [searchParams])
 
     return (
         <Container>
@@ -129,17 +141,30 @@ export function Issues() {
                                     <td>{issue.date}</td>
                                     <td><AccountName accounts={accounts} accountId={issue.accountId} /></td>
                                     <td>
-                                        <Button variant="primary" onClick={() => {
-                                            setTransaction({
-                                                date: issue.date,
-                                                description: "",
-                                                type: TransactionType.BALANCE,
-                                                accountId: issue.accountId,
-                                            });
-                                            setShowTransactionModal(true);
-                                        }}>
-                                            <FontAwesomeIcon icon={faWrench} />
-                                        </Button>
+                                        <ButtonGroup>
+                                            {
+                                                issue.type === IssueType.NO_BALANCE ? <>
+                                                    <Button variant="warning" onClick={() => {
+                                                        setBalanceAddingTransactions({});
+                                                        setBalanceAddingDate(issue.date);
+                                                        setShowBalanceAdding(true);
+                                                    }}>
+                                                        <FontAwesomeIcon icon={faBalanceScale} />
+                                                    </Button>
+                                                </> : null
+                                            }
+                                            <Button variant="primary" onClick={() => {
+                                                setTransaction({
+                                                    date: issue.date,
+                                                    description: "",
+                                                    type: TransactionType.BALANCE,
+                                                    accountId: issue.accountId,
+                                                });
+                                                setShowTransactionModal(true);
+                                            }}>
+                                                <FontAwesomeIcon icon={faWrench} />
+                                            </Button>
+                                        </ButtonGroup>
                                     </td>
                                 </tr>
                             ))}
@@ -147,16 +172,34 @@ export function Issues() {
                     </Table>
                     <Pagination itemCount={issues.length} page={page} setPage={setPage} pageSize={pageSize} setPageSize={setPageSize} />
                     <TransactionModal accounts={accounts} settings={settings} singleAccount={true} singleType={true} singleDate={true} show={showTransactionModal} setShow={setShowTransactionModal} transaction={transaction} setTransaction={setTransaction} saving={savingTransaction} save={() => {
-                            setSavingTransaction(true);
-                            post(server, `/api/transaction/`, transaction)
-                                .then(() => refreshIssues())
-                                .catch(error => err(error))
-                                .finally(() => {
-                                    setSavingTransaction(false);
-                                    setShowTransactionModal(false);
-                                });
-                        }
-                    }/>
+                        setSavingTransaction(true);
+                        post(server, `/api/transaction/`, transaction)
+                            .then(() => refresh())
+                            .catch(error => err(error))
+                            .finally(() => {
+                                setSavingTransaction(false);
+                                setShowTransactionModal(false);
+                            });
+                    }
+                    } />
+                    <BalanceTransactionModal accounts={accounts} settings={settings} singleDate={true} show={showBalanceAdding} setShow={setShowBalanceAdding} date={balanceAddingDate} setDate={setBalanceAddingDate} transactions={transactions} balanceAddingTransactions={balanceAddingTransactions} setBalanceAddingTransactions={setBalanceAddingTransactions} saving={balanceAdding} save={() => {
+                        setBalanceAdding(true);
+                        Promise.all(Object.entries(balanceAddingTransactions).map(([id, value]) => {
+                            let transaction = {
+                                description: "",
+                                accountId: id,
+                                date: balanceAddingDate,
+                                value: value,
+                                type: TransactionType.BALANCE,
+                            }
+                            return post(server, `/api/transaction/`, transaction);
+                        })).then(() => refresh())
+                            .catch(error => err(error))
+                            .finally(() => {
+                                setBalanceAdding(false);
+                                setShowBalanceAdding(false);
+                            });
+                    }} />
                 </Col>
             </Row>
         </Container>

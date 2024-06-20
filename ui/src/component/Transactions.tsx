@@ -1,29 +1,24 @@
 import React, { useEffect, useState } from "react";
 import { Button, ButtonGroup, Col, Container, Form, Modal, OverlayTrigger, Popover, Row, Table } from "react-bootstrap";
 import { useParams, useSearchParams } from "react-router-dom";
-import { AccountType, IndexedAccounts, selectAccounts } from "../app/accountSlice";
+import { IndexedAccounts, selectAccounts } from "../app/accountSlice";
 import { useAppSelector } from "../app/hooks";
 import { selectServer } from "../app/serverSlice";
-import { constrainedPage, defaultAccountId, del, err, formattedAmount, get, isValueValid, post, titleCase, today } from "../util/util";
+import { constrainedPage, defaultAccountId, del, err, filterTransactions, formattedAmount, get, isValueValid, post, sortTransactions, titleCase, today } from "../util/util";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPenToSquare, faTrash, faPlus, faCartPlus, faFilter, faBalanceScale } from '@fortawesome/free-solid-svg-icons';
 import { DEFAULT_PAGE_SIZE, Pagination } from "./Pagination";
 import { AccountName } from "../util/common";
 import { IndexedSettings, selectSettings } from "../app/settingSlice";
 import { TransactionModal, WorkingTransaction } from "./sub-component/TransactionModal";
+import { BalanceAddingTranscations, BalanceTransactionModal } from "./sub-component/BalanceTransactionModal";
 
 export enum TransactionType {
     BALANCE = "BALANCE",
     TRANSFER = "TRANSFER",
 }
 
-enum LastSType {
-    DAYS = "DAYS",
-    WEEKS = "WEEKS",
-    MONTHS = "MONTHS"
-}
-
-interface JTranscation {
+export interface JTranscation {
     id: string,
     description: string,
     date: string,
@@ -33,8 +28,10 @@ interface JTranscation {
     fromAccountId: string,
 }
 
-interface BalanceAddingTranscations {
-    [accountId: string]: string
+enum LastSType {
+    DAYS = "DAYS",
+    WEEKS = "WEEKS",
+    MONTHS = "MONTHS"
 }
 
 interface BulkWorkingTransactionsTransaction {
@@ -52,23 +49,6 @@ interface BulkWorkingTransactions {
 
 function description(transaction: JTranscation) {
     return transaction.description === "" ? titleCase(transaction.type) : transaction.description;
-}
-
-function filterTransactions(transactions: JTranscation[], transactionType: TransactionType, predicate?: (transaction: JTranscation) => boolean) {
-    const encounteredAccountIds = new Set();
-    return transactions.filter(transaction => {
-        if (transaction.type !== transactionType) {
-            return false;
-        }
-        if (predicate && !predicate(transaction)) {
-            return false;
-        }
-        if (encounteredAccountIds.has(transaction.accountId)) {
-            return false;
-        }
-        encounteredAccountIds.add(transaction.accountId);
-        return true;
-    });
 }
 
 function Transaction({ transaction, accounts, edit, del }: { transaction: JTranscation, accounts: IndexedAccounts, edit: () => void, del: () => void }) {
@@ -224,111 +204,6 @@ function BulkTransactionModal({
     );
 }
 
-function BalanceTransactionModal({
-    accounts,
-    settings,
-    show,
-    setShow,
-    date,
-    setDate,
-    transactions,
-    balanceAddingTransactions,
-    setBalanceAddingTransactions,
-    saving,
-    save
-}: {
-    accounts: IndexedAccounts,
-    settings: IndexedSettings,
-    show: boolean,
-    setShow: (value: boolean) => void,
-    date: string,
-    setDate: (value: string) => void,
-    transactions: JTranscation[],
-    balanceAddingTransactions: BalanceAddingTranscations,
-    setBalanceAddingTransactions: (value: BalanceAddingTranscations) => void,
-    saving: boolean,
-    save: () => void
-}) {
-    let actualDate = new Date(date);
-    const mappedTransactions = filterTransactions(transactions, TransactionType.BALANCE, transaction => new Date(transaction.date) <= actualDate).reduce<{ [accountId: string]: JTranscation }>((acc, current) => {
-        acc[current.accountId] = current;
-        return acc;
-    }, {});
-
-    function editTransaction(accountId: string, value: string) {
-        if (value === undefined || value === "") {
-            const copy = { ...balanceAddingTransactions }
-            delete copy[accountId];
-            setBalanceAddingTransactions(copy);
-        } else {
-            setBalanceAddingTransactions({
-                ...balanceAddingTransactions,
-                [accountId]: value
-            });
-        }
-    }
-
-    function placeholder(accountId: string) {
-        let transaction = mappedTransactions[accountId];
-        if (!transaction || transaction.date === date) {
-            return undefined;
-        }
-        return formattedAmount(transaction.value) + "";
-    }
-
-    function value(accountId: string): string {
-        let transaction = mappedTransactions[accountId];
-        if (!transaction || transaction.date !== date) {
-            return balanceAddingTransactions[accountId] ?? "";
-        }
-        return transaction.value + "";
-    }
-
-    function disabled(accountId: string) {
-        let transaction = mappedTransactions[accountId];
-        if (!transaction || transaction.date !== date) {
-            return false;
-        }
-        return true;
-    }
-
-    return (
-        <Modal show={show} onHide={() => setShow(false)} >
-            <Modal.Header closeButton>
-                <Modal.Title>Add Multiple Balance Transactions</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-                <Form.Group>
-                    <Form.Label>Date</Form.Label>
-                    <Form.Control type="date" value={date} onChange={e => setDate(e.target.value)}></Form.Control>
-                </Form.Group>
-                {
-                    Object.values(accounts)
-                        .filter(account => account.type !== AccountType.EXTERNAL)
-                        .filter(account => !(settings.NO_REGULAR_BALANCE_ACCOUNTS?.value ?? "").includes(account.id))
-                        .map(account => account.id)
-                        .map(id => {
-                            return (
-                                <Form.Group key={id}>
-                                    <Form.Label><AccountName accountId={id} accounts={accounts} /></Form.Label>
-                                    <Form.Control type="text" className="colored-placeholder" value={value(id)} placeholder={placeholder(id)} disabled={disabled(id)} isInvalid={value(id) !== "" && !isValueValid(value(id))} onChange={e => editTransaction(id, e.target.value)}></Form.Control>
-                                </Form.Group>
-                            )
-                        })
-                }
-            </Modal.Body>
-            <Modal.Footer>
-                <Button disabled={saving} variant="secondary" onClick={() => setShow(false)}>
-                    Cancel
-                </Button>
-                <Button disabled={saving} variant="primary" onClick={() => save()}>
-                    Save
-                </Button>
-            </Modal.Footer>
-        </Modal>
-    );
-}
-
 export function Transactions() {
     const { accountId } = useParams();
     const [searchParams, _setSearchParams] = useSearchParams();
@@ -382,29 +257,6 @@ export function Transactions() {
     }
 
     function refreshTransactions() {
-        function sortTransactions(transactions: JTranscation[]) {
-            return transactions.sort((left, right) => {
-                const date = Date.parse(right.date) - Date.parse(left.date);
-                if (date !== 0) {
-                    return date;
-                }
-                if (left.type !== right.type) {
-                    if (right.type === TransactionType.BALANCE) {
-                        return 1;
-                    } else {
-                        return -1;
-                    }
-                }
-                if (left.value !== right.value) {
-                    return right.value - left.value;
-                }
-                if (left.description !== right.description) {
-                    return left.description.localeCompare(right.description);
-                }
-                return left.accountId.localeCompare(right.accountId);
-            });
-        }
-
         if (accountId !== undefined) {
             get<JTranscation[]>(server, `/api/account/${accountId}/transaction/`)
                 .then(transactions => setTransactions(sortTransactions(transactions)))
@@ -663,19 +515,23 @@ export function Transactions() {
                                 <td></td>
                                 <td>
                                     <ButtonGroup>
-                                        <Button variant="primary" onClick={() => {
-                                            setBulkAddingTransactions(bulkTranscationsDefault({ accountId: Object.keys(accounts)[0] }));
-                                            setShowBulkAdding(true);
-                                        }}>
-                                            <FontAwesomeIcon icon={faCartPlus} />
-                                        </Button>
-                                        <Button variant="warning" onClick={() => {
-                                            setBalanceAddingTransactions({});
-                                            setBalanceAddingDate(today());
-                                            setShowBalanceAdding(true);
-                                        }}>
-                                            <FontAwesomeIcon icon={faBalanceScale} />
-                                        </Button>
+                                        {
+                                            accountId !== undefined ? null : <>
+                                                <Button variant="primary" onClick={() => {
+                                                    setBulkAddingTransactions(bulkTranscationsDefault({ accountId: Object.keys(accounts)[0] }));
+                                                    setShowBulkAdding(true);
+                                                }}>
+                                                    <FontAwesomeIcon icon={faCartPlus} />
+                                                </Button>
+                                                <Button variant="warning" onClick={() => {
+                                                    setBalanceAddingTransactions({});
+                                                    setBalanceAddingDate(today());
+                                                    setShowBalanceAdding(true);
+                                                }}>
+                                                    <FontAwesomeIcon icon={faBalanceScale} />
+                                                </Button>
+                                            </>
+                                        }
                                         <Button variant="success" onClick={() => {
                                             setAddingTransaction({ type: TransactionType.BALANCE, description: "", date: today(), accountId: accountId ?? Object.keys(accounts)[0] });
                                             setShowAdding(true);
@@ -722,7 +578,7 @@ export function Transactions() {
                         setShowBulkAdding(false);
                     });
             }} />
-            <BalanceTransactionModal accounts={accounts} settings={settings} show={showBalanceAdding} setShow={setShowBalanceAdding} date={balanceAddingDate} setDate={setBalanceAddingDate} transactions={transactions} balanceAddingTransactions={balanceAddingTransactions} setBalanceAddingTransactions={setBalanceAddingTransactions} saving={balanceAdding} save={() => {
+            <BalanceTransactionModal accounts={accounts} settings={settings} singleDate={false} show={showBalanceAdding} setShow={setShowBalanceAdding} date={balanceAddingDate} setDate={setBalanceAddingDate} transactions={transactions} balanceAddingTransactions={balanceAddingTransactions} setBalanceAddingTransactions={setBalanceAddingTransactions} saving={balanceAdding} save={() => {
                 setBalanceAdding(true);
                 Promise.all(Object.entries(balanceAddingTransactions).map(([id, value]) => {
                     let transaction = {

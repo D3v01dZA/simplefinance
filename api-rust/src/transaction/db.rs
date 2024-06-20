@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use anyhow::anyhow;
 use chrono::NaiveDate;
 use const_format::formatcp;
@@ -53,7 +54,7 @@ pub fn list_account_transactions(transaction: &rusqlite::Transaction, account_id
         transaction,
         formatcp!("{TRANSACTION_SELECT} WHERE account_id = ?1 OR from_account_id = ?1 {TRANSACTION_ORDERING}"),
         [account_id]
-    );
+    ).map(sort);
 }
 
 pub fn list_transactions(transaction: &rusqlite::Transaction) -> anyhow::Result<Vec<Transaction>> {
@@ -61,7 +62,7 @@ pub fn list_transactions(transaction: &rusqlite::Transaction) -> anyhow::Result<
         transaction,
         formatcp!("{TRANSACTION_SELECT} {TRANSACTION_ORDERING}"),
         [],
-    );
+    ).map(sort);
 }
 
 pub fn cascade_delete_account(transaction: &rusqlite::Transaction, account_id: String) -> anyhow::Result<()> {
@@ -73,6 +74,30 @@ fn normalize_decimal(decimal: &Decimal) -> Decimal {
     let mut cloned = decimal.clone();
     cloned.rescale(2);
     return cloned
+}
+
+fn sort(mut transactions: Vec<Transaction>) -> Vec<Transaction> {
+    transactions.sort_by(|one, two| {
+        // Sort by latest date first here
+        let date = two.date.cmp(&one.date);
+        if date != Ordering::Equal {
+            return date;
+        }
+        let transaction_type = one.transaction_type.cmp(&two.transaction_type);
+        if transaction_type != Ordering::Equal {
+            return transaction_type;
+        }
+        let value = one.value.cmp(&two.value);
+        if value != Ordering::Equal {
+            return value;
+        }
+        let description = one.description.cmp(&two.description);
+        if description != Ordering::Equal {
+            return description;
+        }
+        return one.account_id.cmp(&two.account_id);
+    });
+    return transactions
 }
 
 fn delete_transaction_by_account(transaction: &rusqlite::Transaction, account_id: String) -> anyhow::Result<Vec<Transaction>> {
