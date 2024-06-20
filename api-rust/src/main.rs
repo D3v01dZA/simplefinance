@@ -872,11 +872,13 @@ mod tests {
                 issue_type: IssueType::NoBalance,
                 date: Some(Local::now().date_naive().with_day(1).unwrap()),
                 account_id: Some(loan.id.clone()),
+                from_account_id: None
             },
             Issue {
                 issue_type: IssueType::NoBalance,
                 date: Some(Local::now().date_naive().with_day(1).unwrap()),
                 account_id: Some(savings.id.clone()),
+                from_account_id: None
             },
         ]);
 
@@ -904,16 +906,19 @@ mod tests {
                 issue_type: IssueType::NoBalance,
                 date: Some(Local::now().date_naive().with_day(1).unwrap()),
                 account_id: Some(loan.id.clone()),
+                from_account_id: None
             },
             Issue {
                 issue_type: IssueType::NoBalance,
                 date: Some(Local::now().date_naive().with_day(1).unwrap()),
                 account_id: Some(savings.id.clone()),
+                from_account_id: None
             },
             Issue {
                 issue_type: IssueType::TransferWithoutBalance,
                 account_id: Some(savings.id.clone()),
                 date: Some(NaiveDate::from_ymd_opt(2024, 1, 10).unwrap()),
+                from_account_id: None
             },
         ]);
 
@@ -941,26 +946,31 @@ mod tests {
                 issue_type: IssueType::NoBalance,
                 date: Some(Local::now().date_naive().with_day(1).unwrap()),
                 account_id: Some(loan.id.clone()),
+                from_account_id: None
             },
             Issue {
                 issue_type: IssueType::NoBalance,
                 date: Some(Local::now().date_naive().with_day(1).unwrap()),
                 account_id: Some(savings.id.clone()),
+                from_account_id: None
             },
             Issue {
                 issue_type: IssueType::TransferWithoutBalance,
                 account_id: Some(loan.id.clone()),
                 date: Some(NaiveDate::from_ymd_opt(2024, 1, 11).unwrap()),
+                from_account_id: None
             },
             Issue {
                 issue_type: IssueType::TransferWithoutBalance,
                 account_id: Some(savings.id.clone()),
                 date: Some(NaiveDate::from_ymd_opt(2024, 1, 11).unwrap()),
+                from_account_id: None
             },
             Issue {
                 issue_type: IssueType::TransferWithoutBalance,
                 account_id: Some(savings.id.clone()),
                 date: Some(NaiveDate::from_ymd_opt(2024, 1, 10).unwrap()),
+                from_account_id: None
             },
         ]);
 
@@ -988,21 +998,25 @@ mod tests {
                 issue_type: IssueType::NoBalance,
                 date: Some(Local::now().date_naive().with_day(1).unwrap()),
                 account_id: Some(loan.id.clone()),
+                from_account_id: None
             },
             Issue {
                 issue_type: IssueType::NoBalance,
                 date: Some(Local::now().date_naive().with_day(1).unwrap()),
                 account_id: Some(savings.id.clone()),
+                from_account_id: None
             },
             Issue {
                 issue_type: IssueType::TransferWithoutBalance,
                 account_id: Some(loan.id.clone()),
                 date: Some(NaiveDate::from_ymd_opt(2024, 1, 11).unwrap()),
+                from_account_id: None
             },
             Issue {
                 issue_type: IssueType::TransferWithoutBalance,
                 account_id: Some(savings.id.clone()),
                 date: Some(NaiveDate::from_ymd_opt(2024, 1, 10).unwrap()),
+                from_account_id: None
             },
         ]);
 
@@ -1030,16 +1044,19 @@ mod tests {
                 issue_type: IssueType::NoBalance,
                 date: Some(Local::now().date_naive().with_day(1).unwrap()),
                 account_id: Some(loan.id.clone()),
+                from_account_id: None
             },
             Issue {
                 issue_type: IssueType::NoBalance,
                 date: Some(Local::now().date_naive().with_day(1).unwrap()),
                 account_id: Some(savings.id.clone()),
+                from_account_id: None
             },
             Issue {
                 issue_type: IssueType::TransferWithoutBalance,
                 account_id: Some(savings.id.clone()),
                 date: Some(NaiveDate::from_ymd_opt(2024, 1, 10).unwrap()),
+                from_account_id: None
             },
         ]);
 
@@ -1067,11 +1084,13 @@ mod tests {
                 issue_type: IssueType::NoBalance,
                 date: Some(Local::now().date_naive().with_day(1).unwrap()),
                 account_id: Some(loan.id.clone()),
+                from_account_id: None
             },
             Issue {
                 issue_type: IssueType::NoBalance,
                 date: Some(Local::now().date_naive().with_day(1).unwrap()),
                 account_id: Some(savings.id.clone()),
+                from_account_id: None
             },
         ]);
 
@@ -1099,6 +1118,7 @@ mod tests {
                 issue_type: IssueType::NoBalance,
                 date: Some(Local::now().date_naive().with_day(1).unwrap()),
                 account_id: Some(loan.id.clone()),
+                from_account_id: None
             },
         ]);
     }

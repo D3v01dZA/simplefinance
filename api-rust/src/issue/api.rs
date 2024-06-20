@@ -63,7 +63,8 @@ pub async fn list_issues(db: web::Data<Pool>) -> Result<HttpResponse, Error> {
 
             calculate_transfer_without_balances(transfer_without_balance_ignored_account_ids, &mut issues, account_ids_with_transfers_by_date, &mut dates_with_balances_by_account_ids);
             calculate_no_balances(no_regular_balance_account_ids, &accounts, &mut issues, dates_with_balances_by_account_ids);
-            calculate_no_transfers(&transactions, repeating_transfers, &mut issues);
+            calculate_no_transfers(transactions, repeating_transfers, &mut issues);
+
             sort_issues(accounts, &mut issues);
             HttpResponse::Ok().json(issues)
         })
@@ -73,11 +74,11 @@ pub async fn list_issues(db: web::Data<Pool>) -> Result<HttpResponse, Error> {
         })
 }
 
-fn calculate_no_transfers(transactions: &Vec<Transaction>, repeating_transfers: Vec<RepeatingTransfer>, mut issues: &mut Vec<Issue>) {
+fn calculate_no_transfers(transactions: Vec<Transaction>, repeating_transfers: Vec<RepeatingTransfer>, issues: &mut Vec<Issue>) {
     for repeating_transfer in repeating_transfers {
         let date = find_latest_repeat_date(&repeating_transfer);
         let mut pending_account_ids: HashSet<String> = HashSet::from_iter(repeating_transfer.to_account_ids.clone().iter().map(|it| it.clone()));
-        for transaction in &transactions {
+        for transaction in transactions.clone() {
             if transaction.transaction_type != TransactionType::Transfer
                 || transaction.date != date
                 || !transaction.from_account_id.eq(&Some(repeating_transfer.from_account_id.clone()))
