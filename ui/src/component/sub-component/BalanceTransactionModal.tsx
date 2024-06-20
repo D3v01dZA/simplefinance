@@ -12,7 +12,7 @@ export interface BalanceAddingTranscations {
 export function BalanceTransactionModal({
     accounts,
     settings,
-    singleDate,
+    specificAccounts,
     show,
     setShow,
     date,
@@ -25,7 +25,7 @@ export function BalanceTransactionModal({
 }: {
     accounts: IndexedAccounts,
     settings: IndexedSettings,
-    singleDate: boolean,
+    specificAccounts?: string[],
     show: boolean,
     setShow: (value: boolean) => void,
     date: string,
@@ -92,18 +92,12 @@ export function BalanceTransactionModal({
                 {
                     Object.values(accounts)
                         .filter(account => account.type !== AccountType.EXTERNAL)
-                        .filter(account => !(settings.NO_REGULAR_BALANCE_ACCOUNTS?.value ?? "").includes(account.id))
                         .map(account => account.id)
                         .filter(id => {
-                            if (singleDate === false) {
-                                return true;
+                            if (specificAccounts === undefined) {
+                                return !(settings.NO_REGULAR_BALANCE_ACCOUNTS?.value ?? "").includes(id);
                             } else {
-                                let transaction = mappedTransactions[id];
-                                if (transaction === undefined) {
-                                    return false;
-                                } else {
-                                    return transaction.date !== date;
-                                }
+                                return specificAccounts.includes(id);
                             }
                         })
                         .map(id => {

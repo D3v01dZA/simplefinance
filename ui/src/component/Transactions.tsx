@@ -578,7 +578,7 @@ export function Transactions() {
                         setShowBulkAdding(false);
                     });
             }} />
-            <BalanceTransactionModal accounts={accounts} settings={settings} singleDate={false} show={showBalanceAdding} setShow={setShowBalanceAdding} date={balanceAddingDate} setDate={setBalanceAddingDate} transactions={transactions} balanceAddingTransactions={balanceAddingTransactions} setBalanceAddingTransactions={setBalanceAddingTransactions} saving={balanceAdding} save={() => {
+            <BalanceTransactionModal accounts={accounts} settings={settings} specificAccounts={undefined} show={showBalanceAdding} setShow={setShowBalanceAdding} date={balanceAddingDate} setDate={setBalanceAddingDate} transactions={transactions} balanceAddingTransactions={balanceAddingTransactions} setBalanceAddingTransactions={setBalanceAddingTransactions} saving={balanceAdding} save={() => {
                 setBalanceAdding(true);
                 Promise.all(Object.entries(balanceAddingTransactions).map(([id, value]) => {
                     let transaction = {

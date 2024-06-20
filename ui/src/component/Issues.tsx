@@ -50,6 +50,7 @@ export function Issues() {
     const [balanceAdding, setBalanceAdding] = useState(false);
     const [balanceAddingDate, setBalanceAddingDate] = useState(today());
     const [balanceAddingTransactions, setBalanceAddingTransactions] = useState<BalanceAddingTranscations>({});
+    const [specificAccounts, setSpecificAccounts] = useState<string[]>([]);
 
     function refresh() {
         function sortIssues(issues: JIssue[]) {
@@ -142,17 +143,15 @@ export function Issues() {
                                     <td><AccountName accounts={accounts} accountId={issue.accountId} /></td>
                                     <td>
                                         <ButtonGroup>
-                                            {
-                                                issue.type === IssueType.NO_BALANCE ? <>
-                                                    <Button variant="warning" onClick={() => {
-                                                        setBalanceAddingTransactions({});
-                                                        setBalanceAddingDate(issue.date);
-                                                        setShowBalanceAdding(true);
-                                                    }}>
-                                                        <FontAwesomeIcon icon={faBalanceScale} />
-                                                    </Button>
-                                                </> : null
-                                            }
+                                            <Button variant="warning" onClick={() => {
+                                                setBalanceAddingTransactions({});
+                                                setBalanceAddingDate(issue.date);
+                                                let accountIds = issues.filter(potential => potential.date === issue.date).map(potential => potential.accountId);
+                                                setSpecificAccounts(accountIds);
+                                                setShowBalanceAdding(true);
+                                            }}>
+                                                <FontAwesomeIcon icon={faBalanceScale} />
+                                            </Button>
                                             <Button variant="primary" onClick={() => {
                                                 setTransaction({
                                                     date: issue.date,
@@ -182,7 +181,7 @@ export function Issues() {
                             });
                     }
                     } />
-                    <BalanceTransactionModal accounts={accounts} settings={settings} singleDate={true} show={showBalanceAdding} setShow={setShowBalanceAdding} date={balanceAddingDate} setDate={setBalanceAddingDate} transactions={transactions} balanceAddingTransactions={balanceAddingTransactions} setBalanceAddingTransactions={setBalanceAddingTransactions} saving={balanceAdding} save={() => {
+                    <BalanceTransactionModal accounts={accounts} settings={settings} specificAccounts={specificAccounts} show={showBalanceAdding} setShow={setShowBalanceAdding} date={balanceAddingDate} setDate={setBalanceAddingDate} transactions={transactions} balanceAddingTransactions={balanceAddingTransactions} setBalanceAddingTransactions={setBalanceAddingTransactions} saving={balanceAdding} save={() => {
                         setBalanceAdding(true);
                         Promise.all(Object.entries(balanceAddingTransactions).map(([id, value]) => {
                             let transaction = {
@@ -198,6 +197,7 @@ export function Issues() {
                             .finally(() => {
                                 setBalanceAdding(false);
                                 setShowBalanceAdding(false);
+                                setSpecificAccounts([]);
                             });
                     }} />
                 </Col>
