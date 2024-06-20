@@ -4,7 +4,7 @@ use actix_web::{Error, error, get, HttpResponse, web};
 use chrono::{Datelike, Local, NaiveDate};
 use log::{error, info};
 use crate::account::db::list_accounts;
-use crate::account::schema::Account;
+use crate::account::schema::{Account, AccountType};
 use crate::db::{do_in_transaction, Pool};
 use crate::issue::schema::{Issue, IssueType};
 use crate::setting::db::{get_setting_by_key};
@@ -85,7 +85,7 @@ pub async fn list_issues(db: web::Data<Pool>) -> Result<HttpResponse, Error> {
             // Just look at the end of last month for missing balances, don't go further back because it becomes a meal
             let first_day_of_this_month = Local::now().date_naive().with_day(1).unwrap();
             for account_id in accounts.keys() {
-                if !no_regular_balance_account_ids.contains(account_id) {
+                if !no_regular_balance_account_ids.contains(account_id) && accounts.get(account_id).unwrap().account_type != AccountType::External {
                     let dates_with_balances = dates_with_balances_by_account_ids.get(account_id);
                     if dates_with_balances.is_none() { // No balances for the account, it's always wrong
                         issues.push(Issue {
