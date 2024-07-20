@@ -37,6 +37,8 @@ enum Category {
 
 #[derive(Debug, Clone, PartialEq, Eq, Display, EnumIter, Hash)]
 enum TotalType {
+    #[strum(serialize = "INCOME", to_string = "INCOME")]
+    Income,
     #[strum(serialize = "NET", to_string = "NET")]
     Net,
     #[strum(serialize = "CASH", to_string = "CASH")]
@@ -57,16 +59,14 @@ enum TotalType {
 
 #[derive(Debug, Clone, PartialEq, Eq, Display, EnumIter, Hash)]
 enum FlowGroupType {
+    #[strum(serialize = "INCOME", to_string = "INCOME")]
+    Income,
     #[strum(serialize = "CASH", to_string = "CASH")]
     Cash,
     #[strum(serialize = "GAIN", to_string = "GAIN")]
     Gain,
-    #[strum(serialize = "RETIREMENT", to_string = "RETIREMENT")]
-    Retirement,
     #[strum(serialize = "APPRECIATION", to_string = "APPRECIATION")]
     Appreciation,
-    #[strum(serialize = "INTEREST", to_string = "INTEREST")]
-    Interest,
 }
 
 #[get("/api/statistics/{period}/{category}/")]
@@ -351,7 +351,7 @@ fn total_type_from_account_type(account_type: &AccountType) -> Option<TotalType>
         AccountType::Investment => Some(TotalType::LongTermAsset),
         AccountType::Retirement => Some(TotalType::Retirement),
         AccountType::PhysicalAsset => Some(TotalType::PhysicalAsset),
-        AccountType::External => None,
+        AccountType::External => Some(TotalType::Income),
     }
 }
 
@@ -362,9 +362,10 @@ fn flow_grouping_type_from_total_type(total_type: &TotalType) -> Option<FlowGrou
         TotalType::ShortTermAsset => Some(FlowGroupType::Gain),
         TotalType::LongTermAsset => Some(FlowGroupType::Gain),
         TotalType::PhysicalAsset => Some(FlowGroupType::Appreciation),
-        TotalType::Retirement => Some(FlowGroupType::Retirement),
-        TotalType::ShortTermLiability => Some(FlowGroupType::Interest),
-        TotalType::LongTermLiability => Some(FlowGroupType::Interest)
+        TotalType::ShortTermLiability => Some(FlowGroupType::Gain),
+        TotalType::LongTermLiability => Some(FlowGroupType::Gain),
+        TotalType::Retirement => Some(FlowGroupType::Gain),
+        TotalType::Income => Some(FlowGroupType::Income),
     }
 }
 

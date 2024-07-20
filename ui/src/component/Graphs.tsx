@@ -7,7 +7,6 @@ import { CartesianGrid, Layer, Legend, Line, LineChart, Rectangle, Sankey, Toolt
 import React from "react";
 import { IndexedAccounts, selectAccounts } from "../app/accountSlice";
 import { useSearchParams } from "react-router-dom";
-import { current } from "@reduxjs/toolkit";
 
 interface JValue {
     name: string,
@@ -35,12 +34,10 @@ enum GraphType {
 }
 
 enum FlowGroupingType {
-    EXTERNAL = "EXTERNAL",
+    INCOME = "INCOME",
     CASH = "CASH",
     GAIN = "GAIN",
-    RETIREMENT = "RETIREMENT",
     APPRECIATION = "APPRECIATION",
-    INTEREST = "INTEREST",
 }
 
 enum DateType {
@@ -55,6 +52,7 @@ enum DataType {
 }
 
 enum TotalType {
+    INCOME = "INCOME",
     NET = "NET",
     CASH = "CASH",
     SHORT_TERM_ASSET = "SHORT_TERM_ASSET",
