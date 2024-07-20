@@ -14,7 +14,7 @@ use crate::db::{do_in_transaction, Pool};
 use crate::statistics::api::Period::{Monthly, Weekly, Yearly};
 use crate::statistics::schema::{Statistic, Value};
 use crate::transaction::db::list_transactions;
-use crate::transaction::schema::{Transaction};
+use crate::transaction::schema::Transaction;
 use crate::transaction::schema::TransactionType::{Balance, Transfer};
 use crate::util::SliceDisplay;
 
@@ -85,7 +85,7 @@ pub async fn calculate_statistics(db: web::Data<Pool>, path: web::Path<(String, 
                 return vec![];
             }
             transactions.sort_by(|one, two| one.date.cmp(&two.date));
-            let dates = dates(period, Local::now().date_naive());
+            let dates = dates(period, Local::now().date_naive(), transactions[0].date);
             match category {
                 Category::AccountBalances => calculate_account_balances(transactions, accounts, dates),
                 Category::AccountTransfers => calculate_account_transfers(transactions, accounts, dates),
@@ -368,9 +368,9 @@ fn flow_grouping_type_from_total_type(total_type: &TotalType) -> Option<FlowGrou
     }
 }
 
-fn dates(period: Period, start: NaiveDate) -> Vec<NaiveDate> {
-    fn generate<T: Fn(NaiveDate) -> NaiveDate, U: FnMut(NaiveDate) -> NaiveDate>(period: Period, start: NaiveDate, origin: T, mut iteration: U) -> Vec<NaiveDate> {
-        let mut current = origin(start);
+fn dates(period: Period, start: NaiveDate, end: NaiveDate) -> Vec<NaiveDate> {
+    fn generate<U: FnMut(NaiveDate) -> NaiveDate>(period: Period, start: NaiveDate, end: NaiveDate, mut iteration: U) -> Vec<NaiveDate> {
+        let mut current = end;
         let mut dates = vec![];
         while current <= start {
             dates.push(current);
@@ -379,13 +379,13 @@ fn dates(period: Period, start: NaiveDate) -> Vec<NaiveDate> {
         debug!("From [{:?}] [{}] generated [{}]", period, start, SliceDisplay(dates.as_slice()));
         return dates;
     }
-    info!("Start date [{:?}] [{}]", period, start);
+    info!("Generating dates [{:?}] [{}] [{}]", period, start, end);
     match period {
         Weekly => {
             generate(
                 Weekly,
                 start.checked_sub_days(Days::new(start.weekday().num_days_from_monday() as u64)).unwrap().checked_add_days(Days::new(7)).unwrap(),
-                |start| start.checked_sub_days(Days::new(11 * 7)).unwrap(),
+                end.checked_sub_days(Days::new(end.weekday().num_days_from_monday() as u64)).unwrap(),
                 |week| week.checked_add_days(Days::new(7)).unwrap(),
             )
         }
@@ -393,7 +393,7 @@ fn dates(period: Period, start: NaiveDate) -> Vec<NaiveDate> {
             generate(
                 Monthly,
                 start.with_day(1).unwrap().checked_add_months(Months::new(1)).unwrap(),
-                |start| start.checked_sub_months(Months::new(11)).unwrap(),
+                end.with_day(1).unwrap(),
                 |month| month.checked_add_months(Months::new(1)).unwrap(),
             )
         }
@@ -401,7 +401,7 @@ fn dates(period: Period, start: NaiveDate) -> Vec<NaiveDate> {
             generate(
                 Yearly,
                 start.with_day(1).unwrap().with_month(1).unwrap().checked_add_months(Months::new(12)).unwrap(),
-                |start| start.checked_sub_months(Months::new(9 * 12)).unwrap(),
+                end.with_day(1).unwrap().with_month(1).unwrap(),
                 |year| year.checked_add_months(Months::new(12)).unwrap(),
             )
         }
@@ -415,7 +415,7 @@ mod tests {
 
     #[test]
     fn test_months() {
-        let months = dates(Monthly, NaiveDate::from_ymd_opt(2024, 3, 4).unwrap());
+        let months = dates(Monthly, NaiveDate::from_ymd_opt(2024, 3, 4).unwrap(), NaiveDate::from_ymd_opt(2023, 5, 3).unwrap());
         assert_eq!(months, vec![
             NaiveDate::from_ymd_opt(2023, 05, 01).unwrap(),
             NaiveDate::from_ymd_opt(2023, 06, 01).unwrap(),
@@ -434,7 +434,7 @@ mod tests {
 
     #[test]
     fn test_weeks() {
-        let weeks = dates(Weekly, NaiveDate::from_ymd_opt(2024, 5, 12).unwrap());
+        let weeks = dates(Weekly, NaiveDate::from_ymd_opt(2024, 5, 12).unwrap(), NaiveDate::from_ymd_opt(2024, 2, 28).unwrap());
         assert_eq!(weeks, vec![
             NaiveDate::from_ymd_opt(2024, 2, 26).unwrap(),
             NaiveDate::from_ymd_opt(2024, 3, 4).unwrap(),
@@ -450,7 +450,7 @@ mod tests {
             NaiveDate::from_ymd_opt(2024, 5, 13).unwrap(),
         ]);
 
-        let weeks = dates(Weekly, NaiveDate::from_ymd_opt(2024, 5, 13).unwrap());
+        let weeks = dates(Weekly, NaiveDate::from_ymd_opt(2024, 5, 13).unwrap(), NaiveDate::from_ymd_opt(2024, 3, 4).unwrap());
         assert_eq!(weeks, vec![
             NaiveDate::from_ymd_opt(2024, 3, 4).unwrap(),
             NaiveDate::from_ymd_opt(2024, 3, 11).unwrap(),
@@ -473,7 +473,7 @@ mod tests {
 
     #[test]
     fn test_years() {
-        let years = dates(Yearly, NaiveDate::from_ymd_opt(2024, 5, 13).unwrap());
+        let years = dates(Yearly, NaiveDate::from_ymd_opt(2024, 5, 13).unwrap(), NaiveDate::from_ymd_opt(2016, 3, 1).unwrap());
         assert_eq!(years, vec![
             NaiveDate::from_ymd_opt(2016, 1, 1).unwrap(),
             NaiveDate::from_ymd_opt(2017, 1, 1).unwrap(),

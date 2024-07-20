@@ -93,7 +93,7 @@ function url(dateType: DateType, viewType: ViewType) {
             return "/api/statistics/monthly" + subpath;
         case DateType.WEEKLY:
             return "/api/statistics/weekly" + subpath;
-        case DateType.YEARLY: 
+        case DateType.YEARLY:
             return "/api/statistics/yearly" + subpath;
     }
 }
@@ -463,7 +463,7 @@ function SankeyNode({ x, y, width, height, index, payload, containerWidth, }: an
                     stroke="#333"
                     strokeOpacity="0.5"
                 >
-                    {}
+                    { }
                 </text>
             </Layer>
         )
@@ -507,6 +507,8 @@ export function Graphs() {
 
     const [graphType, _setGraphType] = useState(DEFAULT_GRAPH_TYPE);
     const [sankeyDate, setSankeyDate] = useState("");
+    const [lineStartDate, setLineStartDate] = useState("");
+    const [lineEndDate, setLineEndDate] = useState("");
     const [viewType, _setViewType] = useState(DEFAULT_VIEW_TYPE);
     const [dateType, _setDateType] = useState(DEFAULT_DATE_TYPE);
     const [dataType, _setDataType] = useState(DEFAULT_DATA_TYPE);
@@ -616,11 +618,18 @@ export function Graphs() {
     }, [viewType]);
 
     useEffect(() => {
-        const data = statistics.map(statistic => calculateData(dataType, hiddenItems, statistic));
+        const startDate = lineStartDate === "" ? statistics.length === 0 ? new Date() : new Date(statistics[Math.max(0, statistics.length - 10)].date) : new Date(lineStartDate);
+        const endDate = lineEndDate === "" ? statistics.length === 0 ? new Date() : new Date(statistics[Math.max(statistics.length - 1)].date) : new Date(lineEndDate);
+        const data = statistics
+            .filter(statistic => {
+                const date = new Date(statistic.date);
+                return date >= startDate && date <= endDate;
+            })
+            .map(statistic => calculateData(dataType, hiddenItems, statistic));
         setData(data);
         const sankeyData = calculateSankey(viewType, dataType, accounts, statistics.find((value) => value.date === sankeyDate)!);
         setSankey(sankeyData);
-    }, [statistics, dataType, viewType, hiddenItems, sankeyDate]);
+    }, [statistics, lineStartDate, lineEndDate, dataType, viewType, hiddenItems, sankeyDate]);
 
     return (
         <Container>
@@ -635,7 +644,24 @@ export function Graphs() {
                 </Col>
             </Row>
             {
-                graphType !== GraphType.SANKEY ? <></> : <Row xs={1} md={1} xl={1}>
+                graphType !== GraphType.SANKEY ? <Row xs={1} md={2} xl={2}>
+                    <Col>
+                        <Form.Group>
+                            <Form.Label>Start Date</Form.Label>
+                            <Form.Select value={lineStartDate} onChange={e => setLineStartDate(e.target.value)}>
+                                {[<option value=""></option>].concat(statistics.map(balance => <option key={balance.date} value={balance.date}>{balance.date}</option>))}
+                            </Form.Select>
+                        </Form.Group>
+                    </Col>
+                    <Col>
+                        <Form.Group>
+                            <Form.Label>End Date</Form.Label>
+                            <Form.Select value={lineEndDate} onChange={e => setLineEndDate(e.target.value)}>
+                                {[<option value=""></option>].concat(statistics.map(balance => <option key={balance.date} value={balance.date}>{balance.date}</option>))}
+                            </Form.Select>
+                        </Form.Group>
+                    </Col>
+                </Row> : <Row xs={1} md={1} xl={1}>
                     <Col>
                         <Form.Group>
                             <Form.Label>Date</Form.Label>
@@ -695,7 +721,7 @@ export function Graphs() {
                             }} />
                             <Tooltip formatter={(value: any) => formattedAmount(value)} />
                         </LineChart> : <Sankey width={(widthRef.current?.offsetWidth ?? 0) * 0.95} height={vh * 0.7} data={sankey} node={<SankeyNode />} link={<SankeyLink />}>
-                            <Tooltip formatter={(value: any) => formattedAmount(value)}/>
+                            <Tooltip formatter={(value: any) => formattedAmount(value)} />
                         </Sankey>
                     }
                 </Col>
