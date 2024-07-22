@@ -59,6 +59,8 @@ enum TotalType {
 
 #[derive(Debug, Clone, PartialEq, Eq, Display, EnumIter, Hash)]
 enum FlowGroupType {
+    #[strum(serialize = "NET", to_string = "NET")]
+    Net,
     #[strum(serialize = "INCOME", to_string = "INCOME")]
     Income,
     #[strum(serialize = "CASH", to_string = "CASH")]
@@ -237,12 +239,9 @@ fn accumulate_totals(map: &HashMap<String, Decimal>, account_by_account_id: &Has
     let mut net = value_by_total.remove(&TotalType::Net).unwrap();
     for (account_id, value) in map.iter() {
         let total_type = total_type_from_account(&account_by_account_id.get(account_id).unwrap());
-        if total_type.is_some() {
-            let total_type = total_type.unwrap();
-            let transfer_value = value_by_total.remove(&total_type).unwrap();
-            value_by_total.insert(total_type.clone(), value + transfer_value);
-            net = net + value;
-        }
+        let transfer_value = value_by_total.remove(&total_type).unwrap();
+        value_by_total.insert(total_type.clone(), value + transfer_value);
+        net = net + value;
     }
     value_by_total.insert(TotalType::Net, net);
     return value_by_total;
@@ -265,14 +264,9 @@ fn add_balance(mut map: HashMap<String, Decimal>, transaction: &Transaction) -> 
 fn calculate_flow_total(balances: &HashMap<TotalType, Decimal>, transfers: &HashMap<TotalType, Decimal>) -> HashMap<TotalType, Decimal> {
     let mut flow_total: HashMap<TotalType, Decimal> = HashMap::new();
     for total_type in TotalType::iter() {
-        match total_type {
-            TotalType::Net => {}
-            _ => {
-                let balance = balances.get(&total_type).unwrap();
-                let transfer = transfers.get(&total_type).unwrap();
-                flow_total.insert(total_type, balance - transfer);
-            }
-        }
+        let balance = balances.get(&total_type).unwrap();
+        let transfer = transfers.get(&total_type).unwrap();
+        flow_total.insert(total_type, balance - transfer);
     }
     return flow_total;
 }
@@ -283,13 +277,10 @@ fn calculate_flow_grouping_total(balances: &HashMap<TotalType, Decimal>, transfe
         .collect();
     for total_type in TotalType::iter() {
         let flow_grouping = flow_grouping_type_from_total_type(&total_type);
-        if flow_grouping.is_some() {
             let balance = balances.get(&total_type).unwrap();
             let transfer = transfers.get(&total_type).unwrap();
-            let flow_grouping = flow_grouping.unwrap();
             let value = flow_grouping_total.remove(&flow_grouping).unwrap();
             flow_grouping_total.insert(flow_grouping, value + (balance - transfer));
-        }
     }
     return flow_grouping_total;
 }
@@ -338,34 +329,34 @@ fn extract_params(path: (String, String)) -> anyhow::Result<(Period, Category)> 
     return Ok((period, category));
 }
 
-fn total_type_from_account(account: &Account) -> Option<TotalType> {
+fn total_type_from_account(account: &Account) -> TotalType {
     return total_type_from_account_type(&account.account_type);
 }
 
-fn total_type_from_account_type(account_type: &AccountType) -> Option<TotalType> {
+fn total_type_from_account_type(account_type: &AccountType) -> TotalType {
     match account_type {
-        AccountType::Savings => Some(TotalType::ShortTermAsset),
-        AccountType::Checking => Some(TotalType::Cash),
-        AccountType::Loan => Some(TotalType::LongTermLiability),
-        AccountType::CreditCard => Some(TotalType::ShortTermLiability),
-        AccountType::Investment => Some(TotalType::LongTermAsset),
-        AccountType::Retirement => Some(TotalType::Retirement),
-        AccountType::PhysicalAsset => Some(TotalType::PhysicalAsset),
-        AccountType::External => Some(TotalType::Income),
+        AccountType::Savings => TotalType::ShortTermAsset,
+        AccountType::Checking => TotalType::Cash,
+        AccountType::Loan => TotalType::LongTermLiability,
+        AccountType::CreditCard => TotalType::ShortTermLiability,
+        AccountType::Investment => TotalType::LongTermAsset,
+        AccountType::Retirement => TotalType::Retirement,
+        AccountType::PhysicalAsset => TotalType::PhysicalAsset,
+        AccountType::External => TotalType::Income,
     }
 }
 
-fn flow_grouping_type_from_total_type(total_type: &TotalType) -> Option<FlowGroupType> {
+fn flow_grouping_type_from_total_type(total_type: &TotalType) -> FlowGroupType {
     match total_type {
-        TotalType::Net => None,
-        TotalType::Cash => Some(FlowGroupType::Cash),
-        TotalType::ShortTermAsset => Some(FlowGroupType::Gain),
-        TotalType::LongTermAsset => Some(FlowGroupType::Gain),
-        TotalType::PhysicalAsset => Some(FlowGroupType::Appreciation),
-        TotalType::ShortTermLiability => Some(FlowGroupType::Gain),
-        TotalType::LongTermLiability => Some(FlowGroupType::Gain),
-        TotalType::Retirement => Some(FlowGroupType::Gain),
-        TotalType::Income => Some(FlowGroupType::Income),
+        TotalType::Net => FlowGroupType::Net,
+        TotalType::Cash => FlowGroupType::Cash,
+        TotalType::ShortTermAsset => FlowGroupType::Gain,
+        TotalType::LongTermAsset => FlowGroupType::Gain,
+        TotalType::PhysicalAsset => FlowGroupType::Appreciation,
+        TotalType::ShortTermLiability => FlowGroupType::Gain,
+        TotalType::LongTermLiability => FlowGroupType::Gain,
+        TotalType::Retirement => FlowGroupType::Gain,
+        TotalType::Income => FlowGroupType::Income,
     }
 }
 

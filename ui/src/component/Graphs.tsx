@@ -34,6 +34,7 @@ enum GraphType {
 }
 
 enum FlowGroupingType {
+    NET = "NET",
     INCOME = "INCOME",
     CASH = "CASH",
     GAIN = "GAIN",
@@ -96,8 +97,8 @@ function url(dateType: DateType, viewType: ViewType) {
     }
 }
 
-function dull(id: string, hiddenItems: Set<string>, color: string) {
-    if (hiddenItems.has(id)) {
+function dull(id: string, shownLines: Set<string>, color: string) {
+    if (shownLines.size !== 0 && !shownLines.has(id)) {
         return "#010101";
     }
     return color;
@@ -122,7 +123,7 @@ interface SankeyData {
 
 const EMPTY_SANKEY = { "nodes": [{ "name": "EMPTY", "color": "" }, { "name": "EMPTY", "color": "" },], "links": [{ "source": 0, "target": 1, "value": 1, "color": "" },] }
 
-function lines(viewType: ViewType, hiddenItems: Set<string>, accounts: IndexedAccounts) {
+function lines(viewType: ViewType, shownLines: Set<string>, accounts: IndexedAccounts) {
     switch (viewType) {
         case ViewType.TOTAL_BALANCE:
             const totalColorPalette = generateColorPalette(1 + Object.values(TotalType).length);
@@ -132,7 +133,7 @@ function lines(viewType: ViewType, hiddenItems: Set<string>, accounts: IndexedAc
                         key={totalType}
                         type="monotone"
                         dataKey={totalType}
-                        stroke={dull(totalType, hiddenItems, totalColorPalette[index + 1])}
+                        stroke={dull(totalType, shownLines, totalColorPalette[index + 1])}
                         name={titleCase(totalType)}
                     />)}
                 </React.Fragment>
@@ -145,7 +146,7 @@ function lines(viewType: ViewType, hiddenItems: Set<string>, accounts: IndexedAc
                         key={totalType}
                         type="monotone"
                         dataKey={totalType}
-                        stroke={dull(totalType, hiddenItems, totalsTransferColorPalette[index])}
+                        stroke={dull(totalType, shownLines, totalsTransferColorPalette[index])}
                         name={titleCase(totalType)}
                     />)}
                 </React.Fragment>
@@ -158,7 +159,7 @@ function lines(viewType: ViewType, hiddenItems: Set<string>, accounts: IndexedAc
                         key={account.id}
                         type="monotone"
                         dataKey={account.id}
-                        stroke={dull(account.id, hiddenItems, accountColorPalette[index])}
+                        stroke={dull(account.id, shownLines, accountColorPalette[index])}
                         name={`${account.name} (${titleCase(account.type)})`}
                     />)}
                 </React.Fragment>
@@ -171,7 +172,7 @@ function lines(viewType: ViewType, hiddenItems: Set<string>, accounts: IndexedAc
                         key={account.id}
                         type="monotone"
                         dataKey={account.id}
-                        stroke={dull(account.id, hiddenItems, accountTransfersColorPalette[index])}
+                        stroke={dull(account.id, shownLines, accountTransfersColorPalette[index])}
                         name={`${account.name} (${titleCase(account.type)})`}
                     />)}
                 </React.Fragment>
@@ -184,7 +185,7 @@ function lines(viewType: ViewType, hiddenItems: Set<string>, accounts: IndexedAc
                         key={totalType}
                         type="monotone"
                         dataKey={totalType}
-                        stroke={dull(totalType, hiddenItems, flowColorPalette[index + 1])}
+                        stroke={dull(totalType, shownLines, flowColorPalette[index + 1])}
                         name={titleCase(totalType)}
                     />)}
                 </React.Fragment>
@@ -197,7 +198,7 @@ function lines(viewType: ViewType, hiddenItems: Set<string>, accounts: IndexedAc
                         key={flowGroupingType}
                         type="monotone"
                         dataKey={flowGroupingType}
-                        stroke={dull(flowGroupingType, hiddenItems, flowGoupingColorPalette[index + 1])}
+                        stroke={dull(flowGroupingType, shownLines, flowGoupingColorPalette[index + 1])}
                         name={titleCase(flowGroupingType)}
                     />)}
                 </React.Fragment>
@@ -205,9 +206,9 @@ function lines(viewType: ViewType, hiddenItems: Set<string>, accounts: IndexedAc
     }
 }
 
-function calculateBalances(hiddenItems: Set<string>, balances: JStatistic, dataType: DataType) {
+function calculateBalances(shownLines: Set<string>, balances: JStatistic, dataType: DataType) {
     const main = balances.values.reduce<any>((acc, current) => {
-        if (!hiddenItems.has(current.name)) {
+        if (shownLines.size === 0 || shownLines.has(current.name)) {
             if (dataType === DataType.NET) {
                 acc[current.name] = current.value;
             } else {
@@ -221,9 +222,9 @@ function calculateBalances(hiddenItems: Set<string>, balances: JStatistic, dataT
     }
 }
 
-function calculateData(dataType: DataType, hiddenItems: Set<string>, statistic: JStatistic): any {
+function calculateData(dataType: DataType, shownLines: Set<string>, statistic: JStatistic): any {
     const date = statistic.date.substring(2, statistic.date.length);
-    let calculated: any = calculateBalances(hiddenItems, statistic, dataType);
+    let calculated: any = calculateBalances(shownLines, statistic, dataType);
     return {
         ...calculated,
         date
@@ -511,7 +512,7 @@ export function Graphs() {
     const [dateType, _setDateType] = useState(DEFAULT_DATE_TYPE);
     const [dataType, _setDataType] = useState(DEFAULT_DATA_TYPE);
 
-    const [hiddenItems, _setHiddenItems] = useState(new Set<string>());
+    const [shownLines, _setShownLines] = useState(new Set<string>());
 
     const [data, setData] = useState<any[]>([]);
     const [sankey, setSankey] = useState<SankeyData>(EMPTY_SANKEY)
@@ -561,11 +562,11 @@ export function Graphs() {
         }
     }
 
-    function setHiddenItems(hiddenItems: Set<string>) {
-        if (hiddenItems.size === 0) {
-            setSearchParams("hiddenItems", undefined);
+    function setShownLines(shownLines: Set<string>) {
+        if (shownLines.size === 0) {
+            setSearchParams("shownLines", undefined);
         } else {
-            setSearchParams("hiddenItems", [...hiddenItems]);
+            setSearchParams("shownLines", [...shownLines]);
         }
     }
 
@@ -594,11 +595,11 @@ export function Graphs() {
         } else {
             _setDataType(DEFAULT_DATA_TYPE);
         }
-        const _hiddenItems = searchParams.getAll("hiddenItems");
-        if (_hiddenItems !== null) {
-            _setHiddenItems(new Set(_hiddenItems));
+        const _shownLines = searchParams.getAll("shownLines");
+        if (_shownLines !== null) {
+            _setShownLines(new Set(_shownLines));
         } else {
-            _setHiddenItems(new Set());
+            _setShownLines(new Set());
         }
     }, [searchParams]);
 
@@ -612,7 +613,7 @@ export function Graphs() {
     }, [dateType, viewType]);
 
     useEffect(() => {
-        setHiddenItems(new Set());
+        setShownLines(new Set());
     }, [viewType]);
 
     useEffect(() => {
@@ -623,11 +624,11 @@ export function Graphs() {
                 const date = new Date(statistic.date);
                 return date >= startDate && date <= endDate;
             })
-            .map(statistic => calculateData(dataType, hiddenItems, statistic));
+            .map(statistic => calculateData(dataType, shownLines, statistic));
         setData(data);
         const sankeyData = calculateSankey(viewType, dataType, accounts, statistics.find((value) => value.date === sankeyDate)!);
         setSankey(sankeyData);
-    }, [statistics, lineStartDate, lineEndDate, dataType, viewType, hiddenItems, sankeyDate]);
+    }, [statistics, lineStartDate, lineEndDate, dataType, viewType, shownLines, sankeyDate]);
 
     return (
         <Container>
@@ -700,20 +701,20 @@ export function Graphs() {
                 <Col>
                     {
                         graphType === GraphType.LINE ? <LineChart width={(widthRef.current?.offsetWidth ?? 0) * 0.95} height={vh * 0.7} margin={{ top: 40, left: 65, right: 5, bottom: 5 }} data={data}>
-                            {lines(viewType, hiddenItems, accounts)}
+                            {lines(viewType, shownLines, accounts)}
                             <CartesianGrid stroke="#ccc" />
                             <XAxis dataKey="date" />~
                             <YAxis tickFormatter={(value: any) => formattedUnknownAmount(value)} />
                             <Legend onClick={e => {
                                 if (e.dataKey) {
-                                    if (hiddenItems.has(e.dataKey)) {
-                                        const replaced = new Set<string>(hiddenItems);
+                                    if (shownLines.has(e.dataKey)) {
+                                        const replaced = new Set<string>(shownLines);
                                         replaced.delete(e.dataKey);
-                                        setHiddenItems(replaced);
+                                        setShownLines(replaced);
                                     } else {
-                                        const replaced = new Set<string>(hiddenItems);
+                                        const replaced = new Set<string>(shownLines);
                                         replaced.add(e.dataKey);
-                                        setHiddenItems(replaced);
+                                        setShownLines(replaced);
                                     }
                                 }
                             }} />
