@@ -107,24 +107,12 @@ export function BulkTransactionModal({
                                     </Form.Select>
                                 </Form.Group>
                                 <br />
-                                {!specific ? null : <Row>
+                                {specific ? null : <Row>
                                     <Col>
-                                        {index !== transactions.transactions.length - 1 ? (
-                                            <ButtonGroup className="float-end">
-                                                <Button variant="danger" onClick={() => deleteTransaction(index)}>
-                                                    Delete Transaction
-                                                </Button>
-                                            </ButtonGroup>
-                                        ) : (
-                                            <ButtonGroup className="float-end">
-                                                <Button onClick={() => setTransactions({ ...transactions, transactions: transactions.transactions.concat({ accountId: defaultAccountId(settings, accounts) }) })}>
-                                                    Add Transaction
-                                                </Button>
-                                                <Button variant="danger" onClick={() => deleteTransaction(index)}>
-                                                    Delete Transaction
-                                                </Button>
-                                            </ButtonGroup>
-                                        )}
+                                        <ButtonGroup className="float-end">
+                                            {index !== transactions.transactions.length - 1 ? null : <Button onClick={() => setTransactions({ ...transactions, transactions: transactions.transactions.concat({ accountId: defaultAccountId(settings, accounts) }) })}>Add</Button>}
+                                            {transactions.transactions.length === 1 ? null : <Button variant="danger" onClick={() => deleteTransaction(index)}>Delete</Button>}
+                                        </ButtonGroup>
                                     </Col>
                                 </Row>
                                 }

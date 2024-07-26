@@ -30,7 +30,7 @@ export function Pagination({ itemCount, page, setPage, pageSize, setPageSize }: 
                                 <FontAwesomeIcon icon={faBackward} />
                             </Button>
                             <Button variant="primary">
-                                Page {page + 1}/{maxPage(itemCount, pageSize) + 1}
+                                Page {Math.min(maxPage(itemCount, pageSize) + 1, page + 1)}/{maxPage(itemCount, pageSize) + 1}
                             </Button>
                             <Button variant="primary" onClick={() => setPage(page + 1)}>
                                 <FontAwesomeIcon icon={faForward} />
