@@ -13,7 +13,7 @@ echo "Building ui"
 npm run build
 
 echo "Copying ui assets"
-cd ../api-rust
+cd ../api
 rm -rf ./static/*
 mkdir -p ./static/
 cp -r ../ui/build/* ./static/
