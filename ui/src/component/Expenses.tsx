@@ -1,12 +1,13 @@
 import { useAppSelector } from "../app/hooks";
 import { selectServer } from "../app/serverSlice";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { constrainedPage, err, formattedAmount, get, post, titleCase, today, isValueValid, del, formattedUnknownAmount } from "../util/util";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPenToSquare, faPlus, faTrash, faMoneyBillTransfer, faFilter } from '@fortawesome/free-solid-svg-icons';
+import { faPenToSquare, faPlus, faTrash, faMoneyBillTransfer, faFilter, faF } from '@fortawesome/free-solid-svg-icons';
 import { Button, Container, Modal, Row, Form, ButtonGroup, Table, OverlayTrigger, Popover, Col } from "react-bootstrap";
 import { DEFAULT_PAGE_SIZE, Pagination } from "./Pagination";
 import { useSearchParams } from "react-router-dom";
+import { icon } from "@fortawesome/fontawesome-svg-core";
 
 enum ExpenseCategory {
     UNKNOWN = "UNKNOWN",
@@ -25,6 +26,11 @@ enum ExpenseCategory {
     VACATIONS = "VACATIONS",
 }
 
+enum LastSType {
+    DAYS = "DAYS",
+    WEEKS = "WEEKS",
+    MONTHS = "MONTHS"
+}
 
 interface JExpense {
     id: string,
@@ -102,6 +108,7 @@ export function Expenses() {
     const server = useAppSelector(selectServer);
 
     const [expenses, setExpenses] = useState<JExpense[]>([]);
+    const [filteredExpenses, setFilteredExpenses] = useState<JExpense[]>([]);
 
     const [showAdding, setShowAdding] = useState(false);
     const [adding, setAdding] = useState(false);
@@ -110,6 +117,13 @@ export function Expenses() {
     const [showEditing, setShowEditing] = useState(false);
     const [editing, setEditing] = useState(false);
     const [editingExpense, setEditingExpense] = useState<Partial<JExpense>>({});
+
+    const [categoryFilter, setCategoryFilter] = useState<"none" | ExpenseCategory>("none");
+    const [descriptionFilter, setDescriptionFilter] = useState("");
+    const [externalFilter, setExternalFilter] = useState("");
+    const [dateFilter, setDateFilter] = useState("");
+    const [lastNFilter, setLastNFilter] = useState("");
+    const [lastSFilter, setLastSFilter] = useState<LastSType>(LastSType.DAYS);
 
     const [pageSize, _setPageSize] = useState(DEFAULT_PAGE_SIZE);
     const [page, _setPage] = useState(0);
@@ -136,9 +150,9 @@ export function Expenses() {
 
     function expensesToDisplay() {
         if (pageSize === 0) {
-            return expenses;
+            return filteredExpenses;
         }
-        return expenses.slice(pageSize * page, pageSize * page + pageSize);
+        return filteredExpenses.slice(pageSize * page, pageSize * page + pageSize);
     }
 
     function setSearchParams(key: string, value: string | number | undefined) {
@@ -164,9 +178,89 @@ export function Expenses() {
         }
     }
 
+    function clearSearchParams() {
+        [...searchParams.keys()].forEach(key => searchParams.delete(key));
+        _setSearchParams(searchParams);
+    }
+
     useEffect(() => refresh(), []);
 
     useEffect(() => {
+        let filtered = expenses;
+        if (categoryFilter !== "none") {
+            filtered = filtered.filter(expense => expense.category === categoryFilter);
+        }
+        if (descriptionFilter !== "") {
+            let use = descriptionFilter.toLowerCase();
+            filtered = filtered.filter(expense => expense.description.toLowerCase().includes(use));
+        }
+        if (externalFilter !== "") {
+            let use = externalFilter.toLowerCase();
+            filtered = filtered.filter(expense => expense.external.toLowerCase().includes(use));
+        } 
+        if (dateFilter !== "") {
+            const filter = new Date(dateFilter + "T00:00:00").getTime();
+            filtered = filtered.filter(expense => new Date(expense.date + "T00:00:00").getTime() === filter);
+        }
+        if (lastNFilter !== "") {
+            const lastNFilterCount = parseInt(lastNFilter);
+            let date = new Date();
+            date.setHours(0);
+            date.setMinutes(0);
+            date.setSeconds(0);
+            switch (lastSFilter) {
+                case LastSType.DAYS:
+                    date.setDate(date.getDate() - lastNFilterCount);
+                    break;
+                case LastSType.WEEKS:
+                    date.setDate(date.getDate() - (lastNFilterCount * 7));
+                     break;
+                case LastSType.MONTHS:
+                    date.setDate(date.getDate() - (lastNFilterCount * 31));
+                    break;
+            }
+            filtered = filtered.filter(transaction => new Date(transaction.date + "T00:00:00").getTime() >= date.getTime());
+        }
+        setFilteredExpenses(filtered);
+    }, [expenses, categoryFilter, descriptionFilter, externalFilter, dateFilter, lastNFilter, lastSFilter])
+
+    useEffect(() => {
+        const category = searchParams.get("category");
+        if (category !== null) {
+            setCategoryFilter(category as ExpenseCategory);
+        } else {
+            setCategoryFilter("none");
+        }
+        const description = searchParams.get("description");
+        if (description !== null) {
+            setDescriptionFilter(description);
+        } else {
+            setDescriptionFilter("");
+        }
+        const external = searchParams.get("external");
+        if (external !== null) {
+            setExternalFilter(external);
+        } else {
+            setExternalFilter("");
+        }
+        const date = searchParams.get("date");
+        if (date !== null) {
+            setDateFilter(date);
+        } else {
+            setDateFilter("");
+        }
+        const lastN = searchParams.get("lastN");
+        if (lastN != null) {
+            setLastNFilter(lastN);
+        } else {
+            setLastNFilter("");
+        }
+        const lastS = searchParams.get("lastS");
+        if (lastS != null) {
+            setLastSFilter(lastS as LastSType);
+        } else {
+            setLastSFilter(LastSType.DAYS);
+        }
         const page = searchParams.get("page");
         if (page != null) {
             _setPage(parseInt(page) - 1);
@@ -181,6 +275,83 @@ export function Expenses() {
         }
     }, [searchParams])
 
+    const clearFilters = (
+        <React.Fragment>
+            <br />
+            <Row>
+                <Col>
+                    <Button variant="danger" style={{ width: "100%" }} onClick={_ => clearSearchParams()}>
+                        Clear Filters
+                    </Button>
+                </Col>
+            </Row>
+        </React.Fragment>
+    );
+
+    const categoryFilterPopover = (
+        <Popover>
+            <Popover.Body>
+                <h6>Local Filters</h6>
+                <Form.Group>
+                    <Form.Label>Type</Form.Label>
+                    <Form.Select value={categoryFilter} onChange={e => setSearchParams("category", e.target.value)}>
+                        <option value={"none"}></option>
+                        {Object.keys(ExpenseCategory).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
+                    </Form.Select>
+                </Form.Group>
+                {clearFilters}
+            </Popover.Body>
+        </Popover>
+    );
+
+    const descriptionFilterPopover = (
+        <Popover>
+            <Popover.Body>
+                <h6>Local Filters</h6>
+                <Form.Group>
+                    <Form.Label>Description</Form.Label>
+                    <Form.Control value={descriptionFilter} onChange={e => setSearchParams("description", e.target.value)} />
+                </Form.Group>
+                {clearFilters}
+            </Popover.Body>
+        </Popover>
+    );
+
+    const externalFilterPopover = (
+        <Popover>
+            <Popover.Body>
+                <h6>Local Filters</h6>
+                <Form.Group>
+                    <Form.Label>External</Form.Label>
+                    <Form.Control value={externalFilter} onChange={e => setSearchParams("external", e.target.value)} />
+                </Form.Group>
+                {clearFilters}
+            </Popover.Body>
+        </Popover>
+    );
+
+    const dateFilterPopover = (
+        <Popover>
+            <Popover.Body>
+                <h6>Local Filters</h6>
+                <Form.Group>
+                    <Form.Label>Date</Form.Label>
+                    <Form.Control type="date" value={dateFilter} onChange={e => setSearchParams("date", e.target.value)} />
+                </Form.Group>
+                <Form.Group>
+                    <Form.Label>Last</Form.Label>
+                    <Form.Control isInvalid={lastNFilter !== "" && !isValueValid(lastNFilter)} type="text" value={lastNFilter} onChange={e => setSearchParams("lastN", e.target.value)} />
+                    <Form.Select value={lastSFilter} onChange={e => setSearchParams("lastS", e.target.value)}>
+                        <option value={"none"}></option>
+                        {Object.keys(LastSType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
+                    </Form.Select>
+                </Form.Group>
+                {clearFilters}
+            </Popover.Body>
+        </Popover>
+    );
+
+
     return (
         <Container>
             <Row>
@@ -188,10 +359,10 @@ export function Expenses() {
                     <Table striped bordered hover>
                         <thead>
                             <tr>
-                                <th>Category</th>
-                                <th>External ID</th>
-                                <th>Description</th>
-                                <th>Date</th>
+                                <th>Category <OverlayTrigger trigger="click" placement="bottom" overlay={categoryFilterPopover}><FontAwesomeIcon color={categoryFilter === "none" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
+                                <th>External ID <OverlayTrigger trigger="click" placement="bottom" overlay={externalFilterPopover}><FontAwesomeIcon color={externalFilter === "" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
+                                <th>Description <OverlayTrigger trigger="click" placement="bottom" overlay={descriptionFilterPopover}><FontAwesomeIcon color={descriptionFilter === "" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
+                                <th>Date <OverlayTrigger trigger="click" placement="bottom" overlay={dateFilterPopover}><FontAwesomeIcon color={dateFilter === "" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
                                 <th>Value</th>
                                 <th>Actions</th>
                             </tr>
