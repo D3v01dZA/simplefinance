@@ -6,7 +6,7 @@ use rusqlite::Row;
 use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ValueRef};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
-use strum_macros::{Display, EnumString};
+use strum_macros::{Display, EnumIter, EnumString};
 use crate::db::FromRow;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -30,7 +30,7 @@ pub struct NewExpense {
     pub value: Decimal,
 }
 
-#[derive(Debug, Clone, Display, EnumString, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Display, EnumString, Serialize, Deserialize, PartialEq, Eq, EnumIter, Hash)]
 pub enum ExpenseCategory {
     #[serde(rename = "UNKNOWN" )]
     #[strum(serialize="UNKNOWN", to_string="UNKNOWN")]

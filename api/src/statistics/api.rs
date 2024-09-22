@@ -11,6 +11,8 @@ use strum_macros::{EnumIter, Display};
 use crate::account::db::list_accounts;
 use crate::account::schema::{Account, AccountType};
 use crate::db::{do_in_transaction, Pool};
+use crate::expense::db::list_expenses;
+use crate::expense::schema::{Expense, ExpenseCategory};
 use crate::statistics::api::Period::{Monthly, Weekly, Yearly};
 use crate::statistics::schema::{Statistic, Value};
 use crate::transaction::db::list_transactions;
@@ -33,6 +35,7 @@ enum Category {
     TotalTransfers,
     Flow,
     FlowGrouping,
+    Expenses,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Display, EnumIter, Hash)]
@@ -79,14 +82,13 @@ pub async fn calculate_statistics(db: web::Data<Pool>, path: web::Path<(String, 
         let (period, category) = extract_params((period, category))?;
         let transactions = list_transactions(transaction)?;
         let accounts = list_accounts(transaction)?;
-        return Ok((period, category, transactions, accounts));
+        let expenses = list_expenses(transaction)?;
+        return Ok((period, category, transactions, accounts, expenses));
     })
         .await
-        .map(|(period, category, mut transactions, accounts)| {
-            if transactions.is_empty() {
-                return vec![];
-            }
+        .map(|(period, category, mut transactions, accounts, mut expenses)| {
             transactions.sort_by(|one, two| one.date.cmp(&two.date));
+            expenses.sort_by(|one, two| one.date.cmp(&two.date));
             let dates = dates(period, Local::now().date_naive(), transactions[0].date);
             match category {
                 Category::AccountBalances => calculate_account_balances(transactions, accounts, dates),
@@ -95,6 +97,7 @@ pub async fn calculate_statistics(db: web::Data<Pool>, path: web::Path<(String, 
                 Category::TotalTransfers => calculate_total_transfers(transactions, accounts, dates),
                 Category::Flow => calculate_flow(transactions, accounts, dates),
                 Category::FlowGrouping => calculate_flow_grouping(transactions, accounts, dates),
+                Category::Expenses => calculate_expenses(transactions, accounts, expenses, dates),
             }
         })
         .map(|statistics| HttpResponse::Ok().json(statistics))
@@ -126,6 +129,39 @@ fn calculate_flow(transactions: Vec<Transaction>, accounts: Vec<Account>, dates:
 
 fn calculate_flow_grouping(transactions: Vec<Transaction>, accounts: Vec<Account>, dates: Vec<NaiveDate>) -> Vec<Statistic> {
     return calculate_flow_internal(transactions, accounts, dates, calculate_flow_grouping_total);
+}
+
+fn calculate_expenses(transactions: Vec<Transaction>, accounts: Vec<Account>, expenses: Vec<Expense>, dates: Vec<NaiveDate>) -> Vec<Statistic> {
+    // let cash_holder = calculate_flow_grouping(transactions, accounts, dates);
+    let mut statistics: Vec<Statistic> = vec![];
+    let mut previous_value_by_accumulator_key: HashMap<ExpenseCategory, Decimal> = ExpenseCategory::iter()
+        .map(|category| (category.clone(), Decimal::ZERO))
+        .collect();
+    
+    let mut current_value_by_accumulator_key: HashMap<ExpenseCategory, Decimal> = ExpenseCategory::iter()
+        .map(|category| (category.clone(), Decimal::ZERO))
+        .collect();
+
+    let mut expenses_iterator = expenses.iter();
+    let mut first_expense_encountered = false;
+    let mut current_expense = expenses_iterator.next();
+
+    for date in dates {
+        while current_expense.is_some() && current_expense.unwrap().date <= date {
+            let expense = current_expense.unwrap();        
+            let value = current_value_by_accumulator_key.remove(&expense.category).unwrap();
+            current_value_by_accumulator_key.insert(expense.category.clone(), value + expense.value);
+            current_expense = expenses_iterator.next();
+            first_expense_encountered = true;
+        }
+
+        if first_expense_encountered {
+            statistics.push(create_statistic_by_key(date, &current_value_by_accumulator_key, &previous_value_by_accumulator_key));
+            previous_value_by_accumulator_key = current_value_by_accumulator_key.clone();
+        }
+    }
+
+    return statistics;
 }
 
 fn calculate_internal<
@@ -323,6 +359,8 @@ fn extract_params(path: (String, String)) -> anyhow::Result<(Period, Category)> 
         Category::Flow
     } else if raw_category.eq_ignore_ascii_case("flow_grouping") {
         Category::FlowGrouping
+    } else if raw_category.eq_ignore_ascii_case("expenses")  {
+        Category::Expenses
     } else {
         return Err(anyhow!("Unknown category {raw_category}"));
     };

@@ -9,7 +9,7 @@ import { DEFAULT_PAGE_SIZE, Pagination } from "./Pagination";
 import { useSearchParams } from "react-router-dom";
 import { icon } from "@fortawesome/fontawesome-svg-core";
 
-enum ExpenseCategory {
+export enum ExpenseCategory {
     UNKNOWN = "UNKNOWN",
     OTHER = "OTHER",
 

@@ -7,6 +7,7 @@ import { CartesianGrid, Layer, Legend, Line, LineChart, Rectangle, Sankey, Toolt
 import React from "react";
 import { IndexedAccounts, selectAccounts } from "../app/accountSlice";
 import { useSearchParams } from "react-router-dom";
+import { ExpenseCategory } from "./Expenses";
 
 interface JValue {
     name: string,
@@ -26,6 +27,7 @@ enum ViewType {
     ACCOUNT_TRANSFER = "ACCOUNT_TRANSFER",
     FLOW = "FLOW",
     FLOW_GROUPING = "FLOW_GROUPING",
+    EXPENSES = "EXPENSES",
 }
 
 enum GraphType {
@@ -85,6 +87,9 @@ function url(dateType: DateType, viewType: ViewType) {
             break;
         case ViewType.FLOW_GROUPING:
             subpath = "/flow_grouping/"
+            break;
+        case ViewType.EXPENSES:
+            subpath = "/expenses/"
             break;
     }
     switch (dateType) {
@@ -203,6 +208,19 @@ function lines(viewType: ViewType, shownLines: Set<string>, accounts: IndexedAcc
                     />)}
                 </React.Fragment>
             );
+        case ViewType.EXPENSES:
+            const expensesColorPalette = generateColorPalette(Object.values(ExpenseCategory).length);
+            return (
+                <React.Fragment>
+                  {Object.values(ExpenseCategory).map((category, index) => <Line
+                      key={category}
+                      type="monotone"
+                      dataKey={category}
+                      stroke={dull(category, shownLines, expensesColorPalette[index + 1])}
+                      name={titleCase(category)}
+                  />)}
+                </React.Fragment>
+            )
     }
 }
 
