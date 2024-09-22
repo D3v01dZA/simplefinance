@@ -22,6 +22,7 @@ enum ExpenseCategory {
 interface JExpense {
     id: string,
     description: string,
+    external: string,
     category: ExpenseCategory,
     date: string,
     value: string,
@@ -51,6 +52,10 @@ function ExpenseModal({
             </Modal.Header>
             <Modal.Body>
                 <Form>
+                    <Form.Group>
+                        <Form.Label>External Id</Form.Label>
+                        <Form.Control type="text" value={expense?.external} onChange={e => setExpense({ ...expense, external: e.target.value })}></Form.Control>
+                    </Form.Group>
                     <Form.Group>
                         <Form.Label>Description</Form.Label>
                         <Form.Control type="text" value={expense?.description} onChange={e => setExpense({ ...expense, description: e.target.value })}></Form.Control>
@@ -177,6 +182,7 @@ export function Expenses() {
                         <thead>
                             <tr>
                                 <th>Category</th>
+                                <th>External ID</th>
                                 <th>Description</th>
                                 <th>Date</th>
                                 <th>Value</th>
@@ -187,6 +193,7 @@ export function Expenses() {
                             {expensesToDisplay().map((expense, index) => (
                                 <tr key={index}>
                                     <td>{titleCase(expense.category)}</td>
+                                    <td>{expense.external}</td>
                                     <td>{expense.description}</td>
                                     <td>{expense.date}</td>
                                     <td className="text-end">{formattedUnknownAmount(expense.value)}</td>
@@ -212,6 +219,7 @@ export function Expenses() {
                                 </tr>
                             ))}
                             <tr>
+                                <td></td>
                                 <td></td>
                                 <td></td>
                                 <td></td>

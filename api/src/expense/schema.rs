@@ -13,6 +13,7 @@ use crate::db::FromRow;
 pub struct Expense {
     pub id: String,
     pub description: String,
+    pub external: String,
     pub category: ExpenseCategory,
     pub date: NaiveDate, 
     #[serde(with = "rust_decimal::serde::float")]
@@ -22,6 +23,7 @@ pub struct Expense {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct NewExpense {
     pub description: String,
+    pub external: String,
     pub category: ExpenseCategory,
     pub date: NaiveDate, 
     #[serde(with = "rust_decimal::serde::float")]
@@ -56,6 +58,7 @@ impl FromRow for Expense {
         Ok(Expense {
             id: row.get("id")?,
             description: row.get("description")?,
+            external: row.get("external")?,
             category: row.get("category")?,
             date: crate::db::get_naive_date(row, "date")?,
             value: crate::db::get_decimal(row, "value")?,

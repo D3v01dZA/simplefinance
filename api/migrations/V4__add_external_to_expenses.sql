@@ -1,0 +1,2 @@
+ALTER TABLE expense ADD external TEXT NOT NULL;
+CREATE UNIQUE INDEX UNQ_EXTERNAL ON expense(external);
