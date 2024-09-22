@@ -13,6 +13,7 @@ mod transaction;
 mod setting;
 mod issue;
 mod statistics;
+mod expense;
 
 use db::{Pool};
 
@@ -44,6 +45,12 @@ macro_rules! app (
         .service(transaction::api::delete_transaction)
         .service(transaction::api::get_transaction)
         .service(transaction::api::list_transactions)
+
+        .service(expense::api::create_expense)
+        .service(expense::api::update_expense)
+        .service(expense::api::delete_expense)
+        .service(expense::api::get_expense)
+        .service(expense::api::list_expenses)
 
         .service(issue::api::list_issues)
 
@@ -99,6 +106,7 @@ mod tests {
     use crate::transaction::schema::{Transaction, TransactionType, NewTransaction};
     use crate::issue;
     use crate::statistics;
+    use crate::expense;
     use crate::issue::schema::{Issue, IssueType};
     use crate::db::Pool;
     use crate::run_migrations;

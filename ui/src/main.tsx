@@ -11,6 +11,7 @@ import { Transactions } from "./component/Transactions";
 import { Graphs } from "./component/Graphs";
 import { Settings } from "./component/Settings";
 import { Issues } from "./component/Issues";
+import { Expenses } from "./component/Expenses";
 
 const router = createHashRouter([
   {
@@ -31,7 +32,11 @@ const router = createHashRouter([
       },
       {
         path: "/accounts/:accountId/transactions",
-        element: <Transactions />
+        element: <SpecificTransactions />
+      },
+      {
+        path: "/expenses",
+        element: <Expenses />
       },
       {
         path: "/issues",
