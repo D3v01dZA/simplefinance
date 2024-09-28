@@ -193,7 +193,7 @@ function lines(viewType: ViewType, shownLines: Set<string>, accounts: IndexedAcc
             const expensesColorPalette = generateColorPalette(Object.values(ExpenseCategory).length + 2);
             return (
                 <React.Fragment>
-                  {([...Object.values(ExpenseCategory)] as string[]).concat("TOTAL").concat("CASH").map((category, index) => <Line
+                  {["TOTAL", "CASH"].concat([...Object.values(ExpenseCategory)] as string[]).map((category, index) => <Line
                       key={category}
                       type="monotone"
                       dataKey={category}
