@@ -132,25 +132,41 @@ fn calculate_flow_grouping(transactions: Vec<Transaction>, accounts: Vec<Account
 }
 
 fn calculate_expenses(transactions: Vec<Transaction>, accounts: Vec<Account>, expenses: Vec<Expense>, dates: Vec<NaiveDate>) -> Vec<Statistic> {
-    // let cash_holder = calculate_flow_grouping(transactions, accounts, dates);
+    let mut cash_map: HashMap<NaiveDate, Decimal> = calculate_flow_grouping(transactions, accounts, dates.clone()).iter()
+        .map(|statistic| (statistic.date.clone(), statistic.values.iter()
+            .find(|value| value.name == "CASH".to_string())
+            .map(|value| value.value_difference.abs())
+            .unwrap_or(Decimal::ZERO))
+        ).collect();
+
     let mut statistics: Vec<Statistic> = vec![];
-    let mut previous_value_by_accumulator_key: HashMap<ExpenseCategory, Decimal> = ExpenseCategory::iter()
-        .map(|category| (category.clone(), Decimal::ZERO))
+
+    let mut previous_value_by_accumulator_key: HashMap<String, Decimal> = ExpenseCategory::iter()
+        .map(|category| (category.to_string(), Decimal::ZERO))
         .collect();
-    
-    let mut current_value_by_accumulator_key: HashMap<ExpenseCategory, Decimal> = ExpenseCategory::iter()
-        .map(|category| (category.clone(), Decimal::ZERO))
+    previous_value_by_accumulator_key.insert("TOTAL".to_string(), Decimal::ZERO);
+
+    let mut current_value_by_accumulator_key: HashMap<String, Decimal> = ExpenseCategory::iter()
+        .map(|category| (category.to_string(), Decimal::ZERO))
         .collect();
+    current_value_by_accumulator_key.insert("TOTAL".to_string(), Decimal::ZERO);
 
     let mut expenses_iterator = expenses.iter();
     let mut first_expense_encountered = false;
     let mut current_expense = expenses_iterator.next();
 
     for date in dates {
+        let value = current_value_by_accumulator_key.remove(&"CASH".to_string()).unwrap_or(Decimal::ZERO);
+        current_value_by_accumulator_key.insert("CASH".to_string(), value + cash_map.remove(&date).unwrap_or(Decimal::ZERO));
         while current_expense.is_some() && current_expense.unwrap().date <= date {
             let expense = current_expense.unwrap();        
-            let value = current_value_by_accumulator_key.remove(&expense.category).unwrap();
-            current_value_by_accumulator_key.insert(expense.category.clone(), value + expense.value);
+
+            let value = current_value_by_accumulator_key.remove(&expense.category.to_string()).unwrap();
+            current_value_by_accumulator_key.insert(expense.category.to_string(), value + expense.value);
+            
+            let value = current_value_by_accumulator_key.remove(&"TOTAL".to_string()).unwrap();
+            current_value_by_accumulator_key.insert("TOTAL".to_string(), value + expense.value);
+            
             current_expense = expenses_iterator.next();
             first_expense_encountered = true;
         }

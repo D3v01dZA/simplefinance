@@ -54,8 +54,8 @@ export function Header() {
                             <LinkContainer to="/issues">
                                 <Nav.Link>Issues</Nav.Link>
                             </LinkContainer>
-                            <LinkContainer to="/graphs">
-                                <Nav.Link>Graphs</Nav.Link>
+                            <LinkContainer to="/statistics">
+                                <Nav.Link>Statistics</Nav.Link>
                             </LinkContainer>
                             <LinkContainer to="/settings">
                                 <Nav.Link>Settings</Nav.Link>

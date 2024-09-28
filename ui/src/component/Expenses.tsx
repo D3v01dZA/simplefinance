@@ -1,13 +1,12 @@
 import { useAppSelector } from "../app/hooks";
 import { selectServer } from "../app/serverSlice";
 import React, { useEffect, useState } from "react";
-import { constrainedPage, err, formattedAmount, get, post, titleCase, today, isValueValid, del, formattedUnknownAmount } from "../util/util";
+import { constrainedPage, err, get, post, titleCase, today, isValueValid, del, formattedUnknownAmount } from "../util/util";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPenToSquare, faPlus, faTrash, faMoneyBillTransfer, faFilter, faF } from '@fortawesome/free-solid-svg-icons';
+import { faPenToSquare, faPlus, faTrash, faFilter } from '@fortawesome/free-solid-svg-icons';
 import { Button, Container, Modal, Row, Form, ButtonGroup, Table, OverlayTrigger, Popover, Col } from "react-bootstrap";
 import { DEFAULT_PAGE_SIZE, Pagination } from "./Pagination";
 import { useSearchParams } from "react-router-dom";
-import { icon } from "@fortawesome/fontawesome-svg-core";
 
 export enum ExpenseCategory {
     UNKNOWN = "UNKNOWN",
@@ -360,7 +359,7 @@ export function Expenses() {
                     <Table striped bordered hover>
                         <thead>
                             <tr>
-                                <th>Category <OverlayTrigger trigger="click" placement="bottom" overlay={categoryFilterPopover}><FontAwesomeIcon color={categoryFilter === "none" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
+                                <th style={{whiteSpace: "nowrap"}}>Category <OverlayTrigger trigger="click" placement="bottom" overlay={categoryFilterPopover}><FontAwesomeIcon color={categoryFilter === "none" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
                                 <th>External ID <OverlayTrigger trigger="click" placement="bottom" overlay={externalFilterPopover}><FontAwesomeIcon color={externalFilter === "" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
                                 <th>Description <OverlayTrigger trigger="click" placement="bottom" overlay={descriptionFilterPopover}><FontAwesomeIcon color={descriptionFilter === "" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
                                 <th>Date <OverlayTrigger trigger="click" placement="bottom" overlay={dateFilterPopover}><FontAwesomeIcon color={dateFilter === "" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
@@ -416,7 +415,7 @@ export function Expenses() {
                             </tr>
                         </tbody>
                     </Table>
-                    <Pagination itemCount={expenses.length} page={page} setPage={setPage} pageSize={pageSize} setPageSize={setPageSize} />
+                    <Pagination itemCount={expensesToDisplay.length} page={page} setPage={setPage} pageSize={pageSize} setPageSize={setPageSize} />
                 </Col>
             </Row>
             <ExpenseModal show={showAdding} setShow={setShowAdding} expense={addingExpense} setExpense={setAddingExpense} saving={adding} save={() => {

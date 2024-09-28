@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAppSelector } from "../app/hooks";
 import { selectServer } from "../app/serverSlice";
 import { accountTitle, err, formattedAmount, formattedUnknownAmount, generateColorPalette, get, titleCase } from "../util/util";
-import { Col, Container, Form, Row } from "react-bootstrap";
+import { Col, Container, Form, Row, Table } from "react-bootstrap";
 import { CartesianGrid, Layer, Legend, Line, LineChart, Rectangle, Sankey, Tooltip, XAxis, YAxis } from "recharts";
 import React from "react";
 import { IndexedAccounts, selectAccounts } from "../app/accountSlice";
@@ -32,7 +32,7 @@ enum ViewType {
 
 enum GraphType {
     LINE = "LINE",
-    SANKEY = "SANKEY",
+    TABLE = "TABLE",
 }
 
 enum FlowGroupingType {
@@ -108,25 +108,6 @@ function dull(id: string, shownLines: Set<string>, color: string) {
     }
     return color;
 }
-
-interface LinkDataItem {
-    source: number,
-    target: number,
-    value: number,
-    color: string,
-}
-
-interface Node {
-    name: string,
-    color: string,
-}
-
-interface SankeyData {
-    nodes: Node[];
-    links: LinkDataItem[];
-}
-
-const EMPTY_SANKEY = { "nodes": [{ "name": "EMPTY", "color": "" }, { "name": "EMPTY", "color": "" },], "links": [{ "source": 0, "target": 1, "value": 1, "color": "" },] }
 
 function lines(viewType: ViewType, shownLines: Set<string>, accounts: IndexedAccounts) {
     switch (viewType) {
@@ -209,10 +190,10 @@ function lines(viewType: ViewType, shownLines: Set<string>, accounts: IndexedAcc
                 </React.Fragment>
             );
         case ViewType.EXPENSES:
-            const expensesColorPalette = generateColorPalette(Object.values(ExpenseCategory).length);
+            const expensesColorPalette = generateColorPalette(Object.values(ExpenseCategory).length + 2);
             return (
                 <React.Fragment>
-                  {Object.values(ExpenseCategory).map((category, index) => <Line
+                  {([...Object.values(ExpenseCategory)] as string[]).concat("TOTAL").concat("CASH").map((category, index) => <Line
                       key={category}
                       type="monotone"
                       dataKey={category}
@@ -249,266 +230,6 @@ function calculateData(dataType: DataType, shownLines: Set<string>, statistic: J
     }
 }
 
-function calculateSankey(viewType: ViewType, dataType: DataType, accounts: IndexedAccounts, balance: JStatistic): SankeyData {
-    const net = dataType === DataType.NET;
-    if (balance === undefined) {
-        return EMPTY_SANKEY
-    }
-
-    const nodes: Node[] = [];
-    const links: LinkDataItem[] = [];
-    if (viewType === ViewType.TOTAL_BALANCE || viewType == ViewType.TOTAL_TRANSFER || viewType == ViewType.FLOW) {
-        function decideAsset() {
-            if (viewType == ViewType.TOTAL_BALANCE) {
-                return net ? "Assets" : "Increase"
-            }
-            return "Income"
-        }
-
-        function decideLiability() {
-            if (viewType == ViewType.TOTAL_BALANCE) {
-                return net ? "Liabilities" : "Decrease"
-            }
-            return "Expense"
-        }
-
-        const totalColorPalette = generateColorPalette(4 + Object.values(TotalType).length);
-        const nodeNameToIndex: { [name: string]: number } = {};
-        nodes.push({ name: "Total " + decideAsset(), color: totalColorPalette[nodes.length] })
-        nodes.push({ name: "Total " + decideLiability(), color: totalColorPalette[nodes.length] })
-        nodes.push({ name: decideAsset(), color: totalColorPalette[nodes.length] })
-        nodes.push({ name: decideLiability(), color: totalColorPalette[nodes.length] })
-
-        Object.values(TotalType).forEach((totalType) => {
-            nodes.push({ name: titleCase(totalType), color: totalColorPalette[nodes.length] });
-            nodeNameToIndex[totalType] = nodes.length - 1;
-        });
-
-        let assets = 0;
-        let liabilities = 0;
-
-        balance.values.forEach((total) => {
-            if (total.name !== TotalType.NET) {
-                let value;
-                if (net) {
-                    value = total.value;
-                } else {
-                    value = total.value_difference;
-                }
-                if (value > 0) {
-                    assets += value;
-                    links.push({
-                        source: 2,
-                        target: nodeNameToIndex[total.name],
-                        value: value,
-                        color: totalColorPalette[nodeNameToIndex[total.name]]
-                    })
-                } else if (value < 0) {
-                    liabilities -= value;
-                    links.push({
-                        source: 3,
-                        target: nodeNameToIndex[total.name],
-                        value: -value,
-                        color: totalColorPalette[nodeNameToIndex[total.name]]
-                    })
-                }
-            }
-        })
-
-        links.push({
-            source: 0,
-            target: 2,
-            value: assets,
-            color: totalColorPalette[1]
-        })
-        links.push({
-            source: 1,
-            target: 3,
-            value: liabilities,
-            color: totalColorPalette[2]
-        })
-
-        return { nodes, links }
-    } else if (viewType === ViewType.ACCOUNT_BALANCE || viewType == ViewType.ACCOUNT_TRANSFER) {
-        function decideAsset() {
-            if (viewType == ViewType.ACCOUNT_BALANCE) {
-                return net ? "Assets" : "Increase"
-            }
-            return "Income"
-        }
-
-        function decideLiability() {
-            if (viewType == ViewType.ACCOUNT_BALANCE) {
-                return net ? "Liabilities" : "Decrease"
-            }
-            return "Expense"
-        }
-
-        const totalColorPalette = generateColorPalette(3 + balance.values.length);
-        nodes.push({ name: "Total " + decideAsset(), color: totalColorPalette[nodes.length] })
-        nodes.push({ name: "Total " + decideLiability(), color: totalColorPalette[nodes.length] })
-        nodes.push({ name: decideAsset(), color: totalColorPalette[nodes.length] })
-        nodes.push({ name: decideLiability(), color: totalColorPalette[nodes.length] })
-
-        let assets = 0;
-        let liabilities = 0;
-
-        balance.values.forEach((account) => {
-            nodes.push({ name: accountTitle(account.name, accounts), color: totalColorPalette[nodes.length] });
-            let value;
-            if (net) {
-                value = account.value;
-            } else {
-                value = account.value_difference;
-            }
-            if (value > 0) {
-                assets += value;
-                links.push({
-                    source: 2,
-                    target: nodes.length - 1,
-                    value: value,
-                    color: totalColorPalette[nodes.length - 1]
-                })
-            } else if (value < 0) {
-                liabilities -= value;
-                links.push({
-                    source: 3,
-                    target: nodes.length - 1,
-                    value: -value,
-                    color: totalColorPalette[nodes.length - 1]
-                })
-            }
-        })
-
-        links.push({
-            source: 0,
-            target: 2,
-            value: assets,
-            color: totalColorPalette[1]
-        })
-        links.push({
-            source: 1,
-            target: 3,
-            value: liabilities,
-            color: totalColorPalette[2]
-        })
-
-        return { nodes, links }
-    } else if (viewType == ViewType.FLOW_GROUPING) {
-        const totalColorPalette = generateColorPalette(4 + balance.values.length);
-        nodes.push({ name: "Total Income", color: totalColorPalette[nodes.length] })
-        nodes.push({ name: "Total Expense", color: totalColorPalette[nodes.length] })
-        nodes.push({ name: "Income", color: totalColorPalette[nodes.length] })
-        nodes.push({ name: "Expense", color: totalColorPalette[nodes.length] })
-
-        let assets = 0;
-        let liabilities = 0;
-
-        balance.values.forEach((flow) => {
-            nodes.push({ name: titleCase(flow.name), color: totalColorPalette[nodes.length] });
-            let value;
-            if (net) {
-                value = flow.value;
-            } else {
-                value = flow.value_difference;
-            }
-            if (value > 0) {
-                assets += value;
-                links.push({
-                    source: 2,
-                    target: nodes.length - 1,
-                    value: value,
-                    color: totalColorPalette[nodes.length - 1]
-                })
-            } else if (value < 0) {
-                liabilities -= value;
-                links.push({
-                    source: 3,
-                    target: nodes.length - 1,
-                    value: -value,
-                    color: totalColorPalette[nodes.length - 1]
-                })
-            }
-        })
-
-        links.push({
-            source: 0,
-            target: 2,
-            value: assets,
-            color: totalColorPalette[1]
-        })
-        links.push({
-            source: 1,
-            target: 3,
-            value: liabilities,
-            color: totalColorPalette[2]
-        })
-
-        return { nodes, links }
-    }
-    return EMPTY_SANKEY
-}
-
-function SankeyNode({ x, y, width, height, index, payload, containerWidth, }: any) {
-    const isOut = payload.value !== 0 || x + width + 6 > containerWidth;
-    return (
-        (
-            <Layer key={`CustomNode${index}`}>
-                <Rectangle
-                    x={x}
-                    y={y}
-                    width={width}
-                    height={height}
-                    fill={payload.color}
-                    fillOpacity="1"
-                />
-
-                <text
-                    textAnchor={isOut ? "end" : "start"}
-                    x={isOut ? x - 6 : x + width + 6}
-                    y={y + height / 2}
-                    fontSize="14"
-                    stroke="#333"
-                >
-                    {payload.name} - {formattedAmount(payload.value)}
-                </text>
-                <text
-                    textAnchor={isOut ? "end" : "start"}
-                    x={isOut ? x - 6 : x + width + 6}
-                    y={y + height / 2 + 13}
-                    fontSize="12"
-                    stroke="#333"
-                    strokeOpacity="0.5"
-                >
-                    { }
-                </text>
-            </Layer>
-        )
-    )
-}
-
-function SankeyLink({ sourceX, targetX, sourceY, targetY, sourceControlX, targetControlX, linkWidth, index, payload }: any) {
-    return (
-        <Layer key={`CustomLink${index}`}>
-            <path
-                d={`
-              M${sourceX},${sourceY + linkWidth / 2}
-              C${sourceControlX},${sourceY + linkWidth / 2}
-                ${targetControlX},${targetY + linkWidth / 2}
-                ${targetX},${targetY + linkWidth / 2}
-              L${targetX},${targetY - linkWidth / 2}
-              C${targetControlX},${targetY - linkWidth / 2}
-                ${sourceControlX},${sourceY - linkWidth / 2}
-                ${sourceX},${sourceY - linkWidth / 2}
-              Z
-            `}
-                fill={payload.color}
-                strokeWidth="0"
-            />
-        </Layer>
-    );
-}
-
 export function Graphs() {
     const DEFAULT_GRAPH_TYPE = GraphType.LINE;
     const DEFAULT_VIEW_TYPE = ViewType.FLOW_GROUPING;
@@ -523,7 +244,6 @@ export function Graphs() {
     const accounts = useAppSelector(selectAccounts);
 
     const [graphType, _setGraphType] = useState(DEFAULT_GRAPH_TYPE);
-    const [sankeyDate, setSankeyDate] = useState("");
     const [lineStartDate, setLineStartDate] = useState("");
     const [lineEndDate, setLineEndDate] = useState("");
     const [viewType, _setViewType] = useState(DEFAULT_VIEW_TYPE);
@@ -533,7 +253,6 @@ export function Graphs() {
     const [shownLines, _setShownLines] = useState(new Set<string>());
 
     const [data, setData] = useState<any[]>([]);
-    const [sankey, setSankey] = useState<SankeyData>(EMPTY_SANKEY)
     const [statistics, setStatistics] = useState<JStatistic[]>([]);
 
     function setSearchParams(key: string, value: string | number | undefined | string[]) {
@@ -623,10 +342,7 @@ export function Graphs() {
 
     useEffect(() => {
         get<JStatistic[]>(server, url(dateType, viewType))
-            .then(balances => {
-                setStatistics(balances);
-                setSankeyDate(balances[balances.length - 1].date);
-            })
+            .then(balances => setStatistics(balances))
             .catch(error => err(error));
     }, [dateType, viewType]);
 
@@ -644,9 +360,7 @@ export function Graphs() {
             })
             .map(statistic => calculateData(dataType, shownLines, statistic));
         setData(data);
-        const sankeyData = calculateSankey(viewType, dataType, accounts, statistics.find((value) => value.date === sankeyDate)!);
-        setSankey(sankeyData);
-    }, [statistics, lineStartDate, lineEndDate, dataType, viewType, shownLines, sankeyDate]);
+    }, [statistics, lineStartDate, lineEndDate, dataType, viewType, shownLines]);
 
     return (
         <Container>
@@ -661,7 +375,7 @@ export function Graphs() {
                 </Col>
             </Row>
             {
-                graphType !== GraphType.SANKEY ? <Row xs={1} md={2} xl={2}>
+                <Row xs={1} md={2} xl={2}>
                     <Col>
                         <Form.Group>
                             <Form.Label>Start Date</Form.Label>
@@ -675,15 +389,6 @@ export function Graphs() {
                             <Form.Label>End Date</Form.Label>
                             <Form.Select value={lineEndDate} onChange={e => setLineEndDate(e.target.value)}>
                                 {[<option value=""></option>].concat(statistics.map(balance => <option key={balance.date} value={balance.date}>{balance.date}</option>))}
-                            </Form.Select>
-                        </Form.Group>
-                    </Col>
-                </Row> : <Row xs={1} md={1} xl={1}>
-                    <Col>
-                        <Form.Group>
-                            <Form.Label>Date</Form.Label>
-                            <Form.Select value={sankeyDate} onChange={e => setSankeyDate(e.target.value)}>
-                                {statistics.map(balance => <option key={balance.date} value={balance.date}>{balance.date}</option>)}
                             </Form.Select>
                         </Form.Group>
                     </Col>
@@ -737,9 +442,13 @@ export function Graphs() {
                                 }
                             }} />
                             <Tooltip formatter={(value: any) => formattedAmount(value)} />
-                        </LineChart> : <Sankey width={(widthRef.current?.offsetWidth ?? 0) * 0.95} height={vh * 0.7} data={sankey} node={<SankeyNode />} link={<SankeyLink />}>
-                            <Tooltip formatter={(value: any) => formattedAmount(value)} />
-                        </Sankey>
+                        </LineChart> : <Table striped bordered hover>
+                            <thead>
+                                <tr>
+                                    <td>Date</td>
+                                </tr>
+                            </thead>
+                        </Table>
                     }
                 </Col>
             </Row>

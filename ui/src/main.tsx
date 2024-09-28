@@ -43,7 +43,7 @@ const router = createHashRouter([
         element: <Issues />
       },
       {
-        path: "/graphs",
+        path: "/statistics",
         element: <Graphs />
       },
       {
