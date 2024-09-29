@@ -360,22 +360,22 @@ export function Expenses() {
                         <thead>
                             <tr>
                                 <th style={{whiteSpace: "nowrap"}}>Category <OverlayTrigger trigger="click" placement="bottom" overlay={categoryFilterPopover}><FontAwesomeIcon color={categoryFilter === "none" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
-                                <th>External ID <OverlayTrigger trigger="click" placement="bottom" overlay={externalFilterPopover}><FontAwesomeIcon color={externalFilter === "" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
-                                <th>Description <OverlayTrigger trigger="click" placement="bottom" overlay={descriptionFilterPopover}><FontAwesomeIcon color={descriptionFilter === "" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
-                                <th>Date <OverlayTrigger trigger="click" placement="bottom" overlay={dateFilterPopover}><FontAwesomeIcon color={dateFilter === "" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
-                                <th>Value</th>
-                                <th>Actions</th>
+                                <th style={{whiteSpace: "nowrap"}}>External ID <OverlayTrigger trigger="click" placement="bottom" overlay={externalFilterPopover}><FontAwesomeIcon color={externalFilter === "" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
+                                <th style={{whiteSpace: "nowrap"}}>Description <OverlayTrigger trigger="click" placement="bottom" overlay={descriptionFilterPopover}><FontAwesomeIcon color={descriptionFilter === "" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
+                                <th style={{whiteSpace: "nowrap"}}>Date <OverlayTrigger trigger="click" placement="bottom" overlay={dateFilterPopover}><FontAwesomeIcon color={dateFilter === "" ? undefined : "blue"} icon={faFilter} /></OverlayTrigger></th>
+                                <th style={{whiteSpace: "nowrap"}}>Value</th>
+                                <th style={{whiteSpace: "nowrap"}}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {expensesToDisplay().map((expense, index) => (
                                 <tr key={index}>
-                                    <td>{titleCase(expense.category)}</td>
-                                    <td>{expense.external}</td>
-                                    <td>{expense.description}</td>
-                                    <td>{expense.date}</td>
+                                    <td style={{whiteSpace: "nowrap"}}>{titleCase(expense.category)}</td>
+                                    <td style={{whiteSpace: "nowrap"}}>{expense.external}</td>
+                                    <td style={{whiteSpace: "nowrap"}}>{expense.description}</td>
+                                    <td style={{whiteSpace: "nowrap"}}>{expense.date}</td>
                                     <td className="text-end">{formattedUnknownAmount(expense.value)}</td>
-                                    <td>
+                                    <td style={{whiteSpace: "nowrap"}}>
                                         <ButtonGroup>
                                             <Button onClick={() => {
                                               setEditingExpense(expense);
@@ -402,7 +402,7 @@ export function Expenses() {
                                 <td></td>
                                 <td></td>
                                 <td></td>
-                                <td>
+                                <td style={{whiteSpace: "nowrap"}}>
                                     <ButtonGroup>
                                         <Button variant="success" onClick={() => {
                                             setAddingExpense({ description: "", category: ExpenseCategory.UNKNOWN, date: today(), value: "0" });
