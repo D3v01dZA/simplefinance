@@ -125,7 +125,7 @@ function lines(viewType: ViewType, shownLines: Set<string>, accounts: IndexedAcc
                 </React.Fragment>
             );
         case ViewType.TOTAL_TRANSFER:
-            const totalsTransferColorPalette = generateColorPalette(1 + Object.values(TotalType).length);
+            const totalsTransferColorPalette = generateColorPalette(Object.values(TotalType).length);
             return (
                 <React.Fragment>
                     {Object.values(TotalType).map((totalType, index) => <Line
@@ -362,6 +362,36 @@ export function Graphs() {
         setData(data);
     }, [statistics, lineStartDate, lineEndDate, dataType, viewType, shownLines]);
 
+    function headers(): { [key: string]: string } {
+        if (viewType == ViewType.TOTAL_BALANCE || viewType == ViewType.TOTAL_TRANSFER || viewType == ViewType.FLOW) {
+            return Object.values(TotalType).reduce((acc, cur) => { acc[cur as string] = titleCase(cur); return acc; }, {} as { [key: string]: string });
+        }
+        if (viewType == ViewType.ACCOUNT_BALANCE || viewType == ViewType.ACCOUNT_TRANSFER) {
+            return Object.values(accounts).reduce((acc, value) => { acc[value.id] = accountTitle(value.id, accounts); return acc; }, {} as { [key: string]: string });
+        }
+        if (viewType == ViewType.FLOW_GROUPING) {
+            return Object.values(FlowGroupingType).reduce((acc, cur) => { acc[cur as string] = titleCase(cur); return acc; }, {} as { [key: string]: string });
+        }
+        if (viewType == ViewType.EXPENSES) {
+            return ["TOTAL", "CASH"].concat([...Object.values(ExpenseCategory)] as string[]).reduce((acc, cur) => { acc[cur] = titleCase(cur); return acc; }, {} as { [key:string]: string })
+        }
+        console.log("Unknown " + viewType);
+        return {};
+    }
+
+    function tableValue(key: string, statistic: JStatistic) {
+        let value = statistic.values.find(value => value.name === key);
+        if (value === undefined) {
+            return "Not Found"
+        } else {
+            if (dataType === DataType.NET) {
+                return formattedAmount(value.value);
+            } else {
+                return formattedAmount(value.value_difference);
+            }
+        }
+    }
+
     return (
         <Container>
             <Row xs={1} md={1} xl={1}>
@@ -442,13 +472,34 @@ export function Graphs() {
                                 }
                             }} />
                             <Tooltip formatter={(value: any) => formattedAmount(value)} />
-                        </LineChart> : <Table striped bordered hover>
+                        </LineChart> : <><br/><Table striped bordered hover>
                             <thead>
                                 <tr>
-                                    <td>Date</td>
+                                    <td style={{whiteSpace: "nowrap"}}>Date</td>
+                                    {
+                                        Object.values(headers()).map(header => <td key={header} style={{whiteSpace: "nowrap"}}>{header}</td>)
+                                    }
                                 </tr>
                             </thead>
-                        </Table>
+                            <tbody>
+                                {
+                                    statistics.map(statistic => (
+                                        <tr key={statistic.date}>
+                                            <td style={{whiteSpace: "nowrap"}}>{statistic.date}</td>
+                                            {
+                                                Object.keys(headers()).map(key => (
+                                                    <td key={key + statistic.date} style={{whiteSpace: "nowrap"}} className="text-end">
+                                                        {
+                                                            tableValue(key, statistic)
+                                                        }
+                                                    </td>
+                                                ))
+                                            }
+                                        </tr>
+                                    ))
+                                }
+                            </tbody>
+                        </Table></>
                     }
                 </Col>
             </Row>
