@@ -415,7 +415,7 @@ export function Expenses() {
                             </tr>
                         </tbody>
                     </Table>
-                    <Pagination itemCount={expensesToDisplay.length} page={page} setPage={setPage} pageSize={pageSize} setPageSize={setPageSize} />
+                    <Pagination itemCount={filteredExpenses.length} page={page} setPage={setPage} pageSize={pageSize} setPageSize={setPageSize} />
                 </Col>
             </Row>
             <ExpenseModal show={showAdding} setShow={setShowAdding} expense={addingExpense} setExpense={setAddingExpense} saving={adding} save={() => {
