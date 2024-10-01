@@ -230,7 +230,7 @@ function calculateData(dataType: DataType, shownLines: Set<string>, statistic: J
     }
 }
 
-export function Graphs() {
+export function Statistics() {
     const DEFAULT_GRAPH_TYPE = GraphType.LINE;
     const DEFAULT_VIEW_TYPE = ViewType.FLOW_GROUPING;
     const DEFAULT_DATE_TYPE = DateType.MONTHLY;

@@ -8,7 +8,7 @@ import { createHashRouter, RouterProvider, useNavigate, } from "react-router-dom
 import { Header } from "./component/Header"
 import { Accounts } from "./component/Accounts"
 import { Transactions } from "./component/Transactions";
-import { Graphs } from "./component/Graphs";
+import { Statistics } from "./component/Statistics";
 import { Settings } from "./component/Settings";
 import { Issues } from "./component/Issues";
 import { Expenses } from "./component/Expenses";
@@ -44,7 +44,7 @@ const router = createHashRouter([
       },
       {
         path: "/statistics",
-        element: <Graphs />
+        element: <Statistics />
       },
       {
         path: "/settings",
