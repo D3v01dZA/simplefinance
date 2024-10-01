@@ -69,6 +69,9 @@ pub enum ExpenseCategory {
     #[serde(rename = "RESTAURANTS" )]
     #[strum(serialize="RESTAURANTS", to_string="RESTAURANTS")]
     Restaurants,
+    #[serde(rename = "SMART_HOME" )]
+    #[strum(serialize="SMART_HOME", to_string="SMART_HOME")]
+    SmartHome,
     #[serde(rename = "SUBSCRIPTIONS" )]
     #[strum(serialize="SUBSCRIPTIONS", to_string="SUBSCRIPTIONS")]
     Subscriptions,
