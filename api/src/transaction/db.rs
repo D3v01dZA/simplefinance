@@ -15,8 +15,8 @@ const TRANSACTION_RETURNING: &str = formatcp!("RETURNING {TRANSACTION_COLUMNS}")
 const TRANSACTION_ORDERING: &str = "ORDER BY date, type, account_id";
 
 pub fn create_transaction(transaction: &rusqlite::Transaction, new_transaction: NewTransaction) -> anyhow::Result<Option<Transaction>> {
-    verify_new(transaction, new_transaction.transaction_type.clone(), new_transaction.account_id.clone(), new_transaction.date.clone())?;
     verify(transaction, new_transaction.transaction_type.clone(), new_transaction.account_id.clone(), new_transaction.from_account_id.clone())?;
+    verify_new(transaction, new_transaction.transaction_type.clone(), new_transaction.account_id.clone(), new_transaction.from_account_id.clone(), new_transaction.date.clone())?;
     return single(
         transaction,
         formatcp!("INSERT INTO account_transaction ({TRANSACTION_COLUMNS}) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7) {TRANSACTION_RETURNING}"),
@@ -108,7 +108,7 @@ fn delete_transaction_by_account(transaction: &rusqlite::Transaction, account_id
     );
 }
 
-fn verify_new(transaction: &rusqlite::Transaction, transaction_type: TransactionType, account_id: String, date: NaiveDate) -> anyhow::Result<()> {
+fn verify_new(transaction: &rusqlite::Transaction, transaction_type: TransactionType, account_id: String, from_account_id: Option<String>, date: NaiveDate) -> anyhow::Result<()> {
     return match transaction_type {
         TransactionType::Balance => {
             let current: Vec<Transaction> = list(
@@ -122,6 +122,14 @@ fn verify_new(transaction: &rusqlite::Transaction, transaction_type: Transaction
             Ok(())
         },
         TransactionType::Transfer => {
+            let current: Vec<Transaction> = list(
+                transaction,
+                formatcp!("{TRANSACTION_SELECT} WHERE account_id = ?1 and from_account_id = ?2 and date = ?3 and type = ?4"),
+                [account_id, from_account_id.unwrap(), date.to_string(), transaction_type.to_string()]
+            )?;
+            if !current.is_empty() {
+                return Err(anyhow!("Conflicting transaction found on same date"));
+            }
             Ok(())
         }
     }

@@ -397,7 +397,7 @@ export function Statistics() {
             <Row xs={1} md={1} xl={1}>
                 <Col>
                     <Form.Group>
-                        <Form.Label>Graph Type</Form.Label>
+                        <Form.Label>Statistic Type</Form.Label>
                         <Form.Select value={graphType} onChange={e => setGraphType(e.target.value as GraphType)}>
                             {Object.keys(GraphType).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
                         </Form.Select>
@@ -450,7 +450,7 @@ export function Statistics() {
                     </Form.Group>
                 </Col>
             </Row>
-            <Row ref={widthRef} xl={1} className="justify-content-center">
+            <Row ref={widthRef} xl={1} className="justify-content-center" style={{overflowX: "scroll"}}>
                 <Col>
                     {
                         graphType === GraphType.LINE ? <LineChart width={(widthRef.current?.offsetWidth ?? 0) * 0.95} height={vh * 0.7} margin={{ top: 40, left: 65, right: 5, bottom: 5 }} data={data}>
