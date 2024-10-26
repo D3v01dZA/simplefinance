@@ -1,9 +1,11 @@
-import { Button, Form, Modal } from "react-bootstrap";
+import { Button, Form, InputGroup, Modal } from "react-bootstrap";
 import { AccountType, IndexedAccounts } from "../../app/accountSlice";
 import { IndexedSettings } from "../../app/settingSlice";
 import { filterTransactions, formattedAmount, isValueValid } from "../../util/util";
 import { JTranscation, TransactionType } from "../Transactions";
 import { AccountName } from "../../util/common";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faFileImport } from "@fortawesome/free-solid-svg-icons";
 
 export interface BalanceAddingTranscations {
     [accountId: string]: string
@@ -104,7 +106,10 @@ export function BalanceTransactionModal({
                             return (
                                 <Form.Group key={id}>
                                     <Form.Label><AccountName accountId={id} accounts={accounts} /></Form.Label>
-                                    <Form.Control type="text" className="colored-placeholder" value={value(id)} placeholder={placeholder(id)} disabled={disabled(id)} isInvalid={value(id) !== "" && !isValueValid(value(id))} onChange={e => editTransaction(id, e.target.value)}></Form.Control>
+                                    <InputGroup>
+                                        <Form.Control type="text" className="colored-placeholder" value={value(id)} placeholder={placeholder(id)} disabled={disabled(id)} isInvalid={value(id) !== "" && !isValueValid(value(id))} onChange={e => editTransaction(id, e.target.value)}></Form.Control>
+                                        <Button onClick={() => editTransaction(id, "" + mappedTransactions[id]?.value)}><FontAwesomeIcon title="Use" icon={faFileImport}/></Button>
+                                    </InputGroup>
                                 </Form.Group>
                             )
                         })

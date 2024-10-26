@@ -16,7 +16,7 @@ const TRANSACTION_ORDERING: &str = "ORDER BY date, type, account_id";
 
 pub fn create_transaction(transaction: &rusqlite::Transaction, new_transaction: NewTransaction) -> anyhow::Result<Option<Transaction>> {
     verify(transaction, new_transaction.transaction_type.clone(), new_transaction.account_id.clone(), new_transaction.from_account_id.clone())?;
-    verify_new(transaction, new_transaction.transaction_type.clone(), new_transaction.account_id.clone(), new_transaction.from_account_id.clone(), new_transaction.date.clone())?;
+    verify_unique(transaction, None, new_transaction.transaction_type.clone(), new_transaction.account_id.clone(), new_transaction.from_account_id.clone(), new_transaction.date.clone())?;
     return single(
         transaction,
         formatcp!("INSERT INTO account_transaction ({TRANSACTION_COLUMNS}) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7) {TRANSACTION_RETURNING}"),
@@ -26,6 +26,7 @@ pub fn create_transaction(transaction: &rusqlite::Transaction, new_transaction: 
 
 pub fn update_transaction(transaction: &rusqlite::Transaction, updated_transaction: Transaction) -> anyhow::Result<Option<Transaction>> {
     verify(transaction, updated_transaction.transaction_type.clone(), updated_transaction.account_id.clone(), updated_transaction.from_account_id.clone())?;
+    verify_unique(transaction, Some(updated_transaction.id.clone()), updated_transaction.transaction_type.clone(), updated_transaction.account_id.clone(), updated_transaction.from_account_id.clone(), updated_transaction.date.clone())?;
     return single(
         transaction,
         formatcp!("UPDATE account_transaction SET description = ?1, date = ?2, value = ?3, type = ?4, account_id = ?5, from_account_id = ?6 WHERE id = ?7 {}", TRANSACTION_RETURNING),
@@ -108,7 +109,7 @@ fn delete_transaction_by_account(transaction: &rusqlite::Transaction, account_id
     );
 }
 
-fn verify_new(transaction: &rusqlite::Transaction, transaction_type: TransactionType, account_id: String, from_account_id: Option<String>, date: NaiveDate) -> anyhow::Result<()> {
+fn verify_unique(transaction: &rusqlite::Transaction, id: Option<String>, transaction_type: TransactionType, account_id: String, from_account_id: Option<String>, date: NaiveDate) -> anyhow::Result<()> {
     return match transaction_type {
         TransactionType::Balance => {
             let current: Vec<Transaction> = list(
@@ -116,7 +117,10 @@ fn verify_new(transaction: &rusqlite::Transaction, transaction_type: Transaction
                 formatcp!("{TRANSACTION_SELECT} WHERE account_id = ?1 and date = ?2 and type = ?3"),
                 [account_id, date.to_string(), transaction_type.to_string()]
             )?;
-            if !current.is_empty() {
+            if !current.is_empty() && id.is_none() {
+                return Err(anyhow!("Conflicting transaction found on same date"));
+            }
+            if current.len() == 1 && id.is_some() && current.get(0).unwrap().id != id.unwrap() {
                 return Err(anyhow!("Conflicting transaction found on same date"));
             }
             Ok(())
@@ -128,6 +132,9 @@ fn verify_new(transaction: &rusqlite::Transaction, transaction_type: Transaction
                 [account_id, from_account_id.unwrap(), date.to_string(), transaction_type.to_string()]
             )?;
             if !current.is_empty() {
+                return Err(anyhow!("Conflicting transaction found on same date"));
+            }
+            if current.len() == 1 && id.is_some() && current.get(0).unwrap().id != id.unwrap() {
                 return Err(anyhow!("Conflicting transaction found on same date"));
             }
             Ok(())
