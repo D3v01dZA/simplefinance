@@ -131,7 +131,7 @@ fn verify_unique(transaction: &rusqlite::Transaction, id: Option<String>, transa
                 formatcp!("{TRANSACTION_SELECT} WHERE account_id = ?1 and from_account_id = ?2 and date = ?3 and type = ?4"),
                 [account_id, from_account_id.unwrap(), date.to_string(), transaction_type.to_string()]
             )?;
-            if !current.is_empty() {
+            if !current.is_empty() && id.is_none() {
                 return Err(anyhow!("Conflicting transaction found on same date"));
             }
             if current.len() == 1 && id.is_some() && current.get(0).unwrap().id != id.unwrap() {
