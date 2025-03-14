@@ -44,6 +44,9 @@ pub enum ExpenseCategory {
     Bills,
     #[serde(rename = "CLOTHING" )]
     #[strum(serialize="CLOTHING", to_string="CLOTHING")]
+    Car,
+    #[serde(rename = "CAR" )]
+    #[strum(serialize="CAR", to_string="CAR")]
     Clothing,
     #[serde(rename = "ELECTRONICS" )]
     #[strum(serialize="ELECTRONICS", to_string="ELECTRONICS")]
