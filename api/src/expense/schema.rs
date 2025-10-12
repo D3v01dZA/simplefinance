@@ -57,6 +57,9 @@ pub enum ExpenseCategory {
     #[serde(rename = "FITNESS" )]
     #[strum(serialize="FITNESS", to_string="FITNESS")]
     Fitness,
+    #[serde(rename = "GIFTS" )]
+    #[strum(serialize="GIFTS", to_string="GIFTS")]
+    Gifts,
     #[serde(rename = "GROCERIES" )]
     #[strum(serialize="GROCERIES", to_string="GROCERIES")]
     Groceries,

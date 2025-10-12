@@ -18,6 +18,7 @@ export enum ExpenseCategory {
     ELECTRONICS = "ELECTRONICS",
     ENTERTAINMENT = "ENTERTAINMENT",
     FITNESS = "FITNESS",
+    GIFTS = "GIFTS",
     GROCERIES = "GROCERIES",
     HOUSE = "HOUSE",
     MEDICAL = "MEDICAL",
