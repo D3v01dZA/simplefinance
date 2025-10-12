@@ -23,7 +23,7 @@ export interface JTranscation {
     id: string,
     description: string,
     date: string,
-    value: number,
+    value: string,
     type: TransactionType,
     accountId: string,
     fromAccountId: string,
@@ -39,13 +39,57 @@ function description(transaction: JTranscation) {
     return transaction.description === "" ? titleCase(transaction.type) : transaction.description;
 }
 
-function Transaction({ transaction, accounts, edit, del }: { transaction: JTranscation, accounts: IndexedAccounts, edit: () => void, del: () => void }) {
+function Transaction({ 
+    transaction, 
+    accounts, 
+    edit, 
+    del, 
+    inlineTransaction, 
+    setInlineTransaction, 
+    saveInlineTransaction,
+    savingInlineTransaction
+}: { 
+        transaction: JTranscation, 
+        accounts: IndexedAccounts, 
+        edit: () => void, 
+        del: () => void, 
+        inlineTransaction: Partial<JTranscation>, 
+        setInlineTransaction: (transaction: Partial<JTranscation>) => void,
+        saveInlineTransaction: (transaction: JTranscation) => void,
+        savingInlineTransaction: boolean
+}) {
     return (
         <tr>
             <td style={cellStyle("100px")}>{titleCase(transaction.type)}</td>
-            <td style={cellStyle("100px")}>{description(transaction)}</td>
-            <td style={cellStyle("100px")}>{transaction.date}</td>
-            <td style={cellStyle("100px")} className="text-end">{formattedAmount(transaction.value)}</td>
+            <td style={cellStyle("100px")}>
+                <Form.Control 
+                    type="text" 
+                    disabled={savingInlineTransaction}
+                    value={inlineTransaction.id === transaction.id && inlineTransaction.description ? inlineTransaction.description : description(transaction)} 
+                    onChange={e => setInlineTransaction({ id: transaction.id, description: e.target.value })} 
+                    onBlur={e => saveInlineTransaction({ ...transaction, description: e.target.value })}
+                />
+            </td>
+            <td style={cellStyle("100px")}>
+                <Form.Control 
+                    type="date" 
+                    disabled={savingInlineTransaction}
+                    value={inlineTransaction.id === transaction.id && inlineTransaction.date ? inlineTransaction.date : transaction?.date} 
+                    onChange={e => setInlineTransaction({ id: transaction.id, date: e.target.value })} 
+                    onBlur={e => saveInlineTransaction({ ...transaction, date: e.target.value })}
+                />
+            </td>
+            <td style={cellStyle("100px")}>
+                <Form.Control 
+                    type="text" 
+                    disabled={savingInlineTransaction}
+                    style={{textAlign: "right"}}
+                    isInvalid={inlineTransaction.id === transaction.id && inlineTransaction.value ? !isValueValid(inlineTransaction.value) : !isValueValid(transaction?.value)}
+                    value={inlineTransaction.id === transaction.id && inlineTransaction.value ? inlineTransaction.value : transaction.value} 
+                    onChange={e => setInlineTransaction({ id: transaction.id, value: e.target.value })} 
+                    onBlur={e => saveInlineTransaction({ ...transaction, value: e.target.value })}
+                />
+            </td>
             <td style={cellStyle("200px")}><AccountName accountId={transaction.accountId} accounts={accounts} /></td>
             <td style={cellStyle("200px")}><AccountName accountId={transaction.fromAccountId} accounts={accounts} /></td>
             <td style={cellStyle("100px")}>
@@ -82,6 +126,9 @@ export function Transactions() {
 
     const [transactions, setTransactions] = useState<JTranscation[]>([]);
     const [filteredTransactions, setFilteredTransactions] = useState<JTranscation[]>([]);
+    
+    const [inlineTransaction, setInlineTransaction] = useState<Partial<JTranscation>>({});
+    const [savingInlineTransaction, setSavingInlineTransaction] = useState<boolean>(false);
 
     const [showAdding, setShowAdding] = useState(false);
     const [adding, setAdding] = useState(false);
@@ -163,6 +210,16 @@ export function Transactions() {
 
     function globalFilterActive() {
         return lastTransactionByTypeFilter !== "none";
+    }
+
+    function saveInlineTranscation(transaction: JTranscation) {
+        setSavingInlineTransaction(true);
+        post(server, `/api/transaction/${transaction.id}/`, transaction)
+            .then(() => refreshTransactions())
+            .catch(error => err(error))
+            .finally(() => {
+                setSavingInlineTransaction(false);
+            });
     }
 
     useEffect(() => refreshTransactions(), []);
@@ -363,7 +420,7 @@ export function Transactions() {
                                         .then(() => refreshTransactions())
                                         .catch(error => err(error));
                                 }
-                            }} />)}
+                            }} inlineTransaction={inlineTransaction} setInlineTransaction={setInlineTransaction} saveInlineTransaction={saveInlineTranscation} savingInlineTransaction={savingInlineTransaction} />)}
                             <tr>
                                 <td></td>
                                 <td></td>

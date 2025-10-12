@@ -62,7 +62,7 @@ export function BalanceTransactionModal({
         if (!transaction || transaction.date === date) {
             return undefined;
         }
-        return formattedAmount(transaction.value) + "";
+        return formattedAmount(transaction.value as unknown as number) + "";
     }
 
     function value(accountId: string): string {

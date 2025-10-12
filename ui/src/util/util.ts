@@ -156,7 +156,7 @@ export function sortTransactions(transactions: JTranscation[]) {
             }
         }
         if (left.value !== right.value) {
-            return right.value - left.value;
+            return (right.value as unknown as number) - (left.value as unknown as number);
         }
         if (left.description !== right.description) {
             return left.description.localeCompare(right.description);

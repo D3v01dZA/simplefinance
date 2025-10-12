@@ -115,6 +115,9 @@ export function Expenses() {
     const [expenses, setExpenses] = useState<JExpense[]>([]);
     const [filteredExpenses, setFilteredExpenses] = useState<JExpense[]>([]);
 
+    const [inlineExpense, setInlineExpense] = useState<Partial<JExpense>>({});
+    const [savingInlineExpense, setSavingInlineExpense] = useState<boolean>(false);
+
     const [showAdding, setShowAdding] = useState(false);
     const [adding, setAdding] = useState(false);
     const [addingExpense, setAddingExpense] = useState<Partial<JExpense>>({});
@@ -186,6 +189,16 @@ export function Expenses() {
     function clearSearchParams() {
         [...searchParams.keys()].forEach(key => searchParams.delete(key));
         _setSearchParams(searchParams);
+    }
+
+    function saveInlineExpense(expense: JExpense) {
+        setSavingInlineExpense(true);
+        post(server, `/api/expense/${expense.id}/`, expense)
+            .then(() => refresh())
+            .catch(error => err(error))
+            .finally(() => {
+                setSavingInlineExpense(false);
+            });
     }
 
     useEffect(() => refresh(), []);
@@ -356,7 +369,6 @@ export function Expenses() {
         </Popover>
     );
 
-
     return (
         <Container>
             <Row>
@@ -375,11 +387,53 @@ export function Expenses() {
                         <tbody>
                             {expensesToDisplay().map((expense, index) => (
                                 <tr key={index}>
-                                    <td style={cellStyle("100px")}>{titleCase(expense.category)}</td>
-                                    <td style={cellStyle("250px")}>{expense.external}</td>
-                                    <td style={cellStyle("250px")}>{expense.description}</td>
-                                    <td style={cellStyle("100px")}>{expense.date}</td>
-                                    <td style={cellStyle("100px")} className="text-end">{formattedUnknownAmount(expense.value)}</td>
+                                    <td style={cellStyle("150px")}>
+                                        <Form.Select 
+                                            value={expense?.category} 
+                                            disabled={savingInlineExpense}
+                                            onChange={e => saveInlineExpense({ ...expense, category: e.target.value as ExpenseCategory})}
+                                        >
+                                            {Object.keys(ExpenseCategory).map(type => <option key={type} value={type}>{titleCase(type)}</option>)}
+                                        </Form.Select>
+                                    </td>
+                                    <td style={cellStyle("250px")}>
+                                        <Form.Control 
+                                            type="text" 
+                                            disabled={savingInlineExpense}
+                                            value={inlineExpense.id === expense.id && inlineExpense.external ? inlineExpense.external : expense?.external} 
+                                            onChange={e => setInlineExpense({ id: expense.id, external: e.target.value })} 
+                                            onBlur={e => saveInlineExpense({ ...expense, external: e.target.value })}
+                                        />
+                                    </td>
+                                    <td style={cellStyle("250px")}>
+                                        <Form.Control 
+                                            type="text" 
+                                            disabled={savingInlineExpense}
+                                            value={inlineExpense.id === expense.id && inlineExpense.description ? inlineExpense.description : expense?.description} 
+                                            onChange={e => setInlineExpense({ id: expense.id, description: e.target.value })} 
+                                            onBlur={e => saveInlineExpense({ ...expense, description: e.target.value })}
+                                        />
+                                    </td>
+                                    <td style={cellStyle("100px")}>
+                                        <Form.Control 
+                                            type="date" 
+                                            disabled={savingInlineExpense}
+                                            value={inlineExpense.id === expense.id && inlineExpense.date ? inlineExpense.date : expense?.date} 
+                                            onChange={e => setInlineExpense({ id: expense.id, date: e.target.value })} 
+                                            onBlur={e => saveInlineExpense({ ...expense, date: e.target.value })}
+                                        />
+                                    </td>
+                                    <td style={cellStyle("100px")}>
+                                        <Form.Control 
+                                            type="text" 
+                                            disabled={savingInlineExpense}
+                                            style={{textAlign: "right"}}
+                                            isInvalid={inlineExpense.id === expense.id && inlineExpense.value ? !isValueValid(inlineExpense.value) : !isValueValid(expense?.value)}
+                                            value={inlineExpense.id === expense.id && inlineExpense.value ? inlineExpense.value : expense.value} 
+                                            onChange={e => setInlineExpense({ id: expense.id, value: e.target.value })} 
+                                            onBlur={e => saveInlineExpense({ ...expense, value: e.target.value })}
+                                        />
+                                    </td>
                                     <td style={cellStyle("100px")}>
                                         <ButtonGroup>
                                             <Button onClick={() => {
