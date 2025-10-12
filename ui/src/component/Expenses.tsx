@@ -152,7 +152,10 @@ export function Expenses() {
         }
 
         get<JExpense[]>(server, `/api/expense/`)
-            .then(expenses => setExpenses(sortExpenses(expenses)))
+            .then(expenses => { 
+                setExpenses(sortExpenses(expenses))
+                setInlineExpense({});
+            })
             .catch(error => err(error));
     }
 
@@ -402,7 +405,11 @@ export function Expenses() {
                                             disabled={savingInlineExpense}
                                             value={inlineExpense.id === expense.id && inlineExpense.external ? inlineExpense.external : expense?.external} 
                                             onChange={e => setInlineExpense({ id: expense.id, external: e.target.value })} 
-                                            onBlur={e => saveInlineExpense({ ...expense, external: e.target.value })}
+                                            onBlur={e => {
+                                                if (inlineExpense.id === expense.id && inlineExpense.external) { 
+                                                    saveInlineExpense({ ...expense, external: e.target.value }) 
+                                                }
+                                            }}
                                         />
                                     </td>
                                     <td style={cellStyle("250px")}>
@@ -411,7 +418,11 @@ export function Expenses() {
                                             disabled={savingInlineExpense}
                                             value={inlineExpense.id === expense.id && inlineExpense.description ? inlineExpense.description : expense?.description} 
                                             onChange={e => setInlineExpense({ id: expense.id, description: e.target.value })} 
-                                            onBlur={e => saveInlineExpense({ ...expense, description: e.target.value })}
+                                            onBlur={e => {
+                                                if (inlineExpense.id === expense.id && inlineExpense.description) { 
+                                                    saveInlineExpense({ ...expense, description: e.target.value }) 
+                                                }
+                                            }}
                                         />
                                     </td>
                                     <td style={cellStyle("100px")}>
@@ -420,7 +431,11 @@ export function Expenses() {
                                             disabled={savingInlineExpense}
                                             value={inlineExpense.id === expense.id && inlineExpense.date ? inlineExpense.date : expense?.date} 
                                             onChange={e => setInlineExpense({ id: expense.id, date: e.target.value })} 
-                                            onBlur={e => saveInlineExpense({ ...expense, date: e.target.value })}
+                                            onBlur={e => {
+                                                if (inlineExpense.id === expense.id && inlineExpense.date) { 
+                                                    saveInlineExpense({ ...expense, date: e.target.value }) 
+                                                }
+                                            }}
                                         />
                                     </td>
                                     <td style={cellStyle("100px")}>
@@ -431,7 +446,11 @@ export function Expenses() {
                                             isInvalid={inlineExpense.id === expense.id && inlineExpense.value ? !isValueValid(inlineExpense.value) : !isValueValid(expense?.value)}
                                             value={inlineExpense.id === expense.id && inlineExpense.value ? inlineExpense.value : expense.value} 
                                             onChange={e => setInlineExpense({ id: expense.id, value: e.target.value })} 
-                                            onBlur={e => saveInlineExpense({ ...expense, value: e.target.value })}
+                                            onBlur={e => {
+                                                if (inlineExpense.id === expense.id && inlineExpense.value) { 
+                                                    saveInlineExpense({ ...expense, value: e.target.value }) 
+                                                }
+                                            }}
                                         />
                                     </td>
                                     <td style={cellStyle("100px")}>

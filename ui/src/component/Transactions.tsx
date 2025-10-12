@@ -67,7 +67,11 @@ function Transaction({
                     disabled={savingInlineTransaction}
                     value={inlineTransaction.id === transaction.id && inlineTransaction.description ? inlineTransaction.description : description(transaction)} 
                     onChange={e => setInlineTransaction({ id: transaction.id, description: e.target.value })} 
-                    onBlur={e => saveInlineTransaction({ ...transaction, description: e.target.value })}
+                    onBlur={e => {
+                        if (inlineTransaction.id === transaction.id && inlineTransaction.description) { 
+                            saveInlineTransaction({ ...transaction, description: e.target.value }) 
+                        }
+                    }}
                 />
             </td>
             <td style={cellStyle("100px")}>
@@ -76,7 +80,11 @@ function Transaction({
                     disabled={savingInlineTransaction}
                     value={inlineTransaction.id === transaction.id && inlineTransaction.date ? inlineTransaction.date : transaction?.date} 
                     onChange={e => setInlineTransaction({ id: transaction.id, date: e.target.value })} 
-                    onBlur={e => saveInlineTransaction({ ...transaction, date: e.target.value })}
+                    onBlur={e => {
+                        if (inlineTransaction.id === transaction.id && inlineTransaction.date) { 
+                            saveInlineTransaction({ ...transaction, date: e.target.value }) 
+                        }
+                    }}
                 />
             </td>
             <td style={cellStyle("100px")}>
@@ -87,7 +95,11 @@ function Transaction({
                     isInvalid={inlineTransaction.id === transaction.id && inlineTransaction.value ? !isValueValid(inlineTransaction.value) : !isValueValid(transaction?.value)}
                     value={inlineTransaction.id === transaction.id && inlineTransaction.value ? inlineTransaction.value : transaction.value} 
                     onChange={e => setInlineTransaction({ id: transaction.id, value: e.target.value })} 
-                    onBlur={e => saveInlineTransaction({ ...transaction, value: e.target.value })}
+                    onBlur={e => {
+                        if (inlineTransaction.id === transaction.id && inlineTransaction.value) { 
+                            saveInlineTransaction({ ...transaction, value: e.target.value }) 
+                        }
+                    }}
                 />
             </td>
             <td style={cellStyle("200px")}><AccountName accountId={transaction.accountId} accounts={accounts} /></td>
@@ -164,11 +176,17 @@ export function Transactions() {
     function refreshTransactions() {
         if (accountId !== undefined) {
             get<JTranscation[]>(server, `/api/account/${accountId}/transaction/`)
-                .then(transactions => setTransactions(sortTransactions(transactions)))
+                .then(transactions => {
+                    setTransactions(sortTransactions(transactions))
+                    setInlineTransaction({})
+                })
                 .catch(error => err(error));
         } else {
             get<JTranscation[]>(server, `/api/transaction/`)
-                .then(transactions => setTransactions(sortTransactions(transactions)))
+                .then(transactions => {
+                    setTransactions(sortTransactions(transactions))
+                    setInlineTransaction({})
+                })
                 .catch(error => err(error));
         }
     }
