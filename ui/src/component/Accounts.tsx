@@ -10,13 +10,14 @@ import { LinkContainer } from "react-router-bootstrap";
 import { DEFAULT_PAGE_SIZE, Pagination } from "./Pagination";
 import { useSearchParams } from "react-router-dom";
 import React from "react";
+import { cellStyle } from "../util/common";
 
 function Account({ account, edit, del }: { account: JAccount, edit: () => void, del: () => void }) {
     return (
         <tr>
-            <td>{titleCase(account.type)}</td>
-            <td>{account.name}</td>
-            <td>
+            <td style={cellStyle("100px")}>{titleCase(account.type)}</td>
+            <td style={cellStyle("100px")}>{account.name}</td>
+            <td style={cellStyle("100px")}>
                 <ButtonGroup>
                     <LinkContainer to={`/accounts/${account.id}/transactions`}>
                         <Button variant="warning">

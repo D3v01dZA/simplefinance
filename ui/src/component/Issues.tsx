@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { constrainedPage, defaultAccountId, err, get, post, sortTransactions, titleCase, today } from "../util/util";
 import { DEFAULT_PAGE_SIZE, Pagination } from "./Pagination";
 import { useSearchParams } from "react-router-dom";
-import { AccountName } from "../util/common";
+import { AccountName, cellStyle } from "../util/common";
 import { TransactionModal, WorkingTransaction } from "./sub-component/TransactionModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBalanceScale, faCartPlus, faWrench } from "@fortawesome/free-solid-svg-icons";
@@ -164,11 +164,11 @@ export function Issues() {
                         <tbody>
                             {issuesToDisplay().map((issue, index) => (
                                 <tr key={index}>
-                                    <td>{titleCase(issue.type)}</td>
-                                    <td>{issue.date}</td>
-                                    <td><AccountName accounts={accounts} accountId={issue.accountId} /></td>
-                                    <td>{issue.fromAccountId === undefined ? null : <AccountName accounts={accounts} accountId={issue.fromAccountId} />}</td>
-                                    <td>
+                                    <td style={cellStyle("100px")}>{titleCase(issue.type)}</td>
+                                    <td style={cellStyle("100px")}>{issue.date}</td>
+                                    <td style={cellStyle("200px")}><AccountName accounts={accounts} accountId={issue.accountId} /></td>
+                                    <td style={cellStyle("200px")}>{issue.fromAccountId === undefined ? null : <AccountName accounts={accounts} accountId={issue.fromAccountId} />}</td>
+                                    <td style={cellStyle("100px")}>
                                         <ButtonGroup>
                                             {
                                                 isBalance(issue.type) ? <>

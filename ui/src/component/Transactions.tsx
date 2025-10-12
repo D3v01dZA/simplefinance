@@ -8,7 +8,7 @@ import { constrainedPage, defaultAccountId, del, err, filterTransactions, format
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPenToSquare, faTrash, faPlus, faCartPlus, faFilter, faBalanceScale } from '@fortawesome/free-solid-svg-icons';
 import { DEFAULT_PAGE_SIZE, Pagination } from "./Pagination";
-import { AccountName } from "../util/common";
+import { AccountName, cellStyle } from "../util/common";
 import { selectSettings } from "../app/settingSlice";
 import { TransactionModal, WorkingTransaction } from "./sub-component/TransactionModal";
 import { BalanceAddingTranscations, BalanceTransactionModal } from "./sub-component/BalanceTransactionModal";
@@ -42,13 +42,13 @@ function description(transaction: JTranscation) {
 function Transaction({ transaction, accounts, edit, del }: { transaction: JTranscation, accounts: IndexedAccounts, edit: () => void, del: () => void }) {
     return (
         <tr>
-            <td>{titleCase(transaction.type)}</td>
-            <td>{description(transaction)}</td>
-            <td>{transaction.date}</td>
-            <td className="text-end">{formattedAmount(transaction.value)}</td>
-            <td><AccountName accountId={transaction.accountId} accounts={accounts} /></td>
-            <td><AccountName accountId={transaction.fromAccountId} accounts={accounts} /></td>
-            <td>
+            <td style={cellStyle("100px")}>{titleCase(transaction.type)}</td>
+            <td style={cellStyle("100px")}>{description(transaction)}</td>
+            <td style={cellStyle("100px")}>{transaction.date}</td>
+            <td style={cellStyle("100px")} className="text-end">{formattedAmount(transaction.value)}</td>
+            <td style={cellStyle("200px")}><AccountName accountId={transaction.accountId} accounts={accounts} /></td>
+            <td style={cellStyle("200px")}><AccountName accountId={transaction.fromAccountId} accounts={accounts} /></td>
+            <td style={cellStyle("100px")}>
                 <ButtonGroup>
                     <Button onClick={() => edit()}>
                         <FontAwesomeIcon title="Edit" icon={faPenToSquare} />
