@@ -1,0 +1,6 @@
+[
+  {
+    "label": "Dev",
+    "command": "(trap 'kill 0' SIGINT; (cd api && cargo run) & (cd ui && npm run dev | tee) & wait)"
+  }
+]

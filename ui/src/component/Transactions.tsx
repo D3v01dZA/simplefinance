@@ -5,23 +5,22 @@ import {
   Col,
   Container,
   Form,
-  Modal,
   OverlayTrigger,
   Popover,
   Row,
   Table,
 } from "react-bootstrap"
-import { useParams, useSearchParams } from "react-router-dom"
+import { useSearchParams } from "react-router-dom"
 import { IndexedAccounts, selectAccounts } from "../app/accountSlice"
 import { useAppSelector } from "../app/hooks"
 import { selectServer } from "../app/serverSlice"
 import {
+  accountTitle,
   constrainedPage,
   defaultAccountId,
   del,
   err,
   filterTransactions,
-  formattedAmount,
   get,
   isValueValid,
   post,
@@ -207,7 +206,6 @@ function Transaction({
 }
 
 export function Transactions() {
-  const { accountId } = useParams()
   const [searchParams, _setSearchParams] = useSearchParams()
 
   const server = useAppSelector(selectServer)
@@ -216,6 +214,8 @@ export function Transactions() {
 
   const [pageSize, _setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [page, _setPage] = useState(0)
+
+  const [accountId, _setAccountId] = useState<string>()
 
   const [transactionTypeFilter, setTransactionTypeFilter] = useState<
     "none" | TransactionType
@@ -278,21 +278,12 @@ export function Transactions() {
   }
 
   function refreshTransactions() {
-    if (accountId !== undefined) {
-      get<JTranscation[]>(server, `/api/account/${accountId}/transaction/`)
-        .then((transactions) => {
-          setTransactions(sortTransactions(transactions))
-          setInlineTransaction({})
-        })
-        .catch((error) => err(error))
-    } else {
-      get<JTranscation[]>(server, `/api/transaction/`)
-        .then((transactions) => {
-          setTransactions(sortTransactions(transactions))
-          setInlineTransaction({})
-        })
-        .catch((error) => err(error))
-    }
+    get<JTranscation[]>(server, `/api/transaction/`)
+      .then((transactions) => {
+        setTransactions(sortTransactions(transactions))
+        setInlineTransaction({})
+      })
+      .catch((error) => err(error))
   }
 
   function transactionsToDisplay() {
@@ -320,6 +311,10 @@ export function Transactions() {
     } else {
       setSearchParams("pageSize", pageSize)
     }
+  }
+
+  function setAccountId(accountId: string | undefined) {
+    setSearchParams("accountId", accountId)
   }
 
   function setSearchParams(key: string, value: string | number | undefined) {
@@ -365,6 +360,13 @@ export function Transactions() {
       )
     } else {
       let filtered = transactions
+      if (accountId !== undefined) {
+        filtered = filtered.filter(
+          (transaction) =>
+            transaction.accountId === accountId ||
+            transaction.fromAccountId === accountId,
+        )
+      }
       if (transactionTypeFilter !== "none") {
         filtered = filtered.filter(
           (transaction) => transaction.type === transactionTypeFilter,
@@ -416,9 +418,16 @@ export function Transactions() {
     lastTransactionByTypeFilter,
     lastSFilter,
     lastNFilter,
+    accountId,
   ])
 
   useEffect(() => {
+    const accountId = searchParams.get("accountId")
+    if (accountId === null) {
+      _setAccountId(undefined)
+    } else {
+      _setAccountId(accountId)
+    }
     const transactionType = searchParams.get("type")
     if (transactionType !== null) {
       setTransactionTypeFilter(transactionType as TransactionType)
@@ -593,6 +602,37 @@ export function Transactions() {
     </Popover>
   )
 
+  const accountFilterPopover = (
+    <Popover>
+      <Popover.Body>
+        <h6>Local Filters</h6>
+        <Form.Group>
+          <Form.Label>Account</Form.Label>
+          <Form.Select
+            disabled={globalFilterActive()}
+            value={accountId ?? "none"}
+            onChange={(e) => {
+              if (e.target.value === "none") {
+                setAccountId(undefined)
+              } else {
+                setAccountId(e.target.value)
+              }
+            }}
+          >
+            <option value={"none"}></option>
+            {Object.keys(accounts).map((key) => (
+              <option key={key} value={key}>
+                {accountTitle(key, accounts)}
+              </option>
+            ))}
+          </Form.Select>
+        </Form.Group>
+        {globalFilters}
+        {clearFilters}
+      </Popover.Body>
+    </Popover>
+  )
+
   return (
     <Container>
       <Row xl={1}>
@@ -658,7 +698,25 @@ export function Transactions() {
                   </OverlayTrigger>
                 </th>
                 <th>Value</th>
-                <th>Account</th>
+                <th>
+                  Account{" "}
+                  <OverlayTrigger
+                    trigger="click"
+                    placement="bottom"
+                    overlay={accountFilterPopover}
+                  >
+                    <FontAwesomeIcon
+                      color={
+                        globalFilterActive()
+                          ? "red"
+                          : accountId === undefined
+                          ? undefined
+                          : "blue"
+                      }
+                      icon={faFilter}
+                    />
+                  </OverlayTrigger>
+                </th>
                 <th>From</th>
                 <th>Actions</th>
               </tr>

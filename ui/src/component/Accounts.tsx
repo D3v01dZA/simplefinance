@@ -49,7 +49,12 @@ function Account({
       <td style={cellStyle("100px")}>{account.name}</td>
       <td style={cellStyle("100px")}>
         <ButtonGroup>
-          <LinkContainer to={`/accounts/${account.id}/transactions`}>
+          <LinkContainer
+            to={{
+              pathname: "/transactions",
+              search: `?accountId=${account.id}`
+            }}
+          >
             <Button variant="warning">
               <FontAwesomeIcon
                 title="Transactions"

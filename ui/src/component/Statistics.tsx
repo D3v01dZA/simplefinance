@@ -429,7 +429,7 @@ export function Statistics() {
     get<JStatistic[]>(server, url(dateType, viewType))
       .then((balances) => setStatistics(balances))
       .catch((error) => err(error))
-  }, [dateType, viewType])
+  }, [server, dateType, viewType])
 
   useEffect(() => {
     setShownLines(new Set())
@@ -459,9 +459,9 @@ export function Statistics() {
 
   function headers(): { [key: string]: string } {
     if (
-      viewType == ViewType.TOTAL_BALANCE ||
-      viewType == ViewType.TOTAL_TRANSFER ||
-      viewType == ViewType.FLOW
+      viewType === ViewType.TOTAL_BALANCE ||
+      viewType === ViewType.TOTAL_TRANSFER ||
+      viewType === ViewType.FLOW
     ) {
       return Object.values(TotalType).reduce((acc, cur) => {
         acc[cur as string] = titleCase(cur)
@@ -527,44 +527,46 @@ export function Statistics() {
           </Form.Group>
         </Col>
       </Row>
-      {
-        <Row xs={1} md={2} xl={2}>
-          <Col>
-            <Form.Group>
-              <Form.Label>Start Date</Form.Label>
-              <Form.Select
-                value={lineStartDate}
-                onChange={(e) => setLineStartDate(e.target.value)}
-              >
-                {[<option value=""></option>].concat(
-                  statistics.map((balance) => (
-                    <option key={balance.date} value={balance.date}>
-                      {balance.date}
-                    </option>
-                  )),
-                )}
-              </Form.Select>
-            </Form.Group>
-          </Col>
-          <Col>
-            <Form.Group>
-              <Form.Label>End Date</Form.Label>
-              <Form.Select
-                value={lineEndDate}
-                onChange={(e) => setLineEndDate(e.target.value)}
-              >
-                {[<option value=""></option>].concat(
-                  statistics.map((balance) => (
-                    <option key={balance.date} value={balance.date}>
-                      {balance.date}
-                    </option>
-                  )),
-                )}
-              </Form.Select>
-            </Form.Group>
-          </Col>
-        </Row>
-      }
+      {graphType === GraphType.TABLE ? null : (
+        <>
+          <Row xs={1} md={2} xl={2}>
+            <Col>
+              <Form.Group>
+                <Form.Label>Start Date</Form.Label>
+                <Form.Select
+                  value={lineStartDate}
+                  onChange={(e) => setLineStartDate(e.target.value)}
+                >
+                  {[<option value=""></option>].concat(
+                    statistics.map((balance) => (
+                      <option key={balance.date} value={balance.date}>
+                        {balance.date}
+                      </option>
+                    )),
+                  )}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+            <Col>
+              <Form.Group>
+                <Form.Label>End Date</Form.Label>
+                <Form.Select
+                  value={lineEndDate}
+                  onChange={(e) => setLineEndDate(e.target.value)}
+                >
+                  {[<option value=""></option>].concat(
+                    statistics.map((balance) => (
+                      <option key={balance.date} value={balance.date}>
+                        {balance.date}
+                      </option>
+                    )),
+                  )}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+          </Row>
+        </>
+      )}
       <Row xs={1} md={2} xl={3}>
         <Col>
           <Form.Group>

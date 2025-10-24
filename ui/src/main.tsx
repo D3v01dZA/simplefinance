@@ -28,11 +28,7 @@ const router = createHashRouter([
       },
       {
         path: "/transactions",
-        element: <AllTransactions />,
-      },
-      {
-        path: "/accounts/:accountId/transactions",
-        element: <SpecificTransactions />,
+        element: <Transactions />,
       },
       {
         path: "/expenses",
@@ -53,16 +49,6 @@ const router = createHashRouter([
     ],
   },
 ])
-
-// Exists to prevent react router from reusing the Transaction component
-function AllTransactions() {
-  return <Transactions />
-}
-
-// Exists to prevent react router from reusing the Transaction component
-function SpecificTransactions() {
-  return <Transactions />
-}
 
 function Redirector() {
   const navigate = useNavigate()
