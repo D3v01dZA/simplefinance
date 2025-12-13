@@ -48,6 +48,9 @@ pub enum ExpenseCategory {
     #[serde(rename = "CAR" )]
     #[strum(serialize="CAR", to_string="CAR")]
     Clothing,
+    #[serde(rename = "COFFEE" )]
+    #[strum(serialize="COFFEE", to_string="COFFEE")]
+    Coffee,
     #[serde(rename = "ELECTRONICS" )]
     #[strum(serialize="ELECTRONICS", to_string="ELECTRONICS")]
     Electronics,
@@ -84,6 +87,9 @@ pub enum ExpenseCategory {
     #[serde(rename = "VACATIONS" )]
     #[strum(serialize="VACATIONS", to_string="VACATIONS")]
     Vacations,
+    #[serde(rename = "WORK" )]
+    #[strum(serialize="WORK", to_string="WORK")]
+    Work,
 }
 
 impl FromRow for Expense {

@@ -41,6 +41,7 @@ export enum ExpenseCategory {
   BILLS = "BILLS",
   CAR = "CAR",
   CLOTHING = "CLOTHING",
+  COFFEE = "COFFEE",
   ELECTRONICS = "ELECTRONICS",
   ENTERTAINMENT = "ENTERTAINMENT",
   FITNESS = "FITNESS",
@@ -53,6 +54,7 @@ export enum ExpenseCategory {
   SMART_HOME = "SMART_HOME",
   SUBSCRIPTIONS = "SUBSCRIPTIONS",
   VACATIONS = "VACATIONS",
+  WORK = "WORK",
 }
 
 enum LastSType {
