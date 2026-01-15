@@ -38,6 +38,7 @@ export enum ExpenseCategory {
   UNKNOWN = "UNKNOWN",
   OTHER = "OTHER",
 
+  AI = "AI",
   BILLS = "BILLS",
   CAR = "CAR",
   CLOTHING = "CLOTHING",

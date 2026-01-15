@@ -39,6 +39,9 @@ pub enum ExpenseCategory {
     #[strum(serialize="OTHER", to_string="OTHER")]
     Other,
 
+    #[serde(rename = "AI" )]
+    #[strum(serialize="AI", to_string="AI")]
+    AI,
     #[serde(rename = "BILLS" )]
     #[strum(serialize="BILLS", to_string="BILLS")]
     Bills,

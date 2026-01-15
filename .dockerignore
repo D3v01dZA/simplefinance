@@ -1,0 +1,39 @@
+# Rust build artifacts
+api/target
+**/target
+
+# Node.js dependencies and build artifacts
+ui/node_modules
+**/node_modules
+ui/build
+ui/dist
+
+# Git files
+.git
+.gitignore
+
+# Documentation
+*.md
+README.md
+BUILD.md
+LICENSE
+
+# IDE and editor files
+.vscode
+.idea
+.zed
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+**/*.test.*
+**/__tests__
+
+# Local development files
+.env
+.env.local
