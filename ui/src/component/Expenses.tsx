@@ -34,30 +34,6 @@ import { DEFAULT_PAGE_SIZE, Pagination } from "./Pagination"
 import { useSearchParams } from "react-router-dom"
 import { cellStyle } from "../util/common"
 
-export enum ExpenseCategory {
-  UNKNOWN = "UNKNOWN",
-  OTHER = "OTHER",
-
-  AI = "AI",
-  BILLS = "BILLS",
-  CAR = "CAR",
-  CLOTHING = "CLOTHING",
-  COFFEE = "COFFEE",
-  ELECTRONICS = "ELECTRONICS",
-  ENTERTAINMENT = "ENTERTAINMENT",
-  FITNESS = "FITNESS",
-  GIFTS = "GIFTS",
-  GROCERIES = "GROCERIES",
-  HOUSE = "HOUSE",
-  MEDICAL = "MEDICAL",
-  PETS = "PETS",
-  RESTAURANTS = "RESTAURANTS",
-  SMART_HOME = "SMART_HOME",
-  SUBSCRIPTIONS = "SUBSCRIPTIONS",
-  VACATIONS = "VACATIONS",
-  WORK = "WORK",
-}
-
 enum LastSType {
   DAYS = "DAYS",
   WEEKS = "WEEKS",
@@ -68,7 +44,7 @@ interface JExpense {
   id: string
   description: string
   external: string
-  category: ExpenseCategory
+  category: string
   date: string
   value: string
 }
@@ -76,6 +52,7 @@ interface JExpense {
 function ExpenseModal({
   show,
   setShow,
+  categories,
   expense,
   setExpense,
   saving,
@@ -83,6 +60,7 @@ function ExpenseModal({
 }: {
   show: boolean
   setShow: (value: boolean) => void
+  categories: string[]
   expense: Partial<JExpense>
   setExpense: (expense: Partial<JExpense>) => void
   saving: boolean
@@ -124,11 +102,11 @@ function ExpenseModal({
               onChange={(e) =>
                 setExpense({
                   ...expense,
-                  category: e.target.value as ExpenseCategory,
+                  category: e.target.value,
                 })
               }
             >
-              {Object.keys(ExpenseCategory).map((type) => (
+              {categories.map((type) => (
                 <option key={type} value={type}>
                   {titleCase(type)}
                 </option>
@@ -180,6 +158,8 @@ export function Expenses() {
   const [expenses, setExpenses] = useState<JExpense[]>([])
   const [filteredExpenses, setFilteredExpenses] = useState<JExpense[]>([])
 
+  const [categories, setCategories] = useState<string[]>([])
+
   const [inlineExpense, setInlineExpense] = useState<Partial<JExpense>>({})
   const [savingInlineExpense, setSavingInlineExpense] = useState<boolean>(false)
 
@@ -191,9 +171,7 @@ export function Expenses() {
   const [editing, setEditing] = useState(false)
   const [editingExpense, setEditingExpense] = useState<Partial<JExpense>>({})
 
-  const [categoryFilter, setCategoryFilter] = useState<
-    "none" | ExpenseCategory
-  >("none")
+  const [categoryFilter, setCategoryFilter] = useState<string>("none")
   const [descriptionFilter, setDescriptionFilter] = useState("")
   const [externalFilter, setExternalFilter] = useState("")
   const [dateFilter, setDateFilter] = useState("")
@@ -218,10 +196,15 @@ export function Expenses() {
       })
     }
 
-    get<JExpense[]>(server, `/api/expense/`)
-      .then((expenses) => {
-        setExpenses(sortExpenses(expenses))
-        setInlineExpense({})
+    get<string[]>(server, `/api/expense-category/`)
+      .then((categories) => {
+        setCategories(categories)
+        get<JExpense[]>(server, `/api/expense/`)
+          .then((expenses) => {
+            setExpenses(sortExpenses(expenses))
+            setInlineExpense({})
+          })
+          .catch((error) => err(error))
       })
       .catch((error) => err(error))
   }
@@ -339,7 +322,7 @@ export function Expenses() {
   useEffect(() => {
     const category = searchParams.get("category")
     if (category !== null) {
-      setCategoryFilter(category as ExpenseCategory)
+      setCategoryFilter(category)
     } else {
       setCategoryFilter("none")
     }
@@ -415,7 +398,7 @@ export function Expenses() {
             onChange={(e) => setSearchParams("category", e.target.value)}
           >
             <option value={"none"}></option>
-            {Object.keys(ExpenseCategory).map((type) => (
+            {categories.map((type) => (
               <option key={type} value={type}>
                 {titleCase(type)}
               </option>
@@ -569,11 +552,11 @@ export function Expenses() {
                       onChange={(e) =>
                         saveInlineExpense({
                           ...expense,
-                          category: e.target.value as ExpenseCategory,
+                          category: e.target.value,
                         })
                       }
                     >
-                      {Object.keys(ExpenseCategory).map((type) => (
+                      {categories.map((type) => (
                         <option key={type} value={type}>
                           {titleCase(type)}
                         </option>
@@ -743,7 +726,7 @@ export function Expenses() {
                       onClick={() => {
                         setAddingExpense({
                           description: "",
-                          category: ExpenseCategory.UNKNOWN,
+                          category: "UNKNOWN",
                           date: today(),
                           value: "0",
                         })
@@ -769,6 +752,7 @@ export function Expenses() {
       <ExpenseModal
         show={showAdding}
         setShow={setShowAdding}
+        categories={categories}
         expense={addingExpense}
         setExpense={setAddingExpense}
         saving={adding}
@@ -786,6 +770,7 @@ export function Expenses() {
       <ExpenseModal
         show={showEditing}
         setShow={setShowEditing}
+        categories={categories}
         expense={editingExpense}
         setExpense={setEditingExpense}
         saving={editing}

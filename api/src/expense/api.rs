@@ -1,8 +1,9 @@
 use actix_web::{delete, Error, error, get, HttpResponse, post, web};
 use log::{error, info};
+use strum::IntoEnumIterator;
 use crate::db::{do_in_transaction, Pool};
 use crate::expense::db;
-use crate::expense::schema::{NewExpense, Expense};
+use crate::expense::schema::{Expense, ExpenseCategory, NewExpense};
 
 #[post("/api/expense/")]
 pub async fn create_expense(db: web::Data<Pool>, new_expense: web::Json<NewExpense>) -> Result<HttpResponse, Error> {
@@ -71,4 +72,11 @@ pub async fn list_expenses(db: web::Data<Pool>) -> Result<HttpResponse, Error> {
             error!("HTTP list_expenses: [{err}]");
             return error::ErrorInternalServerError(err)
         })
+}
+
+#[get("/api/expense-category/")]
+pub async fn list_expense_categories() -> Result<HttpResponse, Error> {
+    info!("HTTP list_expense_categories");
+    let categories: Vec<ExpenseCategory> = ExpenseCategory::iter().collect();
+    Ok(HttpResponse::Ok().json(categories))
 }

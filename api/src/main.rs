@@ -46,6 +46,7 @@ macro_rules! app (
         .service(transaction::api::get_transaction)
         .service(transaction::api::list_transactions)
 
+        .service(expense::api::list_expense_categories)
         .service(expense::api::create_expense)
         .service(expense::api::update_expense)
         .service(expense::api::delete_expense)

@@ -23,7 +23,6 @@ import {
 import React from "react"
 import { IndexedAccounts, selectAccounts } from "../app/accountSlice"
 import { useSearchParams } from "react-router-dom"
-import { ExpenseCategory } from "./Expenses"
 
 interface JValue {
   name: string
@@ -129,6 +128,7 @@ function lines(
   viewType: ViewType,
   shownLines: Set<string>,
   accounts: IndexedAccounts,
+  categories: string[],
 ) {
   switch (viewType) {
     case ViewType.TOTAL_BALANCE:
@@ -246,13 +246,11 @@ function lines(
         </React.Fragment>
       )
     case ViewType.EXPENSES:
-      const expensesColorPalette = generateColorPalette(
-        Object.values(ExpenseCategory).length + 2,
-      )
+      const expensesColorPalette = generateColorPalette(categories.length + 2)
       return (
         <React.Fragment>
           {["TOTAL", "CASH"]
-            .concat([...Object.values(ExpenseCategory)] as string[])
+            .concat([...categories] as string[])
             .map((category, index) => (
               <Line
                 key={category}
@@ -319,6 +317,8 @@ export function Statistics() {
 
   const server = useAppSelector(selectServer)
   const accounts = useAppSelector(selectAccounts)
+
+  const [categories, setCategories] = useState<string[]>([])
 
   const [graphType, _setGraphType] = useState(DEFAULT_GRAPH_TYPE)
   const [lineStartDate, setLineStartDate] = useState("")
@@ -426,8 +426,13 @@ export function Statistics() {
   }, [searchParams])
 
   useEffect(() => {
-    get<JStatistic[]>(server, url(dateType, viewType))
-      .then((balances) => setStatistics(balances))
+    get<string[]>(server, `/api/expense-category/`)
+      .then((categories) => {
+        setCategories(categories)
+        get<JStatistic[]>(server, url(dateType, viewType))
+          .then((balances) => setStatistics(balances))
+          .catch((error) => err(error))
+      })
       .catch((error) => err(error))
   }, [server, dateType, viewType])
 
@@ -469,27 +474,25 @@ export function Statistics() {
       }, {} as { [key: string]: string })
     }
     if (
-      viewType == ViewType.ACCOUNT_BALANCE ||
-      viewType == ViewType.ACCOUNT_TRANSFER
+      viewType === ViewType.ACCOUNT_BALANCE ||
+      viewType === ViewType.ACCOUNT_TRANSFER
     ) {
       return Object.values(accounts).reduce((acc, value) => {
         acc[value.id] = accountTitle(value.id, accounts)
         return acc
       }, {} as { [key: string]: string })
     }
-    if (viewType == ViewType.FLOW_GROUPING) {
+    if (viewType === ViewType.FLOW_GROUPING) {
       return Object.values(FlowGroupingType).reduce((acc, cur) => {
         acc[cur as string] = titleCase(cur)
         return acc
       }, {} as { [key: string]: string })
     }
-    if (viewType == ViewType.EXPENSES) {
-      return ["TOTAL", "CASH"]
-        .concat([...Object.values(ExpenseCategory)] as string[])
-        .reduce((acc, cur) => {
-          acc[cur] = titleCase(cur)
-          return acc
-        }, {} as { [key: string]: string })
+    if (viewType === ViewType.EXPENSES) {
+      return ["TOTAL", "CASH"].concat(categories).reduce((acc, cur) => {
+        acc[cur] = titleCase(cur)
+        return acc
+      }, {} as { [key: string]: string })
     }
     console.log("Unknown " + viewType)
     return {}
@@ -628,7 +631,7 @@ export function Statistics() {
               margin={{ top: 40, left: 65, right: 5, bottom: 5 }}
               data={data}
             >
-              {lines(viewType, shownLines, accounts)}
+              {lines(viewType, shownLines, accounts, categories)}
               <CartesianGrid stroke="#ccc" />
               <XAxis dataKey="date" />~
               <YAxis

@@ -75,7 +75,7 @@ pub fn cascade_delete_account(transaction: &Transaction, account_id: String) -> 
                     delete_setting(transaction, setting.id)
                         .map(|_| ())?
                 },
-                SettingKey::TransferWithoutBalanceIgnoredAccounts | SettingKey::NoRegularBalanceAccounts => {
+                SettingKey::TransferWithoutBalanceIgnoredAccounts | SettingKey::NoRegularBalanceAccounts | SettingKey::HiddenTransactionAccounts => {
                     delete_account_ids_in_account_id_array(transaction, &account_id, setting)?;
                 },
                 SettingKey::RepeatingTransfers => {
@@ -159,7 +159,7 @@ fn verify_new(transaction: &Transaction, setting_key: SettingKey) -> anyhow::Res
 fn verify(transaction: &Transaction, setting_key: SettingKey, value: String) -> anyhow::Result<()> {
     match setting_key {
         SettingKey::DefaultTransactionFromAccountId => verify_account_id_exists(transaction, value),
-        SettingKey::TransferWithoutBalanceIgnoredAccounts | SettingKey::NoRegularBalanceAccounts => verify_account_ids_exist_in_account_id_array(transaction, value),
+        SettingKey::TransferWithoutBalanceIgnoredAccounts | SettingKey::NoRegularBalanceAccounts | SettingKey::HiddenTransactionAccounts => verify_account_ids_exist_in_account_id_array(transaction, value),
         SettingKey::RepeatingTransfers => verify_repeating_transfers(transaction, value),
     }
 }
