@@ -107,17 +107,15 @@ export function BalanceTransactionModal({
         {Object.values(accounts)
           .filter((account) => account.type !== AccountType.EXTERNAL)
           .filter((account) => !account.hideNewTransactions)
-          .map((account) => account.id)
-          .filter((id) => {
+          .filter((account) => {
             if (specificAccounts === undefined) {
-              return !(
-                settings.NO_REGULAR_BALANCE_ACCOUNTS?.value ?? ""
-              ).includes(id)
+              return !account.noRegularBalance
             } else {
-              return specificAccounts.includes(id)
+              return specificAccounts.includes(account.id)
             }
           })
-          .map((id) => {
+          .map((account) => {
+            const id = account.id
             return (
               <Form.Group key={id}>
                 <Form.Label>

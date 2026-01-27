@@ -124,12 +124,7 @@ export function BulkTransactionModal({
               }
             >
               {Object.values(accounts)
-                .filter(
-                  (account) =>
-                    !(
-                      settings.NO_REGULAR_BALANCE_ACCOUNTS?.value ?? ""
-                    ).includes(account.id),
-                )
+                .filter((account) => !account.noRegularBalance)
                 .filter((account) => !account.hideNewTransactions)
                 .map((account) => (
                   <option key={account.id} value={account.id}>
@@ -162,12 +157,7 @@ export function BulkTransactionModal({
                     }
                   >
                     {Object.values(accounts)
-                      .filter(
-                        (account) =>
-                          !(
-                            settings.NO_REGULAR_BALANCE_ACCOUNTS?.value ?? ""
-                          ).includes(account.id),
-                      )
+                      .filter((account) => !account.noRegularBalance)
                       .filter((account) => !account.hideNewTransactions)
                       .map((account) => (
                         <option key={account.id} value={account.id}>
