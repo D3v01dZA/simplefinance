@@ -1,0 +1,1 @@
+ALTER TABLE account ADD no_regular_balance INTEGER NOT NULL DEFAULT 0;

@@ -26,12 +26,6 @@ pub enum SettingKey {
     #[serde(rename = "DEFAULT_TRANSACTION_FROM_ACCOUNT_ID" )]
     #[strum(serialize="DEFAULT_TRANSACTION_FROM_ACCOUNT_ID", to_string="DEFAULT_TRANSACTION_FROM_ACCOUNT_ID")]
     DefaultTransactionFromAccountId,
-    #[serde(rename = "NO_REGULAR_BALANCE_ACCOUNTS" )]
-    #[strum(serialize="NO_REGULAR_BALANCE_ACCOUNTS", to_string="NO_REGULAR_BALANCE_ACCOUNTS")]
-    NoRegularBalanceAccounts,
-    #[serde(rename = "HIDDEN_TRANSACTION_ACCOUNTS" )]
-    #[strum(serialize="HIDDEN_TRANSACTION_ACCOUNTS", to_string="HIDDEN_TRANSACTION_ACCOUNTS")]
-    HiddenTransactionAccounts,
     #[serde(rename = "REPEATING_TRANSFERS" )]
     #[strum(serialize="REPEATING_TRANSFERS", to_string="REPEATING_TRANSFERS")]
     RepeatingTransfers,

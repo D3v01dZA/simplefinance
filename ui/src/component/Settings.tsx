@@ -50,12 +50,6 @@ export function Settings() {
     setSavingUpdatedDefaultTransactionFromAccountId,
   ] = useState(false)
 
-  const [selectedNoBalanceAccounts, setSelectedNoBalanceAccounts] = useState("")
-  const [updatedNoBalanceAccounts, setUpdatedNoBalanceAccounts] = useState<
-    string[] | undefined
-  >(undefined)
-  const [savingNoBalanceAccounts, setSavingNoBalanceAccounts] = useState(false)
-
   const [updatedRepeatingTransfers, setUpdatedRepeatingTransfers] = useState<
     RepeatingTransfer[]
   >([])
@@ -137,18 +131,6 @@ export function Settings() {
           })
       }
     }
-    if (updatedNoBalanceAccounts !== undefined) {
-      saveMultipleAccountBasedValue(
-        SettingKey.NO_REGULAR_BALANCE_ACCOUNTS,
-        updatedNoBalanceAccounts,
-        (saving) => {
-          setSavingNoBalanceAccounts(saving)
-          if (!saving) {
-            setUpdatedNoBalanceAccounts(undefined)
-          }
-        },
-      )
-    }
     if (dirtyRepeatedTransfers) {
       let toSave: JSetting | undefined =
         settings[SettingKey.REPEATING_TRANSFERS]
@@ -227,32 +209,6 @@ export function Settings() {
     setDirtyRepeatedTransfers(false)
   }, [settings])
 
-  useEffect(() => {
-    setSelectedNoBalanceAccounts(defaultAccountId(settings, accounts))
-  }, [accounts, settings])
-
-  const noBalanceAccountIds = calculateAcountIds(
-    SettingKey.NO_REGULAR_BALANCE_ACCOUNTS,
-    updatedNoBalanceAccounts,
-  )
-  const noBalanceAccountIdsElement =
-    noBalanceAccountIds.length === 0 ? (
-      <>NONE</>
-    ) : (
-      noBalanceAccountIds.map((accountId) => (
-        <>
-          <br />
-          <AccountName
-            key={accountId}
-            accounts={accounts}
-            accountId={accountId}
-          />
-        </>
-      ))
-    )
-
-  console.log(updatedRepeatingTransfers)
-
   return (
     <Container>
       <Row xs={1} md={1} xl={1}>
@@ -275,52 +231,6 @@ export function Settings() {
                 </option>
               ))}
             </Form.Select>
-          </Form.Group>
-          <br />
-          <Form.Group>
-            <Form.Label>
-              No Regular Balance Accounts: {noBalanceAccountIdsElement}
-            </Form.Label>
-            <Form.Select
-              value={selectedNoBalanceAccounts}
-              onChange={(e) => setSelectedNoBalanceAccounts(e.target.value)}
-            >
-              {Object.values(accounts).map((account) => (
-                <option key={account.id} value={account.id}>
-                  <AccountName accountId={account.id} accounts={accounts} />
-                </option>
-              ))}
-            </Form.Select>
-            <br />
-            <ButtonGroup>
-              <Button
-                onClick={(_) => {
-                  if (
-                    !noBalanceAccountIds.includes(selectedNoBalanceAccounts)
-                  ) {
-                    setUpdatedNoBalanceAccounts(
-                      noBalanceAccountIds.concat(selectedNoBalanceAccounts),
-                    )
-                  }
-                }}
-              >
-                Add
-              </Button>
-              <Button
-                variant="danger"
-                onClick={(_) => {
-                  if (noBalanceAccountIds.includes(selectedNoBalanceAccounts)) {
-                    setUpdatedNoBalanceAccounts(
-                      noBalanceAccountIds.filter(
-                        (value) => value !== selectedNoBalanceAccounts,
-                      ),
-                    )
-                  }
-                }}
-              >
-                Remove
-              </Button>
-            </ButtonGroup>
           </Form.Group>
           <br />
           <Form.Label>Repeating Transfers</Form.Label>
@@ -516,8 +426,6 @@ export function Settings() {
               disabled={
                 (savingUpdatedDefaultTransactionFromAccountId ||
                   updatedDefaultTransactionFromAccountId === "") &&
-                (savingNoBalanceAccounts ||
-                  updatedNoBalanceAccounts === undefined) &&
                 (savingRepeatingTransfers || !dirtyRepeatedTransfers)
               }
               onClick={() => save()}

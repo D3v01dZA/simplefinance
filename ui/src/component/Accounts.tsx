@@ -53,6 +53,9 @@ function Account({
       <td style={cellStyle("20px")}>
         {account.transferWithoutBalanceIgnored ? "Yes" : "No"}
       </td>
+      <td style={cellStyle("20px")}>
+        {account.noRegularBalance ? "Yes" : "No"}
+      </td>
       <td style={cellStyle("100px")}>
         <ButtonGroup>
           <LinkContainer
@@ -158,6 +161,19 @@ function AccountModal({
                 setAccount({
                   ...account,
                   transferWithoutBalanceIgnored: e.target.checked,
+                })
+              }
+            />
+          </Form.Group>
+          <Form.Group>
+            <Form.Check
+              type="checkbox"
+              label="No Regular Balance"
+              checked={account?.noRegularBalance ?? false}
+              onChange={(e) =>
+                setAccount({
+                  ...account,
+                  noRegularBalance: e.target.checked,
                 })
               }
             />
@@ -393,6 +409,7 @@ export function Accounts() {
                 </th>
                 <th>Hide New Transactions</th>
                 <th>Transfer Without Balance Ignored</th>
+                <th>No Regular Balance</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -423,6 +440,7 @@ export function Accounts() {
                 <td></td>
                 <td></td>
                 <td></td>
+                <td></td>
                 <td>
                   <ButtonGroup>
                     <Button
@@ -432,6 +450,7 @@ export function Accounts() {
                           type: AccountType.SAVINGS,
                           hideNewTransactions: false,
                           transferWithoutBalanceIgnored: false,
+                          noRegularBalance: false,
                         })
                         setShowAdding(true)
                       }}

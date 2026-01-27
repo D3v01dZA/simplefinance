@@ -17,10 +17,6 @@ pub async fn list_issues(db: web::Data<Pool>) -> Result<HttpResponse, Error> {
     info!("HTTP list_issues");
     do_in_transaction(&db, |transaction| {
         let transactions = list_transactions(transaction)?;
-        let no_regular_balance_account_ids: HashSet<String> = get_setting_by_key(transaction, SettingKey::NoRegularBalanceAccounts)?
-            .map(|setting| HashSet::from_iter(setting.value.split(",").into_iter().map(|s| s.to_string())))
-            .unwrap_or_else(HashSet::new);
-
         let repeating_transfers: Vec<RepeatingTransfer> = get_setting_by_key(transaction, SettingKey::RepeatingTransfers)?
             .map(|setting| serde_json::from_str(&setting.value).unwrap())
             .unwrap_or_else(|| vec![]);
@@ -28,10 +24,10 @@ pub async fn list_issues(db: web::Data<Pool>) -> Result<HttpResponse, Error> {
         let accounts: HashMap<String, Account> = list_accounts(transaction)?.iter()
             .map(|account| (account.id.clone(), account.clone()))
             .collect();
-        return Ok((transactions, no_regular_balance_account_ids, repeating_transfers, accounts))
+        return Ok((transactions, repeating_transfers, accounts))
     })
         .await
-        .map(|(transactions, no_regular_balance_account_ids, repeating_transfers, accounts)| {
+        .map(|(transactions, repeating_transfers, accounts)| {
             let mut issues: Vec<Issue> = vec![];
             let mut account_ids_with_transfers_by_date: HashMap<NaiveDate, HashSet<String>> = HashMap::new();
             let mut dates_with_balances_by_account_ids: HashMap<String, HashSet<NaiveDate>> = HashMap::new();
@@ -58,7 +54,7 @@ pub async fn list_issues(db: web::Data<Pool>) -> Result<HttpResponse, Error> {
             }
 
             calculate_transfer_without_balances(&accounts, &mut issues, account_ids_with_transfers_by_date, &mut dates_with_balances_by_account_ids);
-            calculate_no_balances(no_regular_balance_account_ids, &accounts, &mut issues, dates_with_balances_by_account_ids);
+            calculate_no_balances(&accounts, &mut issues, dates_with_balances_by_account_ids);
             calculate_no_transfers(transactions, repeating_transfers, &mut issues);
 
             sort_issues(accounts, &mut issues);
@@ -150,11 +146,12 @@ fn calculate_transfer_without_balances(accounts: &HashMap<String, Account>, issu
     }
 }
 
-fn calculate_no_balances(no_regular_balance_account_ids: HashSet<String>, accounts: &HashMap<String, Account>, issues: &mut Vec<Issue>, dates_with_balances_by_account_ids: HashMap<String, HashSet<NaiveDate>>) {
+fn calculate_no_balances(accounts: &HashMap<String, Account>, issues: &mut Vec<Issue>, dates_with_balances_by_account_ids: HashMap<String, HashSet<NaiveDate>>) {
     // Just look at the end of last month for missing balances, don't go further back because it becomes a meal
     let first_day_of_this_month = Local::now().date_naive().with_day(1).unwrap();
     for account_id in accounts.keys() {
-        if !no_regular_balance_account_ids.contains(account_id) && accounts.get(account_id).unwrap().account_type != AccountType::External {
+        let account = accounts.get(account_id).unwrap();
+        if !account.no_regular_balance && account.account_type != AccountType::External {
             let dates_with_balances = dates_with_balances_by_account_ids.get(account_id);
             if dates_with_balances.is_none() { // No balances for the account, it's always wrong
                 issues.push(Issue {

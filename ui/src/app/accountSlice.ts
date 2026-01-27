@@ -13,6 +13,7 @@ export interface JAccount {
   type: AccountType
   hideNewTransactions: boolean
   transferWithoutBalanceIgnored: boolean
+  noRegularBalance: boolean
 }
 
 export enum AccountType {
