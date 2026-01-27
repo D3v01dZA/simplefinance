@@ -4,7 +4,7 @@ use actix_web::{Error, error, get, HttpResponse, web};
 use chrono::{Datelike, Days, Local, Months, NaiveDate};
 use log::{error, info};
 use crate::account::db::list_accounts;
-use crate::account::schema::{Account, AccountType};
+use crate::account::schema::Account;
 use crate::db::{do_in_transaction, Pool};
 use crate::issue::schema::{Issue, IssueType};
 use crate::setting::db::{get_setting_by_key};
@@ -151,7 +151,7 @@ fn calculate_no_balances(accounts: &HashMap<String, Account>, issues: &mut Vec<I
     let first_day_of_this_month = Local::now().date_naive().with_day(1).unwrap();
     for account_id in accounts.keys() {
         let account = accounts.get(account_id).unwrap();
-        if !account.no_regular_balance && account.account_type != AccountType::External {
+        if !account.no_regular_balance {
             let dates_with_balances = dates_with_balances_by_account_ids.get(account_id);
             if dates_with_balances.is_none() { // No balances for the account, it's always wrong
                 issues.push(Issue {

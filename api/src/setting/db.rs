@@ -75,9 +75,6 @@ pub fn cascade_delete_account(transaction: &Transaction, account_id: String) -> 
                     delete_setting(transaction, setting.id)
                         .map(|_| ())?
                 },
-                SettingKey::HiddenTransactionAccounts => {
-                    delete_account_ids_in_account_id_array(transaction, &account_id, setting)?;
-                },
                 SettingKey::RepeatingTransfers => {
                     delete_account_ids_in_repeating_transfers(transaction, &account_id, setting)?;
                 }
@@ -87,24 +84,7 @@ pub fn cascade_delete_account(transaction: &Transaction, account_id: String) -> 
     Ok(())
 }
 
-fn delete_account_ids_in_account_id_array(transaction: &Transaction, account_id: &String, setting: Setting) -> anyhow::Result<()> {
-    let filter: Vec<&str> = setting.value.split(",")
-        .filter(|part| part == &account_id.as_str())
-        .collect();
-    if filter.len() == 0 {
-        info!("Deleting setting [{}] [{}] because account [{}] was deleted", setting.id, setting.key, account_id);
-        delete_setting(transaction, setting.id)
-            .map(|_| ())?
-    } else {
-        info!("Updating setting [{}] [{}] because account [{}] was deleted", setting.id, setting.key, account_id);
-        update_setting(transaction, Setting {
-            id: setting.id,
-            key: setting.key,
-            value: filter.join(",")
-        }).map(|_| ())?
-    }
-    Ok(())
-}
+
 
 fn delete_account_ids_in_repeating_transfers(transaction: &Transaction, account_id: &String, setting: Setting) -> anyhow::Result<()> {
     let repeating_transfers: Vec<RepeatingTransfer> = serde_json::from_str(setting.value.as_str())?;
@@ -159,17 +139,11 @@ fn verify_new(transaction: &Transaction, setting_key: SettingKey) -> anyhow::Res
 fn verify(transaction: &Transaction, setting_key: SettingKey, value: String) -> anyhow::Result<()> {
     match setting_key {
         SettingKey::DefaultTransactionFromAccountId => verify_account_id_exists(transaction, value),
-        SettingKey::HiddenTransactionAccounts => verify_account_ids_exist_in_account_id_array(transaction, value),
         SettingKey::RepeatingTransfers => verify_repeating_transfers(transaction, value),
     }
 }
 
-fn verify_account_ids_exist_in_account_id_array(transaction: &Transaction, value: String) -> anyhow::Result<()> {
-    return value.split(",")
-        .map(|id| verify_account_id_exists(transaction, id.to_string()))
-        .filter(|result| result.is_err())
-        .collect();
-}
+
 
 fn verify_repeating_transfers(transaction: &Transaction, value: String) -> anyhow::Result<()> {
     let repeating_transfers: Vec<RepeatingTransfer> = serde_json::from_str(value.as_str())?;

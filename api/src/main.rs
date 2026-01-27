@@ -357,23 +357,7 @@ mod tests {
         }, resp);
         let default_transaction_setting = resp;
 
-        // Create setting - [DefaultTransactionFromAccountId, HiddenTransactionAccounts]
-        let req = test::TestRequest::post()
-            .uri("/api/setting/")
-            .set_json(NewSetting {
-                key: SettingKey::HiddenTransactionAccounts,
-                value: format!("{},{}", loan_account.id.clone(), savings_account.id.clone()),
-            })
-            .to_request();
-        let resp: Setting = test::call_and_read_body_json(&app, req).await;
-        assert_eq!(Setting {
-            id: resp.id.clone(),
-            key: SettingKey::HiddenTransactionAccounts,
-            value: format!("{},{}", loan_account.id.clone(), savings_account.id.clone()),
-        }, resp);
-        let hidden_transaction_setting = resp;
-
-        // Create setting - [DefaultTransactionFromAccountId, HiddenTransactionAccounts, RepeatingTransfers]
+        // Create setting - [DefaultTransactionFromAccountId, RepeatingTransfers]
         let req = test::TestRequest::post()
             .uri("/api/setting/")
             .set_json(NewSetting {
@@ -407,12 +391,12 @@ mod tests {
             value: format!("[{{\"start\":\"2024-01-02\",\"repeat\":\"WEEKLY\",\"repeat_count\":2,\"from_account_id\":\"{}\",\"to_account_ids\":[\"{}\"]}},{{\"start\":\"2024-01-03\",\"repeat\":\"MONTHLY\",\"repeat_count\":1,\"from_account_id\":\"{}\",\"to_account_ids\":[\"{}\"]}}]", loan_account.id.clone(), savings_account.id.clone(), savings_account.id.clone(), checking_account.id.clone())
         }, repeating_transfers);
 
-        // List no settings - [DefaultTransactionFromAccountId, HiddenTransactionAccounts]
+        // List no settings - [DefaultTransactionFromAccountId, RepeatingTransfers]
         let req = test::TestRequest::get()
             .uri("/api/setting/")
             .to_request();
         let resp: Vec<Setting> = test::call_and_read_body_json(&app, req).await;
-        assert_eq!(resp.len(), 3);
+        assert_eq!(resp.len(), 2);
 
         // ------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -713,17 +697,7 @@ mod tests {
         let code = response.response().status();
         assert_eq!(http::StatusCode::NOT_FOUND, code);
 
-        // Get setting now updated - [HiddenTransactionAccounts]
-        let req = test::TestRequest::get()
-            .uri(format!("/api/setting/{}/", hidden_transaction_setting.id.clone()).as_str())
-            .to_request();
-        let resp: Setting = test::call_and_read_body_json(&app, req).await;
-        assert_eq!(Setting {
-            id: resp.id.clone(),
-            key: SettingKey::HiddenTransactionAccounts,
-            value: format!("{}", loan_account.id.clone()),
-        }, resp);
-
+        // Get setting now updated - [RepeatingTransfers]
         let req = test::TestRequest::get()
             .uri(format!("/api/setting/{}/", repeating_transfers.id.clone()).as_str())
             .to_request();
@@ -758,17 +732,11 @@ mod tests {
 
         // ------------------------------------------------------------------------------------------------------------------------------------------------
 
-        // Delete HiddenTransactionAccounts setting first
-        let req = test::TestRequest::delete()
-            .uri(format!("/api/setting/{}/", hidden_transaction_setting.id.clone()).as_str())
-            .to_request();
-        let _: Setting = test::call_and_read_body_json(&app, req).await;
-
-        // Create setting with unknown account - [HiddenTransactionAccounts]
+        // Create setting with unknown account
         let req = test::TestRequest::post()
             .uri("/api/setting/")
             .set_json(NewSetting {
-                key: SettingKey::HiddenTransactionAccounts,
+                key: SettingKey::DefaultTransactionFromAccountId,
                 value: "example".to_string()
             })
             .to_request();
@@ -779,11 +747,21 @@ mod tests {
         assert_eq!(http::StatusCode::INTERNAL_SERVER_ERROR, code);
         assert_eq!("Account example does not exist", text);
 
-        // Create setting that already exists - [HiddenTransactionAccounts]
+        // Create DEFAULT_TRANSACTION_FROM_ACCOUNT_ID setting for duplicate test
         let req = test::TestRequest::post()
             .uri("/api/setting/")
             .set_json(NewSetting {
-                key: SettingKey::HiddenTransactionAccounts,
+                key: SettingKey::DefaultTransactionFromAccountId,
+                value: savings_account.id.clone(),
+            })
+            .to_request();
+        let _: Setting = test::call_and_read_body_json(&app, req).await;
+
+        // Create setting that already exists - DEFAULT_TRANSACTION_FROM_ACCOUNT_ID already exists
+        let req = test::TestRequest::post()
+            .uri("/api/setting/")
+            .set_json(NewSetting {
+                key: SettingKey::DefaultTransactionFromAccountId,
                 value: checking_account.id.clone(),
             })
             .to_request();
@@ -887,7 +865,7 @@ mod tests {
                 account_type: AccountType::External,
                 hide_new_transactions: false,
                 transfer_without_balance_ignored: true,
-                no_regular_balance: false,
+                no_regular_balance: true,
             })
             .to_request();
         let external: Account = test::call_and_read_body_json(&app, req).await;

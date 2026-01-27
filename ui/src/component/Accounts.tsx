@@ -18,6 +18,7 @@ import {
   faTrash,
   faMoneyBillTransfer,
   faFilter,
+  faCog,
 } from "@fortawesome/free-solid-svg-icons"
 import { useAppDispatch, useAppSelector } from "../app/hooks"
 import { selectServer } from "../app/serverSlice"
@@ -47,15 +48,6 @@ function Account({
     <tr>
       <td style={cellStyle("100px")}>{titleCase(account.type)}</td>
       <td style={cellStyle("100px")}>{account.name}</td>
-      <td style={cellStyle("20px")}>
-        {account.hideNewTransactions ? "Yes" : "No"}
-      </td>
-      <td style={cellStyle("20px")}>
-        {account.transferWithoutBalanceIgnored ? "Yes" : "No"}
-      </td>
-      <td style={cellStyle("20px")}>
-        {account.noRegularBalance ? "Yes" : "No"}
-      </td>
       <td style={cellStyle("100px")}>
         <ButtonGroup>
           <LinkContainer
@@ -88,6 +80,79 @@ function isNameValid(name: string | undefined) {
     return false
   }
   return true
+}
+
+function SettingsInfoModal({
+  show,
+  setShow,
+  accounts,
+}: {
+  show: boolean
+  setShow: (value: boolean) => void
+  accounts: { [id: string]: JAccount }
+}) {
+  const accountsWithHideNewTransactions = Object.values(accounts).filter(
+    (account) => account.hideNewTransactions,
+  )
+  const accountsWithTransferIgnored = Object.values(accounts).filter(
+    (account) => account.transferWithoutBalanceIgnored,
+  )
+  const accountsWithNoRegularBalance = Object.values(accounts).filter(
+    (account) => account.noRegularBalance,
+  )
+
+  return (
+    <Modal show={show} onHide={() => setShow(false)}>
+      <Modal.Header closeButton>
+        <Modal.Title>Account Settings Summary</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <h6>Hide New Transactions</h6>
+        {accountsWithHideNewTransactions.length === 0 ? (
+          <p className="text-muted">No accounts</p>
+        ) : (
+          <ul>
+            {accountsWithHideNewTransactions.map((account) => (
+              <li key={account.id}>
+                {account.name} ({titleCase(account.type)})
+              </li>
+            ))}
+          </ul>
+        )}
+        <hr />
+        <h6>Transfer Without Balance Ignored</h6>
+        {accountsWithTransferIgnored.length === 0 ? (
+          <p className="text-muted">No accounts</p>
+        ) : (
+          <ul>
+            {accountsWithTransferIgnored.map((account) => (
+              <li key={account.id}>
+                {account.name} ({titleCase(account.type)})
+              </li>
+            ))}
+          </ul>
+        )}
+        <hr />
+        <h6>No Regular Balance</h6>
+        {accountsWithNoRegularBalance.length === 0 ? (
+          <p className="text-muted">No accounts</p>
+        ) : (
+          <ul>
+            {accountsWithNoRegularBalance.map((account) => (
+              <li key={account.id}>
+                {account.name} ({titleCase(account.type)})
+              </li>
+            ))}
+          </ul>
+        )}
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={() => setShow(false)}>
+          Close
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  )
 }
 
 function AccountModal({
@@ -374,6 +439,8 @@ export function Accounts() {
     </Popover>
   )
 
+  const [showSettingsInfo, setShowSettingsInfo] = useState(false)
+
   return (
     <Container>
       <Row>
@@ -407,9 +474,6 @@ export function Accounts() {
                     />
                   </OverlayTrigger>
                 </th>
-                <th>Hide New Transactions</th>
-                <th>Transfer Without Balance Ignored</th>
-                <th>No Regular Balance</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -438,11 +502,11 @@ export function Accounts() {
               <tr>
                 <td></td>
                 <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
                 <td>
                   <ButtonGroup>
+                    <Button onClick={() => setShowSettingsInfo(true)}>
+                      <FontAwesomeIcon icon={faCog} />
+                    </Button>
                     <Button
                       variant="success"
                       onClick={() => {
@@ -504,6 +568,11 @@ export function Accounts() {
               setShowEditing(false)
             })
         }}
+      />
+      <SettingsInfoModal
+        show={showSettingsInfo}
+        setShow={setShowSettingsInfo}
+        accounts={accounts}
       />
     </Container>
   )
