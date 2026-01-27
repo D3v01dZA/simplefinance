@@ -50,19 +50,6 @@ export function Settings() {
     setSavingUpdatedDefaultTransactionFromAccountId,
   ] = useState(false)
 
-  const [
-    selectedTransferWithoutBalanceIgnoredAccounts,
-    setSelectedTransferWithoutBalanceIgnoredAccounts,
-  ] = useState("")
-  const [
-    updatedTransferWithoutBalanceIgnoredAccounts,
-    setUpdatedTransferWithoutBalanceIgnoredAccounts,
-  ] = useState<string[] | undefined>(undefined)
-  const [
-    savingTransferWithoutBalanceIgnoredAccounts,
-    setSavingTransferWithoutBalanceIgnoredAccounts,
-  ] = useState(false)
-
   const [selectedNoBalanceAccounts, setSelectedNoBalanceAccounts] = useState("")
   const [updatedNoBalanceAccounts, setUpdatedNoBalanceAccounts] = useState<
     string[] | undefined
@@ -149,18 +136,6 @@ export function Settings() {
             setSavingUpdatedDefaultTransactionFromAccountId(false)
           })
       }
-    }
-    if (updatedTransferWithoutBalanceIgnoredAccounts !== undefined) {
-      saveMultipleAccountBasedValue(
-        SettingKey.TRANSFER_WITHOUT_BALANCE_IGNORED_ACCOUNTS,
-        updatedTransferWithoutBalanceIgnoredAccounts,
-        (saving) => {
-          setSavingTransferWithoutBalanceIgnoredAccounts(saving)
-          if (!saving) {
-            setUpdatedTransferWithoutBalanceIgnoredAccounts(undefined)
-          }
-        },
-      )
     }
     if (updatedNoBalanceAccounts !== undefined) {
       saveMultipleAccountBasedValue(
@@ -253,34 +228,8 @@ export function Settings() {
   }, [settings])
 
   useEffect(() => {
-    setSelectedTransferWithoutBalanceIgnoredAccounts(
-      defaultAccountId(settings, accounts),
-    )
-  }, [accounts, settings])
-
-  useEffect(() => {
     setSelectedNoBalanceAccounts(defaultAccountId(settings, accounts))
   }, [accounts, settings])
-
-  const transferWithoutBalanceIgnoredIds = calculateAcountIds(
-    SettingKey.TRANSFER_WITHOUT_BALANCE_IGNORED_ACCOUNTS,
-    updatedTransferWithoutBalanceIgnoredAccounts,
-  )
-  const transferWithoutBalanceIgnoredIdsElement =
-    transferWithoutBalanceIgnoredIds.length === 0 ? (
-      <>NONE</>
-    ) : (
-      transferWithoutBalanceIgnoredIds.map((accountId) => (
-        <>
-          <br />
-          <AccountName
-            key={accountId}
-            accounts={accounts}
-            accountId={accountId}
-          />
-        </>
-      ))
-    )
 
   const noBalanceAccountIds = calculateAcountIds(
     SettingKey.NO_REGULAR_BALANCE_ACCOUNTS,
@@ -326,65 +275,6 @@ export function Settings() {
                 </option>
               ))}
             </Form.Select>
-          </Form.Group>
-          <br />
-          <Form.Group>
-            <Form.Label>
-              Transfer Without Balance Ignored Accounts:{" "}
-              {transferWithoutBalanceIgnoredIdsElement}
-            </Form.Label>
-            <Form.Select
-              value={selectedTransferWithoutBalanceIgnoredAccounts}
-              onChange={(e) =>
-                setSelectedTransferWithoutBalanceIgnoredAccounts(e.target.value)
-              }
-            >
-              {Object.values(accounts).map((account) => (
-                <option key={account.id} value={account.id}>
-                  <AccountName accountId={account.id} accounts={accounts} />
-                </option>
-              ))}
-            </Form.Select>
-            <br />
-            <ButtonGroup>
-              <Button
-                onClick={(_) => {
-                  if (
-                    !transferWithoutBalanceIgnoredIds.includes(
-                      selectedTransferWithoutBalanceIgnoredAccounts,
-                    )
-                  ) {
-                    setUpdatedTransferWithoutBalanceIgnoredAccounts(
-                      transferWithoutBalanceIgnoredIds.concat(
-                        selectedTransferWithoutBalanceIgnoredAccounts,
-                      ),
-                    )
-                  }
-                }}
-              >
-                Add
-              </Button>
-              <Button
-                variant="danger"
-                onClick={(_) => {
-                  if (
-                    transferWithoutBalanceIgnoredIds.includes(
-                      selectedTransferWithoutBalanceIgnoredAccounts,
-                    )
-                  ) {
-                    setUpdatedTransferWithoutBalanceIgnoredAccounts(
-                      transferWithoutBalanceIgnoredIds.filter(
-                        (value) =>
-                          value !==
-                          selectedTransferWithoutBalanceIgnoredAccounts,
-                      ),
-                    )
-                  }
-                }}
-              >
-                Remove
-              </Button>
-            </ButtonGroup>
           </Form.Group>
           <br />
           <Form.Group>
@@ -626,8 +516,6 @@ export function Settings() {
               disabled={
                 (savingUpdatedDefaultTransactionFromAccountId ||
                   updatedDefaultTransactionFromAccountId === "") &&
-                (savingTransferWithoutBalanceIgnoredAccounts ||
-                  updatedTransferWithoutBalanceIgnoredAccounts === undefined) &&
                 (savingNoBalanceAccounts ||
                   updatedNoBalanceAccounts === undefined) &&
                 (savingRepeatingTransfers || !dirtyRepeatedTransfers)

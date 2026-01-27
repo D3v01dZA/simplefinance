@@ -1,0 +1,1 @@
+ALTER TABLE account ADD hide_new_transactions INTEGER NOT NULL DEFAULT 0;

@@ -106,6 +106,7 @@ export function BalanceTransactionModal({
         </Form.Group>
         {Object.values(accounts)
           .filter((account) => account.type !== AccountType.EXTERNAL)
+          .filter((account) => !account.hideNewTransactions)
           .map((account) => account.id)
           .filter((id) => {
             if (specificAccounts === undefined) {

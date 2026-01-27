@@ -109,11 +109,13 @@ export function TransactionModal({
                 setTransaction({ ...transaction, accountId: e.target.value })
               }
             >
-              {Object.values(accounts).map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.name} ({titleCase(account.type)})
-                </option>
-              ))}
+              {Object.values(accounts)
+                .filter((account) => !account.hideNewTransactions)
+                .map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name} ({titleCase(account.type)})
+                  </option>
+                ))}
             </Form.Select>
           </Form.Group>
           <Form.Group hidden={transaction.type !== TransactionType.TRANSFER}>
@@ -128,11 +130,13 @@ export function TransactionModal({
                 })
               }
             >
-              {Object.values(accounts).map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.name} ({titleCase(account.type)})
-                </option>
-              ))}
+              {Object.values(accounts)
+                .filter((account) => !account.hideNewTransactions)
+                .map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name} ({titleCase(account.type)})
+                  </option>
+                ))}
             </Form.Select>
           </Form.Group>
         </Form>

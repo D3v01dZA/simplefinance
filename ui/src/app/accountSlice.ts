@@ -11,6 +11,8 @@ export interface JAccount {
   id: string
   name: string
   type: AccountType
+  hideNewTransactions: boolean
+  transferWithoutBalanceIgnored: boolean
 }
 
 export enum AccountType {

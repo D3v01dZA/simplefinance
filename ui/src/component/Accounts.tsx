@@ -47,12 +47,18 @@ function Account({
     <tr>
       <td style={cellStyle("100px")}>{titleCase(account.type)}</td>
       <td style={cellStyle("100px")}>{account.name}</td>
+      <td style={cellStyle("20px")}>
+        {account.hideNewTransactions ? "Yes" : "No"}
+      </td>
+      <td style={cellStyle("20px")}>
+        {account.transferWithoutBalanceIgnored ? "Yes" : "No"}
+      </td>
       <td style={cellStyle("100px")}>
         <ButtonGroup>
           <LinkContainer
             to={{
               pathname: "/transactions",
-              search: `?accountId=${account.id}`
+              search: `?accountId=${account.id}`,
             }}
           >
             <Button variant="warning">
@@ -129,6 +135,32 @@ function AccountModal({
                 </option>
               ))}
             </Form.Select>
+          </Form.Group>
+          <Form.Group>
+            <Form.Check
+              type="checkbox"
+              label="Hide New Transactions"
+              checked={account?.hideNewTransactions ?? false}
+              onChange={(e) =>
+                setAccount({
+                  ...account,
+                  hideNewTransactions: e.target.checked,
+                })
+              }
+            />
+          </Form.Group>
+          <Form.Group>
+            <Form.Check
+              type="checkbox"
+              label="Transfer Without Balance Ignored"
+              checked={account?.transferWithoutBalanceIgnored ?? false}
+              onChange={(e) =>
+                setAccount({
+                  ...account,
+                  transferWithoutBalanceIgnored: e.target.checked,
+                })
+              }
+            />
           </Form.Group>
         </Form>
       </Modal.Body>
@@ -359,6 +391,8 @@ export function Accounts() {
                     />
                   </OverlayTrigger>
                 </th>
+                <th>Hide New Transactions</th>
+                <th>Transfer Without Balance Ignored</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -387,12 +421,18 @@ export function Accounts() {
               <tr>
                 <td></td>
                 <td></td>
+                <td></td>
+                <td></td>
                 <td>
                   <ButtonGroup>
                     <Button
                       variant="success"
                       onClick={() => {
-                        setAddingAccount({ type: AccountType.SAVINGS })
+                        setAddingAccount({
+                          type: AccountType.SAVINGS,
+                          hideNewTransactions: false,
+                          transferWithoutBalanceIgnored: false,
+                        })
                         setShowAdding(true)
                       }}
                     >

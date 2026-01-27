@@ -17,10 +17,6 @@ pub async fn list_issues(db: web::Data<Pool>) -> Result<HttpResponse, Error> {
     info!("HTTP list_issues");
     do_in_transaction(&db, |transaction| {
         let transactions = list_transactions(transaction)?;
-        let transfer_without_balance_ignored_account_ids: HashSet<String> = get_setting_by_key(transaction, SettingKey::TransferWithoutBalanceIgnoredAccounts)?
-            .map(|setting| HashSet::from_iter(setting.value.split(",").into_iter().map(|s| s.to_string())))
-            .unwrap_or_else(HashSet::new);
-
         let no_regular_balance_account_ids: HashSet<String> = get_setting_by_key(transaction, SettingKey::NoRegularBalanceAccounts)?
             .map(|setting| HashSet::from_iter(setting.value.split(",").into_iter().map(|s| s.to_string())))
             .unwrap_or_else(HashSet::new);
@@ -32,10 +28,10 @@ pub async fn list_issues(db: web::Data<Pool>) -> Result<HttpResponse, Error> {
         let accounts: HashMap<String, Account> = list_accounts(transaction)?.iter()
             .map(|account| (account.id.clone(), account.clone()))
             .collect();
-        return Ok((transactions, transfer_without_balance_ignored_account_ids, no_regular_balance_account_ids, repeating_transfers, accounts))
+        return Ok((transactions, no_regular_balance_account_ids, repeating_transfers, accounts))
     })
         .await
-        .map(|(transactions, transfer_without_balance_ignored_account_ids, no_regular_balance_account_ids, repeating_transfers, accounts)| {
+        .map(|(transactions, no_regular_balance_account_ids, repeating_transfers, accounts)| {
             let mut issues: Vec<Issue> = vec![];
             let mut account_ids_with_transfers_by_date: HashMap<NaiveDate, HashSet<String>> = HashMap::new();
             let mut dates_with_balances_by_account_ids: HashMap<String, HashSet<NaiveDate>> = HashMap::new();
@@ -61,7 +57,7 @@ pub async fn list_issues(db: web::Data<Pool>) -> Result<HttpResponse, Error> {
                 }
             }
 
-            calculate_transfer_without_balances(transfer_without_balance_ignored_account_ids, &mut issues, account_ids_with_transfers_by_date, &mut dates_with_balances_by_account_ids);
+            calculate_transfer_without_balances(&accounts, &mut issues, account_ids_with_transfers_by_date, &mut dates_with_balances_by_account_ids);
             calculate_no_balances(no_regular_balance_account_ids, &accounts, &mut issues, dates_with_balances_by_account_ids);
             calculate_no_transfers(transactions, repeating_transfers, &mut issues);
 
@@ -124,11 +120,12 @@ fn find_latest_repeat_date(repeating_transfer: &RepeatingTransfer) -> NaiveDate 
     return date
 }
 
-fn calculate_transfer_without_balances(transfer_without_balance_ignored_account_ids: HashSet<String>, issues: &mut Vec<Issue>, account_ids_with_transfers_by_date: HashMap<NaiveDate, HashSet<String>>, dates_with_balances_by_account_ids: &mut HashMap<String, HashSet<NaiveDate>>) {
+fn calculate_transfer_without_balances(accounts: &HashMap<String, Account>, issues: &mut Vec<Issue>, account_ids_with_transfers_by_date: HashMap<NaiveDate, HashSet<String>>, dates_with_balances_by_account_ids: &mut HashMap<String, HashSet<NaiveDate>>) {
     // Look for dates that have a transfer but no balance
     for (date, account_ids) in account_ids_with_transfers_by_date.iter() {
         for account_id in account_ids {
-            if !transfer_without_balance_ignored_account_ids.contains(account_id) {
+            let account = accounts.get(account_id);
+            if account.is_some() && !account.unwrap().transfer_without_balance_ignored {
                 let dates_with_balances = dates_with_balances_by_account_ids.get(account_id);
                 if dates_with_balances.is_none() { // No balances for the account, it's always wrong
                     issues.push(Issue {

@@ -1,0 +1,1 @@
+ALTER TABLE account ADD transfer_without_balance_ignored INTEGER NOT NULL DEFAULT 0;

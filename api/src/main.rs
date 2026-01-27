@@ -134,6 +134,8 @@ mod tests {
             .set_json(NewAccount {
                 name: "Savings".to_string(),
                 account_type: AccountType::Savings,
+                hide_new_transactions: false,
+                transfer_without_balance_ignored: false,
             })
             .to_request();
         let resp: Account = test::call_and_read_body_json(&app, req).await;
@@ -141,6 +143,8 @@ mod tests {
             id: resp.id.clone(),
             name: "Savings".to_string(),
             account_type: AccountType::Savings,
+            hide_new_transactions: false,
+            transfer_without_balance_ignored: false,
         }, resp);
 
         // Update account - [Savings]
@@ -150,6 +154,8 @@ mod tests {
                 id: resp.id.clone(),
                 name: "Savings 2".to_string(),
                 account_type: AccountType::Savings,
+                hide_new_transactions: false,
+                transfer_without_balance_ignored: false,
             })
             .to_request();
         let resp: Account = test::call_and_read_body_json(&app, req).await;
@@ -157,6 +163,8 @@ mod tests {
             id: resp.id.clone(),
             name: "Savings 2".to_string(),
             account_type: AccountType::Savings,
+            hide_new_transactions: false,
+            transfer_without_balance_ignored: false,
         }, resp);
 
         // Delete original account - []
@@ -168,6 +176,8 @@ mod tests {
             id: resp.id.clone(),
             name: "Savings 2".to_string(),
             account_type: AccountType::Savings,
+            hide_new_transactions: false,
+            transfer_without_balance_ignored: false,
         }, resp);
 
         // List no accounts - []
@@ -183,6 +193,8 @@ mod tests {
             .set_json(NewAccount {
                 name: "Savings".to_string(),
                 account_type: AccountType::Savings,
+                hide_new_transactions: false,
+                transfer_without_balance_ignored: false,
             })
             .to_request();
         let resp: Account = test::call_and_read_body_json(&app, req).await;
@@ -190,6 +202,8 @@ mod tests {
             id: resp.id.clone(),
             name: "Savings".to_string(),
             account_type: AccountType::Savings,
+            hide_new_transactions: false,
+            transfer_without_balance_ignored: false,
         }, resp);
         let savings_account = resp.clone();
 
@@ -202,6 +216,8 @@ mod tests {
             id: resp.id.clone(),
             name: "Savings".to_string(),
             account_type: AccountType::Savings,
+            hide_new_transactions: false,
+            transfer_without_balance_ignored: false,
         }, resp);
 
         // Create second account - [Savings, Loan]
@@ -210,6 +226,8 @@ mod tests {
             .set_json(NewAccount {
                 name: "Loan".to_string(),
                 account_type: AccountType::Loan,
+                hide_new_transactions: false,
+                transfer_without_balance_ignored: false,
             })
             .to_request();
         let resp: Account = test::call_and_read_body_json(&app, req).await;
@@ -217,6 +235,8 @@ mod tests {
             id: resp.id.clone(),
             name: "Loan".to_string(),
             account_type: AccountType::Loan,
+            hide_new_transactions: false,
+            transfer_without_balance_ignored: false,
         }, resp);
         let loan_account = resp.clone();
 
@@ -226,6 +246,8 @@ mod tests {
             .set_json(NewAccount {
                 name: "Checking".to_string(),
                 account_type: AccountType::Checking,
+                hide_new_transactions: false,
+                transfer_without_balance_ignored: false,
             })
             .to_request();
         let resp: Account = test::call_and_read_body_json(&app, req).await;
@@ -233,6 +255,8 @@ mod tests {
             id: resp.id.clone(),
             name: "Checking".to_string(),
             account_type: AccountType::Checking,
+            hide_new_transactions: false,
+            transfer_without_balance_ignored: false,
         }, resp);
         let checking_account = resp.clone();
 
@@ -321,23 +345,23 @@ mod tests {
         }, resp);
         let default_transaction_setting = resp;
 
-        // Create setting - [DefaultTransactionFromAccountId, TransferWithoutBalanceIgnoredAccounts]
+        // Create setting - [DefaultTransactionFromAccountId, NoRegularBalanceAccounts]
         let req = test::TestRequest::post()
             .uri("/api/setting/")
             .set_json(NewSetting {
-                key: SettingKey::TransferWithoutBalanceIgnoredAccounts,
+                key: SettingKey::NoRegularBalanceAccounts,
                 value: format!("{},{}", loan_account.id.clone(), savings_account.id.clone()),
             })
             .to_request();
         let resp: Setting = test::call_and_read_body_json(&app, req).await;
         assert_eq!(Setting {
             id: resp.id.clone(),
-            key: SettingKey::TransferWithoutBalanceIgnoredAccounts,
+            key: SettingKey::NoRegularBalanceAccounts,
             value: format!("{},{}", loan_account.id.clone(), savings_account.id.clone()),
         }, resp);
-        let transfer_without_setting = resp;
+        let no_balance_setting = resp;
 
-        // Create setting - [DefaultTransactionFromAccountId, TransferWithoutBalanceIgnoredAccounts, RepeatingTransfers]
+        // Create setting - [DefaultTransactionFromAccountId, NoRegularBalanceAccounts, RepeatingTransfers]
         let req = test::TestRequest::post()
             .uri("/api/setting/")
             .set_json(NewSetting {
@@ -371,7 +395,7 @@ mod tests {
             value: format!("[{{\"start\":\"2024-01-02\",\"repeat\":\"WEEKLY\",\"repeat_count\":2,\"from_account_id\":\"{}\",\"to_account_ids\":[\"{}\"]}},{{\"start\":\"2024-01-03\",\"repeat\":\"MONTHLY\",\"repeat_count\":1,\"from_account_id\":\"{}\",\"to_account_ids\":[\"{}\"]}}]", loan_account.id.clone(), savings_account.id.clone(), savings_account.id.clone(), checking_account.id.clone())
         }, repeating_transfers);
 
-        // List no settings - [DefaultTransactionFromAccountId, TransferWithoutBalanceIgnoredAccounts]
+        // List no settings - [DefaultTransactionFromAccountId, NoRegularBalanceAccounts]
         let req = test::TestRequest::get()
             .uri("/api/setting/")
             .to_request();
@@ -650,6 +674,8 @@ mod tests {
             id: resp.id.clone(),
             name: "Loan".to_string(),
             account_type: AccountType::Loan,
+            hide_new_transactions: false,
+            transfer_without_balance_ignored: false,
         }, resp);
 
         // List no accounts - [Savings, Chceking]
@@ -674,14 +700,14 @@ mod tests {
         let code = response.response().status();
         assert_eq!(http::StatusCode::NOT_FOUND, code);
 
-        // Get setting now updated - [TransferWithoutBalanceIgnoredAccounts]
+        // Get setting now updated - [NoRegularBalanceAccounts]
         let req = test::TestRequest::get()
-            .uri(format!("/api/setting/{}/", transfer_without_setting.id.clone()).as_str())
+            .uri(format!("/api/setting/{}/", no_balance_setting.id.clone()).as_str())
             .to_request();
         let resp: Setting = test::call_and_read_body_json(&app, req).await;
         assert_eq!(Setting {
             id: resp.id.clone(),
-            key: SettingKey::TransferWithoutBalanceIgnoredAccounts,
+            key: SettingKey::NoRegularBalanceAccounts,
             value: format!("{}", loan_account.id.clone()),
         }, resp);
 
@@ -704,6 +730,8 @@ mod tests {
             id: resp.id.clone(),
             name: "Checking".to_string(),
             account_type: AccountType::Checking,
+            hide_new_transactions: false,
+            transfer_without_balance_ignored: false,
         }, resp);
 
         // Get setting now deleted - [RepeatingTransfers]
@@ -716,26 +744,26 @@ mod tests {
 
         // ------------------------------------------------------------------------------------------------------------------------------------------------
 
-        // Create setting with unknown account - [TransferWithoutBalanceIgnoredAccounts]
+        // Create setting with unknown account - [NoRegularBalanceAccounts]
         let req = test::TestRequest::post()
             .uri("/api/setting/")
             .set_json(NewSetting {
-                key: SettingKey::DefaultTransactionFromAccountId,
-                value: "example".to_string(),
+                key: SettingKey::HiddenTransactionAccounts,
+                value: "example".to_string()
             })
             .to_request();
-        let response = test::call_service(&app, req).await;
-        let code = response.response().status();
-        let vec = body::to_bytes(response.into_body()).await.unwrap().into();
-        let text = String::from_utf8(vec).unwrap();
+        let resp = test::call_service(&app, req).await;
+        let code = resp.status();
+        let body = test::read_body(resp).await;
+        let text = std::str::from_utf8(&body).unwrap();
         assert_eq!(http::StatusCode::INTERNAL_SERVER_ERROR, code);
         assert_eq!("Account example does not exist", text);
 
-        // Create setting that already exists - [TransferWithoutBalanceIgnoredAccounts]
+        // Create setting that already exists - [NoRegularBalanceAccounts]
         let req = test::TestRequest::post()
             .uri("/api/setting/")
             .set_json(NewSetting {
-                key: SettingKey::TransferWithoutBalanceIgnoredAccounts,
+                key: SettingKey::NoRegularBalanceAccounts,
                 value: savings_account.id.clone(),
             })
             .to_request();
@@ -744,7 +772,7 @@ mod tests {
         let vec = body::to_bytes(response.into_body()).await.unwrap().into();
         let text = String::from_utf8(vec).unwrap();
         assert_eq!(http::StatusCode::INTERNAL_SERVER_ERROR, code);
-        assert_eq!("Setting key TRANSFER_WITHOUT_BALANCE_IGNORED_ACCOUNTS already exists", text);
+        assert_eq!("Setting key NO_REGULAR_BALANCE_ACCOUNTS already exists", text);
 
         let req = test::TestRequest::post()
             .uri("/api/setting/")
@@ -837,6 +865,8 @@ mod tests {
             .set_json(NewAccount {
                 name: "External".to_string(),
                 account_type: AccountType::External,
+                hide_new_transactions: false,
+                transfer_without_balance_ignored: true,
             })
             .to_request();
         let external: Account = test::call_and_read_body_json(&app, req).await;
@@ -847,6 +877,8 @@ mod tests {
             .set_json(NewAccount {
                 name: "Savings".to_string(),
                 account_type: AccountType::Savings,
+                hide_new_transactions: false,
+                transfer_without_balance_ignored: false,
             })
             .to_request();
         let savings: Account = test::call_and_read_body_json(&app, req).await;
@@ -857,19 +889,13 @@ mod tests {
             .set_json(NewAccount {
                 name: "Loan".to_string(),
                 account_type: AccountType::Savings,
+                hide_new_transactions: false,
+                transfer_without_balance_ignored: false,
             })
             .to_request();
         let loan: Account = test::call_and_read_body_json(&app, req).await;
 
-        // Assign External to not show up in issues
-        let req = test::TestRequest::post()
-            .uri("/api/setting/")
-            .set_json(NewSetting {
-                key: SettingKey::TransferWithoutBalanceIgnoredAccounts,
-                value: external.id.clone(),
-            })
-            .to_request();
-        let _: Setting = test::call_and_read_body_json(&app, req).await;
+
 
         // Check there are 0 issues
         let req = test::TestRequest::get()

@@ -13,6 +13,10 @@ pub struct Account {
     pub name: String,
     #[serde(rename = "type")]
     pub account_type: AccountType,
+    #[serde(rename = "hideNewTransactions")]
+    pub hide_new_transactions: bool,
+    #[serde(rename = "transferWithoutBalanceIgnored")]
+    pub transfer_without_balance_ignored: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -20,6 +24,10 @@ pub struct NewAccount {
     pub name: String,
     #[serde(rename = "type")]
     pub account_type: AccountType,
+    #[serde(rename = "hideNewTransactions")]
+    pub hide_new_transactions: bool,
+    #[serde(rename = "transferWithoutBalanceIgnored")]
+    pub transfer_without_balance_ignored: bool,
 }
 
 #[derive(Debug, Clone, Display, EnumString, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -56,6 +64,8 @@ impl FromRow for Account {
             id: row.get("id")?,
             name: row.get("name")?,
             account_type: row.get("type")?,
+            hide_new_transactions: row.get::<_, i32>("hide_new_transactions")? != 0,
+            transfer_without_balance_ignored: row.get::<_, i32>("transfer_without_balance_ignored")? != 0,
         })
     }
 }
