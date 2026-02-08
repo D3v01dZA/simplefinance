@@ -124,7 +124,6 @@ export function BulkTransactionModal({
               }
             >
               {Object.values(accounts)
-                .filter((account) => !account.noRegularBalance)
                 .filter((account) => !account.hideNewTransactions)
                 .map((account) => (
                   <option key={account.id} value={account.id}>
