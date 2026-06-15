@@ -22,6 +22,8 @@ pub struct Account {
     // Prevents issues for accounts that don't need balance updates every period
     #[serde(rename = "noRegularBalance")]
     pub no_regular_balance: bool,
+    // Hides closed accounts from the accounts view by default
+    pub hidden: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -35,6 +37,7 @@ pub struct NewAccount {
     pub transfer_without_balance_ignored: bool,
     #[serde(rename = "noRegularBalance")]
     pub no_regular_balance: bool,
+    pub hidden: bool,
 }
 
 #[derive(Debug, Clone, Display, EnumString, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -74,6 +77,7 @@ impl FromRow for Account {
             hide_new_transactions: row.get::<_, i32>("hide_new_transactions")? != 0,
             transfer_without_balance_ignored: row.get::<_, i32>("transfer_without_balance_ignored")? != 0,
             no_regular_balance: row.get::<_, i32>("no_regular_balance")? != 0,
+            hidden: row.get::<_, i32>("hidden")? != 0,
         })
     }
 }

@@ -19,6 +19,8 @@ import {
   faMoneyBillTransfer,
   faFilter,
   faCog,
+  faEye,
+  faEyeSlash,
 } from "@fortawesome/free-solid-svg-icons"
 import { useAppDispatch, useAppSelector } from "../app/hooks"
 import { selectServer } from "../app/serverSlice"
@@ -100,6 +102,9 @@ function SettingsInfoModal({
   const accountsWithNoRegularBalance = Object.values(accounts).filter(
     (account) => account.noRegularBalance,
   )
+  const accountsHidden = Object.values(accounts).filter(
+    (account) => account.hidden,
+  )
 
   return (
     <Modal show={show} onHide={() => setShow(false)}>
@@ -139,6 +144,19 @@ function SettingsInfoModal({
         ) : (
           <ul>
             {accountsWithNoRegularBalance.map((account) => (
+              <li key={account.id}>
+                {account.name} ({titleCase(account.type)})
+              </li>
+            ))}
+          </ul>
+        )}
+        <hr />
+        <h6>Hidden</h6>
+        {accountsHidden.length === 0 ? (
+          <p className="text-muted">No accounts</p>
+        ) : (
+          <ul>
+            {accountsHidden.map((account) => (
               <li key={account.id}>
                 {account.name} ({titleCase(account.type)})
               </li>
@@ -243,6 +261,19 @@ function AccountModal({
               }
             />
           </Form.Group>
+          <Form.Group>
+            <Form.Check
+              type="checkbox"
+              label="Hide Account"
+              checked={account?.hidden ?? false}
+              onChange={(e) =>
+                setAccount({
+                  ...account,
+                  hidden: e.target.checked,
+                })
+              }
+            />
+          </Form.Group>
         </Form>
       </Modal.Body>
       <Modal.Footer>
@@ -273,6 +304,7 @@ export function Accounts() {
     "none" | AccountType
   >("none")
   const [nameFilter, setNameFilter] = useState("")
+  const [showHidden, setShowHidden] = useState(false)
   const [filteredAccounts, setFilteredAccounts] = useState<JAccount[]>([])
 
   const [pageSize, _setPageSize] = useState(DEFAULT_PAGE_SIZE)
@@ -285,6 +317,8 @@ export function Accounts() {
   const [showEditing, setShowEditing] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editingAccount, setEditingAccount] = useState<Partial<JAccount>>({})
+
+  const [showSettingsInfo, setShowSettingsInfo] = useState(false)
 
   function refreshAccounts() {
     function sortAccounts(accounts: JAccount[]) {
@@ -342,8 +376,11 @@ export function Accounts() {
 
   useEffect(() => {
     let filtered = Object.values(accounts)
+    if (!showHidden) {
+      filtered = filtered.filter((account) => !account.hidden)
+    }
     if (accountTypeFilter !== "none") {
-      filtered = Object.values(accounts).filter(
+      filtered = filtered.filter(
         (account) => account.type === accountTypeFilter,
       )
     }
@@ -354,7 +391,7 @@ export function Accounts() {
       )
     }
     setFilteredAccounts(filtered)
-  }, [accounts, accountTypeFilter, nameFilter])
+  }, [accounts, accountTypeFilter, nameFilter, showHidden])
 
   useEffect(() => {
     const transactionType = searchParams.get("type")
@@ -381,6 +418,7 @@ export function Accounts() {
     } else {
       _setPageSize(DEFAULT_PAGE_SIZE)
     }
+    setShowHidden(searchParams.get("showHidden") === "true")
   }, [searchParams])
 
   const clearFilters = (
@@ -438,8 +476,6 @@ export function Accounts() {
       </Popover.Body>
     </Popover>
   )
-
-  const [showSettingsInfo, setShowSettingsInfo] = useState(false)
 
   return (
     <Container>
@@ -508,6 +544,20 @@ export function Accounts() {
                       <FontAwesomeIcon icon={faCog} />
                     </Button>
                     <Button
+                      variant={showHidden ? "info" : "secondary"}
+                      onClick={() =>
+                        setSearchParams(
+                          "showHidden",
+                          showHidden ? undefined : "true",
+                        )
+                      }
+                      title={
+                        showHidden ? "Hide hidden accounts" : "Show hidden accounts"
+                      }
+                    >
+                      <FontAwesomeIcon icon={showHidden ? faEye : faEyeSlash} />
+                    </Button>
+                    <Button
                       variant="success"
                       onClick={() => {
                         setAddingAccount({
@@ -515,6 +565,7 @@ export function Accounts() {
                           hideNewTransactions: false,
                           transferWithoutBalanceIgnored: false,
                           noRegularBalance: false,
+                          hidden: false,
                         })
                         setShowAdding(true)
                       }}

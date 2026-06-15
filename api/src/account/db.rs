@@ -5,7 +5,7 @@ use uuid::Uuid;
 use crate::account::schema::{Account, NewAccount};
 use crate::db::{list, single};
 
-const ACCOUNT_COLUMNS: &str = "id, name, type, hide_new_transactions, transfer_without_balance_ignored, no_regular_balance";
+const ACCOUNT_COLUMNS: &str = "id, name, type, hide_new_transactions, transfer_without_balance_ignored, no_regular_balance, hidden";
 const ACCOUNT_SELECT: &str = formatcp!("SELECT {ACCOUNT_COLUMNS} FROM account");
 const ACCOUNT_RETURNING: &str = formatcp!("RETURNING {ACCOUNT_COLUMNS}");
 const ACCOUNT_ORDERING: &str = "ORDER BY type, name ASC";
@@ -13,16 +13,16 @@ const ACCOUNT_ORDERING: &str = "ORDER BY type, name ASC";
 pub fn create_account(transaction: &Transaction, new_account: NewAccount) -> anyhow::Result<Option<Account>> {
     return single(
         transaction,
-        formatcp!("INSERT INTO account ({ACCOUNT_COLUMNS}) VALUES (?1, ?2, ?3, ?4, ?5, ?6) {ACCOUNT_RETURNING}"),
-        [Uuid::new_v4().to_string(), new_account.name.clone(), new_account.account_type.to_string(), (new_account.hide_new_transactions as i32).to_string(), (new_account.transfer_without_balance_ignored as i32).to_string(), (new_account.no_regular_balance as i32).to_string()]
+        formatcp!("INSERT INTO account ({ACCOUNT_COLUMNS}) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7) {ACCOUNT_RETURNING}"),
+        [Uuid::new_v4().to_string(), new_account.name.clone(), new_account.account_type.to_string(), (new_account.hide_new_transactions as i32).to_string(), (new_account.transfer_without_balance_ignored as i32).to_string(), (new_account.no_regular_balance as i32).to_string(), (new_account.hidden as i32).to_string()]
     );
 }
 
 pub fn update_account(transaction: &Transaction, updated_account: Account) -> anyhow::Result<Option<Account>> {
     return single(
         transaction,
-        formatcp!("UPDATE account SET name = ?1, type = ?2, hide_new_transactions = ?3, transfer_without_balance_ignored = ?4, no_regular_balance = ?5 WHERE id = ?6 {ACCOUNT_RETURNING}"),
-        [updated_account.name, updated_account.account_type.to_string(), (updated_account.hide_new_transactions as i32).to_string(), (updated_account.transfer_without_balance_ignored as i32).to_string(), (updated_account.no_regular_balance as i32).to_string(), updated_account.id]
+        formatcp!("UPDATE account SET name = ?1, type = ?2, hide_new_transactions = ?3, transfer_without_balance_ignored = ?4, no_regular_balance = ?5, hidden = ?6 WHERE id = ?7 {ACCOUNT_RETURNING}"),
+        [updated_account.name, updated_account.account_type.to_string(), (updated_account.hide_new_transactions as i32).to_string(), (updated_account.transfer_without_balance_ignored as i32).to_string(), (updated_account.no_regular_balance as i32).to_string(), (updated_account.hidden as i32).to_string(), updated_account.id]
     );
 }
 

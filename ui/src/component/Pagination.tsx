@@ -8,7 +8,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons"
 import { maxPage } from "../util/util"
 
-export const DEFAULT_PAGE_SIZE = 15
+export const DEFAULT_PAGE_SIZE = 50
 
 export function Pagination({
   itemCount,

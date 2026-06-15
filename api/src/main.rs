@@ -137,6 +137,7 @@ mod tests {
                 hide_new_transactions: false,
                 transfer_without_balance_ignored: false,
                 no_regular_balance: false,
+                hidden: false,
             })
             .to_request();
         let resp: Account = test::call_and_read_body_json(&app, req).await;
@@ -147,6 +148,7 @@ mod tests {
             hide_new_transactions: false,
             transfer_without_balance_ignored: false,
             no_regular_balance: false,
+            hidden: false,
         }, resp);
 
         // Update account - [Savings]
@@ -159,6 +161,7 @@ mod tests {
                 hide_new_transactions: false,
                 transfer_without_balance_ignored: false,
                 no_regular_balance: false,
+                hidden: false,
             })
             .to_request();
         let resp: Account = test::call_and_read_body_json(&app, req).await;
@@ -169,6 +172,7 @@ mod tests {
             hide_new_transactions: false,
             transfer_without_balance_ignored: false,
             no_regular_balance: false,
+            hidden: false,
         }, resp);
 
         // Delete original account - []
@@ -183,6 +187,7 @@ mod tests {
             hide_new_transactions: false,
             transfer_without_balance_ignored: false,
             no_regular_balance: false,
+            hidden: false,
         }, resp);
 
         // List no accounts - []
@@ -201,6 +206,7 @@ mod tests {
                 hide_new_transactions: false,
                 transfer_without_balance_ignored: false,
                 no_regular_balance: false,
+                hidden: false,
             })
             .to_request();
         let resp: Account = test::call_and_read_body_json(&app, req).await;
@@ -211,6 +217,7 @@ mod tests {
             hide_new_transactions: false,
             transfer_without_balance_ignored: false,
             no_regular_balance: false,
+            hidden: false,
         }, resp);
         let savings_account = resp.clone();
 
@@ -226,6 +233,7 @@ mod tests {
             hide_new_transactions: false,
             transfer_without_balance_ignored: false,
             no_regular_balance: false,
+            hidden: false,
         }, resp);
 
         // Create second account - [Savings, Loan]
@@ -237,6 +245,7 @@ mod tests {
                 hide_new_transactions: false,
                 transfer_without_balance_ignored: false,
                 no_regular_balance: false,
+                hidden: false,
             })
             .to_request();
         let resp: Account = test::call_and_read_body_json(&app, req).await;
@@ -247,6 +256,7 @@ mod tests {
             hide_new_transactions: false,
             transfer_without_balance_ignored: false,
             no_regular_balance: false,
+            hidden: false,
         }, resp);
         let loan_account = resp.clone();
 
@@ -259,6 +269,7 @@ mod tests {
                 hide_new_transactions: false,
                 transfer_without_balance_ignored: false,
                 no_regular_balance: false,
+                hidden: false,
             })
             .to_request();
         let resp: Account = test::call_and_read_body_json(&app, req).await;
@@ -269,6 +280,7 @@ mod tests {
             hide_new_transactions: false,
             transfer_without_balance_ignored: false,
             no_regular_balance: false,
+            hidden: false,
         }, resp);
         let checking_account = resp.clone();
 
@@ -673,6 +685,7 @@ mod tests {
             hide_new_transactions: false,
             transfer_without_balance_ignored: false,
             no_regular_balance: false,
+            hidden: false,
         }, resp);
 
         // List no accounts - [Savings, Chceking]
@@ -720,6 +733,7 @@ mod tests {
             hide_new_transactions: false,
             transfer_without_balance_ignored: false,
             no_regular_balance: false,
+            hidden: false,
         }, resp);
 
         // Get setting now deleted - [RepeatingTransfers]
@@ -866,6 +880,7 @@ mod tests {
                 hide_new_transactions: false,
                 transfer_without_balance_ignored: true,
                 no_regular_balance: true,
+                hidden: false,
             })
             .to_request();
         let external: Account = test::call_and_read_body_json(&app, req).await;
@@ -879,6 +894,7 @@ mod tests {
                 hide_new_transactions: false,
                 transfer_without_balance_ignored: false,
                 no_regular_balance: false,
+                hidden: false,
             })
             .to_request();
         let savings: Account = test::call_and_read_body_json(&app, req).await;
@@ -892,6 +908,7 @@ mod tests {
                 hide_new_transactions: false,
                 transfer_without_balance_ignored: false,
                 no_regular_balance: false,
+                hidden: false,
             })
             .to_request();
         let loan: Account = test::call_and_read_body_json(&app, req).await;
